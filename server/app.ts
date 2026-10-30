@@ -56,7 +56,7 @@ if (fs.existsSync(distDir)) {
 
   // Express 5 compatible SPA fallback
   app.use((req, res, next) => {
-    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    if ((req.method === 'GET' || req.method === 'HEAD') && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
       return res.sendFile(path.join(distDir, 'index.html'));
     }
     next();

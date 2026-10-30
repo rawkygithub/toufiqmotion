@@ -56,3 +56,4 @@ router.get('/me', requireAuth, (req: AuthRequest, res) => {
 });
 
 export default router;
+

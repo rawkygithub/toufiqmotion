@@ -21,3 +21,4 @@ router.post('/upload', requireAuth, upload.single('image'), (req, res) => {
 });
 
 export default router;
+

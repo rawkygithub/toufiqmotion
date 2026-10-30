@@ -33,7 +33,21 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activePage, setActivePage] = useState<PageId>('home');
+  const [activePage, setActivePage] = useState<PageId>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+      const hash = window.location.hash.replace(/^#/, '').toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (path === 'admin' || hash === 'admin' || search.includes('admin')) return 'admin';
+      if (path === 'travel' || hash === 'travel') return 'travel';
+      if (path === 'lifestyle' || hash === 'lifestyle') return 'lifestyle';
+      if (path === 'health' || hash === 'health') return 'health';
+      if (path === 'work' || hash === 'work') return 'work';
+      if (path === 'about' || hash === 'about') return 'about';
+      if (path === 'contact' || hash === 'contact') return 'contact';
+    }
+    return 'home';
+  });
   const [homeVariant, setHomeVariant] = useState<HomeDesignVariant>('design1');
   const [ambientLight, setAmbientLight] = useState<AmbientLightingMode>('golden-hour');
   const [lightIntensity, setLightIntensity] = useState<number>(75);
@@ -95,12 +109,31 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSelectedArticle(null);
   };
 
-  // Scroll to top on page change
+  // Scroll to top on page change & update browser URL
   const handlePageChange = (page: PageId) => {
     setSelectedArticle(null);
     setActivePage(page);
+    if (typeof window !== 'undefined') {
+      const newPath = page === 'home' ? '/' : `/${page}`;
+      if (window.location.pathname !== newPath) {
+        window.history.pushState(null, '', newPath);
+      }
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+      if (['admin', 'travel', 'lifestyle', 'health', 'work', 'about', 'contact'].includes(path)) {
+        setActivePage(path as PageId);
+      } else {
+        setActivePage('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   return (
     <ThemeContext.Provider

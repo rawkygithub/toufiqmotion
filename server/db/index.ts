@@ -110,3 +110,4 @@ export function initDatabase() {
 
   console.log('✅ SQLite Database initialized with WAL mode at:', dbPath);
 }
+
