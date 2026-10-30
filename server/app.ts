@@ -11,6 +11,7 @@ import newsletterRoutes from './routes/newsletter.js';
 import inquiriesRoutes from './routes/inquiries.js';
 import mediaRoutes from './routes/media.js';
 import statsRoutes from './routes/stats.js';
+import categoriesRoutes from './routes/categories.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +49,7 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/inquiries', inquiriesRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/categories', categoriesRoutes);
 
 // Static frontend serving (from dist directory if built)
 const distDir = path.join(__dirname, '../dist');

@@ -21,6 +21,15 @@ export interface Article {
   quote?: string;
   viewsCount?: number;
   likesCount?: number;
+  htmlContent?: string;
+  focusKeyword?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  canonicalUrl?: string;
+  noIndex?: boolean;
+  ogImage?: string;
+  seoScore?: number;
+  readabilityScore?: number;
 }
 
 export const ARTICLES: Article[] = [

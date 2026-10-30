@@ -24,6 +24,57 @@ export function seedDatabase() {
     console.log('👤 Seeded Admin User: admin@toufiqmotion.com (password: admin123)');
   }
 
+  // Check if categories exist (Requirement 1)
+  const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get() as { count: number };
+  if (categoryCount.count === 0) {
+    const insertCat = db.prepare(`
+      INSERT INTO categories (id, name, slug, description, icon, image, subcategories_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertCat.run(
+      'cat-travel',
+      'Travel',
+      'travel',
+      'Inspiring destinations, practical travel guides, itineraries and photography.',
+      'Compass',
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80',
+      JSON.stringify(['Island Escapes', 'Road Trips', 'Travel Tips', 'Weekend Getaways', 'Nature & Outdoor', 'City Guides'])
+    );
+
+    insertCat.run(
+      'cat-lifestyle',
+      'Lifestyle',
+      'lifestyle',
+      'Everyday inspiration, food and coffee, mindful home spaces and intentional living.',
+      'Coffee',
+      'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
+      JSON.stringify(['Food & Coffee', 'Home & Living', 'Productivity', 'Experiences', 'Style & Essentials'])
+    );
+
+    insertCat.run(
+      'cat-health',
+      'Health & Wellbeing',
+      'health-wellbeing',
+      'Practical tips, healthy habits and inspiring ideas for physical and mental vitality.',
+      'Heart',
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80',
+      JSON.stringify(['Healthy Living', 'Mental Wellbeing', 'Fitness & Movement', 'Nutrition & Food', 'Sleep & Recovery', 'Mindful Travel'])
+    );
+
+    insertCat.run(
+      'cat-culture',
+      'Culture & Stories',
+      'culture-stories',
+      'Artisan craft traditions, local heritage, and essays on slow creative journeys.',
+      'Sparkles',
+      'https://images.unsplash.com/photo-1543429776-2782fc8e1acd?auto=format&fit=crop&w=600&q=80',
+      JSON.stringify(['Artisan Craft', 'Local Traditions', 'Creative Essays', 'Photography Journals'])
+    );
+
+    console.log('🏷️ Seeded initial categories into SQLite database.');
+  }
+
   // Check if articles exist
   const articleCount = db.prepare('SELECT COUNT(*) as count FROM articles').get() as { count: number };
   if (articleCount.count === 0) {

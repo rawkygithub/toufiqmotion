@@ -34,7 +34,22 @@ export function initDatabase() {
     );
   `);
 
-  // 2. Articles Table
+  // 2. Categories Table (Requirement 1)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      description TEXT,
+      icon TEXT DEFAULT 'Compass',
+      image TEXT,
+      subcategories_json TEXT DEFAULT '[]',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
+  `);
+
+  // 3. Articles Table with SEO & Rich Content support
   db.exec(`
     CREATE TABLE IF NOT EXISTS articles (
       id TEXT PRIMARY KEY,
@@ -54,6 +69,15 @@ export function initDatabase() {
       quote TEXT,
       tags_json TEXT NOT NULL,
       content_json TEXT NOT NULL,
+      html_content TEXT,
+      focus_keyword TEXT,
+      meta_title TEXT,
+      meta_description TEXT,
+      canonical_url TEXT,
+      no_index INTEGER DEFAULT 0,
+      og_image TEXT,
+      seo_score INTEGER DEFAULT 85,
+      readability_score INTEGER DEFAULT 90,
       views_count INTEGER DEFAULT 0,
       likes_count INTEGER DEFAULT 0,
       published INTEGER DEFAULT 1,
@@ -65,7 +89,28 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at);
   `);
 
-  // 3. Comments / Reflections Table
+  // Ensure columns exist if table was already created earlier
+  const alterColumns = [
+    'ALTER TABLE articles ADD COLUMN html_content TEXT;',
+    'ALTER TABLE articles ADD COLUMN focus_keyword TEXT;',
+    'ALTER TABLE articles ADD COLUMN meta_title TEXT;',
+    'ALTER TABLE articles ADD COLUMN meta_description TEXT;',
+    'ALTER TABLE articles ADD COLUMN canonical_url TEXT;',
+    'ALTER TABLE articles ADD COLUMN no_index INTEGER DEFAULT 0;',
+    'ALTER TABLE articles ADD COLUMN og_image TEXT;',
+    'ALTER TABLE articles ADD COLUMN seo_score INTEGER DEFAULT 85;',
+    'ALTER TABLE articles ADD COLUMN readability_score INTEGER DEFAULT 90;'
+  ];
+
+  for (const sql of alterColumns) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Column already exists, safe to ignore
+    }
+  }
+
+  // 4. Comments Table
   db.exec(`
     CREATE TABLE IF NOT EXISTS comments (
       id TEXT PRIMARY KEY,
@@ -73,14 +118,14 @@ export function initDatabase() {
       author_name TEXT NOT NULL,
       author_email TEXT,
       content TEXT NOT NULL,
-      status TEXT DEFAULT 'approved', -- 'approved', 'pending', 'spam'
+      status TEXT DEFAULT 'approved',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS idx_comments_article_id ON comments(article_id);
   `);
 
-  // 4. Newsletter Subscribers Table
+  // 5. Newsletter Subscribers Table
   db.exec(`
     CREATE TABLE IF NOT EXISTS newsletter_subscribers (
       id TEXT PRIMARY KEY,
@@ -92,22 +137,21 @@ export function initDatabase() {
     );
   `);
 
-  // 5. Inquiries Table (Work With Us & Contact Page Messages)
+  // 6. Inquiries Table
   db.exec(`
     CREATE TABLE IF NOT EXISTS inquiries (
       id TEXT PRIMARY KEY,
-      type TEXT NOT NULL, -- 'partnership' or 'contact'
+      type TEXT NOT NULL,
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       company TEXT,
       subject TEXT,
       project_type TEXT,
       message TEXT NOT NULL,
-      status TEXT DEFAULT 'new', -- 'new', 'in_review', 'resolved'
+      status TEXT DEFAULT 'new',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
-  console.log('✅ SQLite Database initialized with WAL mode at:', dbPath);
+  console.log('✅ SQLite Database schema initialized with Categories & Yoast SEO fields at:', dbPath);
 }
-

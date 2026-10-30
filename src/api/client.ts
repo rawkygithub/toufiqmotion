@@ -13,6 +13,18 @@ export interface PostParams {
   limit?: number;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  image?: string;
+  subcategories: string[];
+  articleCount?: number;
+  createdAt?: string;
+}
+
 export interface StatsResponse {
   totalArticles: number;
   totalViews: number;
@@ -204,6 +216,51 @@ export const api = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
     return data;
+  },
+
+  // Categories (Requirement 1)
+  async getCategories(): Promise<{ categories: Category[]; total: number }> {
+    const res = await fetch(`${API_BASE}/categories`);
+    if (!res.ok) throw new Error('Failed to fetch categories');
+    return res.json();
+  },
+
+  async createCategory(token: string, data: { name: string; description?: string; icon?: string; image?: string; subcategories?: string[] }): Promise<{ category: Category }> {
+    const res = await fetch(`${API_BASE}/categories`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to create category');
+    return result;
+  },
+
+  async updateCategory(token: string, id: string, data: Partial<Category>): Promise<{ category: Category }> {
+    const res = await fetch(`${API_BASE}/categories/${id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to update category');
+    return result;
+  },
+
+  async deleteCategory(token: string, id: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/categories/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to delete category');
+    return result;
   }
 };
 

@@ -26,6 +26,15 @@ function formatArticle(row: any) {
     quote: row.quote,
     tags: JSON.parse(row.tags_json || '[]'),
     content: JSON.parse(row.content_json || '[]'),
+    htmlContent: row.html_content || null,
+    focusKeyword: row.focus_keyword || '',
+    metaTitle: row.meta_title || row.title,
+    metaDescription: row.meta_description || row.excerpt,
+    canonicalUrl: row.canonical_url || '',
+    noIndex: Boolean(row.no_index),
+    ogImage: row.og_image || row.image,
+    seoScore: row.seo_score ?? 85,
+    readabilityScore: row.readability_score ?? 90,
     viewsCount: row.views_count,
     likesCount: row.likes_count,
     published: Boolean(row.published),
@@ -159,9 +168,18 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
     subcategory,
     image,
     content,
+    htmlContent,
     tags = [],
     quote,
-    featured = false
+    featured = false,
+    focusKeyword = '',
+    metaTitle = '',
+    metaDescription = '',
+    canonicalUrl = '',
+    noIndex = false,
+    ogImage = '',
+    seoScore = 85,
+    readabilityScore = 90
   } = req.body;
 
   if (!title || !category || !subcategory || !image) {
@@ -178,8 +196,8 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
   }
 
   const contentArray = Array.isArray(content) ? content : [content || excerpt];
-  const totalWords = contentArray.join(' ').split(/\s+/).length;
-  const readTime = `${Math.max(3, Math.ceil(totalWords / 150))} min read`;
+  const totalWords = (htmlContent ? htmlContent.replace(/<[^>]+>/g, ' ') : contentArray.join(' ')).split(/\s+/).filter(Boolean).length;
+  const readTime = `${Math.max(3, Math.ceil(totalWords / 180))} min read`;
 
   const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date());
 
@@ -187,8 +205,11 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
     INSERT INTO articles (
       id, slug, title, excerpt, category, subcategory, date, read_time,
       image, featured, author_name, author_avatar, author_role,
-      quote, tags_json, content_json, views_count, likes_count, published
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1)
+      quote, tags_json, content_json, html_content,
+      focus_keyword, meta_title, meta_description, canonical_url,
+      no_index, og_image, seo_score, readability_score,
+      views_count, likes_count, published
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1)
   `);
 
   stmt.run(
@@ -207,7 +228,16 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
     'Founder & Travel Photographer',
     quote || null,
     JSON.stringify(tags),
-    JSON.stringify(contentArray)
+    JSON.stringify(contentArray),
+    htmlContent || null,
+    focusKeyword,
+    metaTitle || title,
+    metaDescription || excerpt,
+    canonicalUrl || `https://toufiqmotion.com/${slug}`,
+    noIndex ? 1 : 0,
+    ogImage || image,
+    seoScore,
+    readabilityScore
   );
 
   const created = db.prepare('SELECT * FROM articles WHERE id = ?').get(id);
@@ -217,7 +247,26 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
 // PUT /api/posts/:id (Admin Protected)
 router.put('/:id', requireAuth, (req: AuthRequest, res) => {
   const { id } = req.params;
-  const { title, excerpt, category, subcategory, image, content, tags, quote, featured } = req.body;
+  const {
+    title,
+    excerpt,
+    category,
+    subcategory,
+    image,
+    content,
+    htmlContent,
+    tags,
+    quote,
+    featured,
+    focusKeyword,
+    metaTitle,
+    metaDescription,
+    canonicalUrl,
+    noIndex,
+    ogImage,
+    seoScore,
+    readabilityScore
+  } = req.body;
 
   const existing = db.prepare('SELECT * FROM articles WHERE id = ?').get(id) as any;
   if (!existing) {
@@ -238,6 +287,15 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
       featured = COALESCE(?, featured),
       tags_json = ?,
       content_json = ?,
+      html_content = COALESCE(?, html_content),
+      focus_keyword = COALESCE(?, focus_keyword),
+      meta_title = COALESCE(?, meta_title),
+      meta_description = COALESCE(?, meta_description),
+      canonical_url = COALESCE(?, canonical_url),
+      no_index = COALESCE(?, no_index),
+      og_image = COALESCE(?, og_image),
+      seo_score = COALESCE(?, seo_score),
+      readability_score = COALESCE(?, readability_score),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(
@@ -250,6 +308,15 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
     featured !== undefined ? (featured ? 1 : 0) : existing.featured,
     updatedTags,
     updatedContent,
+    htmlContent,
+    focusKeyword,
+    metaTitle,
+    metaDescription,
+    canonicalUrl,
+    noIndex !== undefined ? (noIndex ? 1 : 0) : existing.no_index,
+    ogImage,
+    seoScore,
+    readabilityScore,
     id
   );
 

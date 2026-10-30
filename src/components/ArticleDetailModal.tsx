@@ -279,11 +279,18 @@ export const ArticleDetailModal: React.FC = () => {
             </div>
           )}
 
-          {selectedArticle.content.map((paragraph, index) => (
-            <p key={index} className="tracking-wide">
-              {paragraph}
-            </p>
-          ))}
+          {selectedArticle.htmlContent ? (
+            <div
+              className="editorial-rendered-content space-y-5 [&_h1]:font-serif [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-[#1E1B18] [&_h1]:mt-8 [&_h1]:mb-4 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-[#1E1B18] [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:font-serif [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-[#1E1B18] [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:leading-[1.8] [&_p]:mb-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#E8734A] [&_blockquote]:pl-5 [&_blockquote]:py-2 [&_blockquote]:my-6 [&_blockquote]:italic [&_blockquote]:font-serif [&_blockquote]:text-xl [&_blockquote]:text-[#1E1B18] [&_blockquote]:bg-[#FFF8F4] [&_blockquote]:rounded-r-xl [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:space-y-2 [&_img]:rounded-2xl [&_img]:my-6 [&_img]:shadow-md [&_a]:text-[#E8734A] [&_a]:underline [&_table]:w-full [&_table]:border-collapse [&_table]:my-6 [&_th]:border [&_th]:border-[#E5DFD7] [&_th]:bg-[#F7F3EE] [&_th]:p-3 [&_th]:font-bold [&_td]:border [&_td]:border-[#E5DFD7] [&_td]:p-3 [&_code]:bg-[#F3EFEA] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-sm"
+              dangerouslySetInnerHTML={{ __html: selectedArticle.htmlContent }}
+            />
+          ) : (
+            selectedArticle.content.map((paragraph, index) => (
+              <p key={index} className="tracking-wide">
+                {paragraph}
+              </p>
+            ))
+          )}
 
           {/* Tags */}
           <div className="pt-8 border-t border-[#ECE7DF]">
