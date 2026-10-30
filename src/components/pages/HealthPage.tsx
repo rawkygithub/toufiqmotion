@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { ARTICLES, TOPICS, QUICK_WELLBEING_TIPS } from '../../data/articles';
+import { api } from '../../api/client';
 import { ArticleCard } from '../ArticleCard';
 import {
   Heart,
@@ -58,10 +59,15 @@ export const HealthPage: React.FC = () => {
     }
   };
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setSubscribed(true);
+    try {
+      await api.subscribeNewsletter(email, '', 'health_page');
+    } catch (e) {
+      console.warn('Backend subscription note:', e);
+    }
     setTimeout(() => {
       setEmail('');
       setSubscribed(false);
@@ -342,3 +348,4 @@ export const HealthPage: React.FC = () => {
     </div>
   );
 };
+

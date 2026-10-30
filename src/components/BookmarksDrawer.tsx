@@ -114,3 +114,4 @@ export const BookmarksDrawer: React.FC = () => {
     </div>
   );
 };
+

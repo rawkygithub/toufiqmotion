@@ -14,16 +14,22 @@ import {
   Check
 } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, PinterestIcon, FacebookIcon } from './SocialIcons';
+import { api } from '../api/client';
 
 export const Footer: React.FC = () => {
   const { setActivePage, openArticle } = useTheme();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setSubscribed(true);
+    try {
+      await api.subscribeNewsletter(email, '', 'footer');
+    } catch (err) {
+      console.warn('Backend subscription note:', err);
+    }
     setTimeout(() => {
       setEmail('');
       setSubscribed(false);
@@ -335,6 +341,10 @@ export const Footer: React.FC = () => {
             <a href="#affiliate" className="hover:text-[#1E1B18] transition-colors">Affiliate Disclosure</a>
             <span>&bull;</span>
             <a href="#editorial" className="hover:text-[#1E1B18] transition-colors">Editorial Policy</a>
+            <span>&bull;</span>
+            <button onClick={() => setActivePage('admin')} className="text-[#E8734A] hover:underline font-semibold flex items-center gap-1">
+              Studio 🔐
+            </button>
           </div>
 
           <button

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { ARTICLES, POPULAR_DESTINATIONS, TOPICS } from '../../data/articles';
+import { api } from '../../api/client';
 import { ArticleCard } from '../ArticleCard';
 import {
   Compass,
@@ -50,10 +51,15 @@ export const TravelPage: React.FC = () => {
     return matchesSub && matchesQuery;
   });
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail) return;
     setNewsletterSubscribed(true);
+    try {
+      await api.subscribeNewsletter(newsletterEmail, '', 'travel_page');
+    } catch (e) {
+      console.warn('Backend subscription note:', e);
+    }
     setTimeout(() => {
       setNewsletterEmail('');
       setNewsletterSubscribed(false);
@@ -334,3 +340,4 @@ export const TravelPage: React.FC = () => {
     </div>
   );
 };
+

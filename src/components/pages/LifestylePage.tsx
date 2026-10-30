@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { ARTICLES, TOPICS } from '../../data/articles';
+import { api } from '../../api/client';
 import { ArticleCard } from '../ArticleCard';
 import {
   Coffee,
@@ -39,10 +40,15 @@ export const LifestylePage: React.FC = () => {
     return selectedSubcategory === 'All' || a.subcategory === selectedSubcategory;
   });
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setSubscribed(true);
+    try {
+      await api.subscribeNewsletter(email, '', 'lifestyle_page');
+    } catch (e) {
+      console.warn('Backend subscription note:', e);
+    }
     setTimeout(() => {
       setEmail('');
       setSubscribed(false);
@@ -285,3 +291,4 @@ export const LifestylePage: React.FC = () => {
     </div>
   );
 };
+

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { FAQS } from '../../data/articles';
+import { api } from '../../api/client';
 import {
   Compass,
   Coffee,
@@ -69,9 +70,20 @@ export const AboutContactPage: React.FC<AboutContactProps> = ({ initialView = 'a
     setTimeout(() => setCopiedEmail(false), 2000);
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setContactSubmitted(true);
+    try {
+      await api.submitInquiry({
+        type: 'contact',
+        name: contactForm.name,
+        email: contactForm.email,
+        subject: contactForm.subject,
+        message: contactForm.message
+      });
+    } catch (err) {
+      console.warn('Backend contact inquiry note:', err);
+    }
     setTimeout(() => {
       setContactForm({ name: '', email: '', subject: '', message: '' });
       setContactSubmitted(false);

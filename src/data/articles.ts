@@ -19,6 +19,8 @@ export interface Article {
   tags: string[];
   content: string[];
   quote?: string;
+  viewsCount?: number;
+  likesCount?: number;
 }
 
 export const ARTICLES: Article[] = [
@@ -496,3 +498,4 @@ export const FAQS = [
     a: 'We offer quarterly bespoke itinerary curation for private travelers. You can inquire about availability via hello@toufiqmotion.com.'
   }
 ];
+

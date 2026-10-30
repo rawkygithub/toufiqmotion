@@ -188,3 +188,4 @@ export const HomeDesign2: React.FC = () => {
     </div>
   );
 };
+

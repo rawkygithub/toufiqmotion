@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { api } from '../../api/client';
 import {
   Briefcase,
   Users,
@@ -75,18 +76,35 @@ export const WorkWithUsPage: React.FC = () => {
     'Professional, reliable communication and comprehensive post-campaign reporting'
   ];
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormSubmitted(true);
+    try {
+      await api.submitInquiry({
+        type: 'partnership',
+        name: formData.name,
+        email: formData.email,
+        company: formData.company,
+        projectType: formData.projectType,
+        message: formData.message
+      });
+    } catch (err) {
+      console.warn('Backend inquiry note:', err);
+    }
     setTimeout(() => {
       setFormData({ name: '', email: '', company: '', projectType: 'Destination Partnership', message: '' });
       setFormSubmitted(false);
     }, 4000);
   };
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setNewsletterSubscribed(true);
+    try {
+      await api.subscribeNewsletter(newsletterEmail, newsletterName, 'newsletter_landing');
+    } catch (err) {
+      console.warn('Backend newsletter note:', err);
+    }
     setTimeout(() => {
       setNewsletterEmail('');
       setNewsletterName('');
@@ -482,3 +500,4 @@ export const WorkWithUsPage: React.FC = () => {
     </div>
   );
 };
+

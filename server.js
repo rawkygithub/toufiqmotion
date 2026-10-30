@@ -120,3 +120,4 @@ server.listen(PORT, () => {
   console.log(`\n✨ Toufiq Motion Editorial Blog is live at: http://localhost:${PORT}`);
   console.log(`⚡ Node.js production server running from: ${DIST_DIR}\n`);
 });
+

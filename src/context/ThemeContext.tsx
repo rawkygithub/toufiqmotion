@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Article, ARTICLES } from '../data/articles';
 
-export type PageId = 'home' | 'travel' | 'lifestyle' | 'health' | 'work' | 'about' | 'contact';
+export type PageId = 'home' | 'travel' | 'lifestyle' | 'health' | 'work' | 'about' | 'contact' | 'admin';
 export type HomeDesignVariant = 'design1' | 'design2' | 'design3';
 export type AmbientLightingMode = 'golden-hour' | 'morning-dew' | 'sunset-ember' | 'candlelight' | 'clean-studio';
 
@@ -141,3 +141,4 @@ export const useTheme = () => {
   }
   return context;
 };
+

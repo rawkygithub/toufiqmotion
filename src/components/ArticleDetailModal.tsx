@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { ARTICLES, Article } from '../data/articles';
+import { api } from '../api/client';
 import {
   X,
   Bookmark,
@@ -56,6 +57,25 @@ export const ArticleDetailModal: React.FC = () => {
     };
   }, [selectedArticle]);
 
+  useEffect(() => {
+    if (selectedArticle) {
+      api.getArticleBySlug(selectedArticle.slug || selectedArticle.id)
+        .then((res) => {
+          if (res.article?.likesCount !== undefined) {
+            setLikes(res.article.likesCount);
+          }
+          if (res.comments && res.comments.length > 0) {
+            setComments(res.comments.map((c: any) => ({
+              name: c.author_name,
+              date: c.created_at,
+              text: c.content
+            })));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedArticle]);
+
   if (!selectedArticle) return null;
 
   const bookmarked = isBookmarked(selectedArticle.id);
@@ -72,28 +92,41 @@ export const ArticleDetailModal: React.FC = () => {
     }
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
     if (!hasLiked) {
-      setLikes(likes + 1);
+      setLikes((prev) => prev + 1);
       setHasLiked(true);
+      try {
+        const res = await api.likeArticle(selectedArticle.id);
+        if (res.likesCount) setLikes(res.likesCount);
+      } catch (e) {
+        console.warn('Could not sync like to backend', e);
+      }
     } else {
-      setLikes(likes - 1);
+      setLikes((prev) => Math.max(0, prev - 1));
       setHasLiked(false);
     }
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
+    const text = commentText.trim();
     setComments([
       {
         name: 'You (Reader)',
         date: 'Just now',
-        text: commentText.trim()
+        text
       },
       ...comments
     ]);
     setCommentText('');
+
+    try {
+      await api.addComment(selectedArticle.id, 'Reader', text);
+    } catch (err) {
+      console.warn('Saved locally, backend sync note:', err);
+    }
   };
 
   return (
@@ -365,3 +398,4 @@ export const ArticleDetailModal: React.FC = () => {
     </div>
   );
 };
+

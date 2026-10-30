@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme, PageId, HomeDesignVariant } from '../context/ThemeContext';
-import { Search, Bookmark, Sparkles, Menu, X, ChevronDown, Compass, Heart, Coffee, Globe, User, Send } from 'lucide-react';
+import { Search, Bookmark, Sparkles, Menu, X, ChevronDown, Lock } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const {
@@ -179,6 +179,19 @@ export const Navbar: React.FC = () => {
               <Search className="w-4 h-4" />
             </button>
 
+            {/* Admin Studio Trigger */}
+            <button
+              onClick={() => setActivePage('admin')}
+              className={`p-2 rounded-full transition-colors ${
+                activePage === 'admin'
+                  ? 'bg-[#E8734A] text-white shadow-xs'
+                  : 'hover:bg-black/5 text-[#4A453E] hover:text-[#E8734A]'
+              }`}
+              title="Admin Editorial Studio"
+            >
+              <Lock className="w-4 h-4" />
+            </button>
+
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -211,6 +224,20 @@ export const Navbar: React.FC = () => {
               </button>
             ))}
 
+            <button
+              onClick={() => {
+                setActivePage('admin');
+                setMobileMenuOpen(false);
+              }}
+              className={`text-left text-base font-medium py-2 px-3 rounded-xl flex items-center gap-2 transition-all ${
+                activePage === 'admin'
+                  ? 'bg-[#FFF3EC] text-[#E8734A] font-semibold'
+                  : 'text-[#4A453E] hover:bg-[#FAF8F5]'
+              }`}
+            >
+              <Lock className="w-4 h-4" /> Admin Studio
+            </button>
+
             {/* Homepage Layout Switcher for Mobile */}
             <div className="pt-3 border-t border-[#F0ECE6]">
               <div className="text-[11px] font-bold uppercase tracking-wider text-[#9E978C] mb-2 px-3">
@@ -242,3 +269,4 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
+

@@ -201,3 +201,4 @@ export const InsideLightEffect: React.FC = () => {
     </>
   );
 };
+

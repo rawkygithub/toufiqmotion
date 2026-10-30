@@ -12,6 +12,7 @@ import { LifestylePage } from './components/pages/LifestylePage';
 import { HealthPage } from './components/pages/HealthPage';
 import { WorkWithUsPage } from './components/pages/WorkWithUsPage';
 import { AboutContactPage } from './components/pages/AboutContactPage';
+import { AdminStudio } from './components/pages/AdminStudio';
 
 const MainLayout: React.FC = () => {
   const { activePage } = useTheme();
@@ -33,6 +34,7 @@ const MainLayout: React.FC = () => {
         {activePage === 'work' && <WorkWithUsPage />}
         {activePage === 'about' && <AboutContactPage initialView="about" />}
         {activePage === 'contact' && <AboutContactPage initialView="contact" />}
+        {activePage === 'admin' && <AdminStudio />}
       </main>
 
       {/* Global Modals & Drawers */}

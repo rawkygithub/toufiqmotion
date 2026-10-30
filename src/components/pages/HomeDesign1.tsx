@@ -250,3 +250,4 @@ export const HomeDesign1: React.FC = () => {
     </div>
   );
 };
+
