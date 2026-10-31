@@ -5,6 +5,15 @@
     --font-serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --font-script: 'Caveat', cursive;
+    --theme-accent: #E8734A;
+    --theme-accent-hover: #D56237;
+    --theme-accent-light: #FFF3EC;
+    --theme-canvas: #FAF8F5;
+  }
+
+  body {
+    background-color: var(--theme-canvas);
+    transition: background-color 800ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 

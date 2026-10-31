@@ -484,3 +484,4 @@ router.get('/search-queries', (req, res) => {
 });
 
 export default router;
+

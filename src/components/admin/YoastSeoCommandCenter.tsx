@@ -1817,3 +1817,4 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     </div>
   );
 };
+

@@ -1,6 +1,82 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTheme, AmbientLightingMode } from '../context/ThemeContext';
-import { Sun, Sparkles, Sliders, Check, Moon, Flame } from 'lucide-react';
+import { Sun, Sparkles, Check, X } from 'lucide-react';
+
+export interface LightPresetConfig {
+  id: AmbientLightingMode;
+  name: string;
+  tagline: string;
+  icon: string;
+  previewColor: string;
+  accentColor: string;
+  accentHover: string;
+  accentBg: string;
+  canvasBg: string;
+  badgeText: string;
+}
+
+export const PRESETS: LightPresetConfig[] = [
+  {
+    id: 'golden-hour',
+    name: 'Golden Hour',
+    tagline: 'Warm sunset honey & sunlit peach illumination',
+    icon: '🌅',
+    previewColor: 'from-amber-400 via-orange-400 to-rose-400',
+    accentColor: '#E8734A',
+    accentHover: '#D56237',
+    accentBg: '#FFF3EC',
+    canvasBg: '#FAF7F2',
+    badgeText: '#C85228'
+  },
+  {
+    id: 'morning-dew',
+    name: 'Morning Dew',
+    tagline: 'Fresh champagne & ethereal botanic morning mist',
+    icon: '🌿',
+    previewColor: 'from-emerald-400 via-teal-400 to-cyan-400',
+    accentColor: '#0D9488',
+    accentHover: '#0F766E',
+    accentBg: '#ECFDF5',
+    canvasBg: '#F1F7F4',
+    badgeText: '#065F46'
+  },
+  {
+    id: 'sunset-ember',
+    name: 'Sunset Ember',
+    tagline: 'Velvet dusk terracotta & romantic rose twilight',
+    icon: '🌄',
+    previewColor: 'from-rose-400 via-fuchsia-500 to-purple-600',
+    accentColor: '#C026D3',
+    accentHover: '#A21CAF',
+    accentBg: '#FDF2F8',
+    canvasBg: '#F7F1F6',
+    badgeText: '#9D174D'
+  },
+  {
+    id: 'candlelight',
+    name: 'Candlelight',
+    tagline: 'Intimate bronze hearth & warm cozy flicker',
+    icon: '🕯️',
+    previewColor: 'from-amber-500 via-yellow-500 to-amber-600',
+    accentColor: '#D97706',
+    accentHover: '#B45309',
+    accentBg: '#FEF3C7',
+    canvasBg: '#F9F4EB',
+    badgeText: '#92400E'
+  },
+  {
+    id: 'clean-studio',
+    name: 'Studio Minimal',
+    tagline: 'Pristine neutral high-fashion architectural gallery',
+    icon: '🏛️',
+    previewColor: 'from-slate-300 via-gray-400 to-slate-500',
+    accentColor: '#475569',
+    accentHover: '#1E293B',
+    accentBg: '#F1F5F9',
+    canvasBg: '#F8FAFC',
+    badgeText: '#334155'
+  }
+];
 
 export const InsideLightEffect: React.FC = () => {
   const {
@@ -12,160 +88,223 @@ export const InsideLightEffect: React.FC = () => {
     setIsLightControlOpen
   } = useTheme();
 
-  // Color profiles for the ambient "inside light"
-  const getLightingStyle = (mode: AmbientLightingMode) => {
-    const alpha = (lightIntensity / 100);
-    switch (mode) {
-      case 'golden-hour':
-        return {
-          orb1: `radial-gradient(circle at 30% 20%, rgba(246, 173, 85, ${0.35 * alpha}) 0%, rgba(232, 115, 74, ${0.18 * alpha}) 35%, transparent 70%)`,
-          orb2: `radial-gradient(circle at 80% 40%, rgba(254, 215, 170, ${0.4 * alpha}) 0%, rgba(249, 115, 22, ${0.12 * alpha}) 40%, transparent 75%)`,
-          orb3: `radial-gradient(circle at 50% 85%, rgba(251, 146, 60, ${0.25 * alpha}) 0%, transparent 60%)`,
-          subtleGlow: `rgba(232, 115, 74, ${0.04 * alpha})`,
-          name: 'Golden Hour',
-          desc: 'Warm sunset honey & sunlit peach illumination'
-        };
+  const currentPreset = PRESETS.find((p) => p.id === ambientLight) || PRESETS[0];
+
+  // Dynamic alpha based on user warmth slider (15% to 100%)
+  const alpha = Math.max(0.15, lightIntensity / 100);
+
+  // Sync background canvas color and CSS variables onto document
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.backgroundColor = currentPreset.canvasBg;
+      document.body.style.transition = 'background-color 800ms cubic-bezier(0.4, 0, 0.2, 1)';
+
+      const root = document.documentElement;
+      root.style.setProperty('--theme-accent', currentPreset.accentColor);
+      root.style.setProperty('--theme-accent-hover', currentPreset.accentHover);
+      root.style.setProperty('--theme-accent-light', currentPreset.accentBg);
+      root.style.setProperty('--theme-canvas', currentPreset.canvasBg);
+    }
+  }, [currentPreset]);
+
+  // Compute atmospheric gradients based on active preset and intensity
+  const getGradients = () => {
+    switch (ambientLight) {
       case 'morning-dew':
         return {
-          orb1: `radial-gradient(circle at 25% 25%, rgba(167, 243, 208, ${0.3 * alpha}) 0%, rgba(199, 210, 254, ${0.2 * alpha}) 40%, transparent 70%)`,
-          orb2: `radial-gradient(circle at 75% 35%, rgba(254, 240, 138, ${0.3 * alpha}) 0%, rgba(147, 197, 253, ${0.15 * alpha}) 50%, transparent 75%)`,
-          orb3: `radial-gradient(circle at 50% 80%, rgba(216, 180, 254, ${0.18 * alpha}) 0%, transparent 60%)`,
-          subtleGlow: `rgba(167, 243, 208, ${0.04 * alpha})`,
-          name: 'Morning Dew',
-          desc: 'Fresh champagne & ethereal botanic morning mist'
+          overheadWash: `radial-gradient(ellipse 90% 60% at 50% -10%, rgba(52, 211, 153, ${0.45 * alpha}) 0%, rgba(20, 184, 166, ${0.25 * alpha}) 50%, transparent 80%)`,
+          softLightBlend: `radial-gradient(circle at 75% 20%, rgba(110, 231, 183, ${0.35 * alpha}) 0%, rgba(13, 148, 136, ${0.15 * alpha}) 50%, transparent 75%)`,
+          orb1: `radial-gradient(circle, rgba(110, 231, 183, ${0.5 * alpha}) 0%, rgba(13, 148, 136, ${0.25 * alpha}) 50%, transparent 75%)`,
+          orb2: `radial-gradient(circle, rgba(167, 243, 208, ${0.55 * alpha}) 0%, rgba(6, 182, 212, ${0.2 * alpha}) 50%, transparent 75%)`,
+          orb3: `radial-gradient(circle, rgba(45, 212, 191, ${0.4 * alpha}) 0%, transparent 70%)`,
+          vignette: `radial-gradient(circle at 50% 50%, transparent 60%, rgba(13, 148, 136, ${0.08 * alpha}) 100%)`
         };
       case 'sunset-ember':
         return {
-          orb1: `radial-gradient(circle at 35% 15%, rgba(244, 63, 94, ${0.25 * alpha}) 0%, rgba(249, 115, 22, ${0.2 * alpha}) 40%, transparent 70%)`,
-          orb2: `radial-gradient(circle at 70% 50%, rgba(168, 85, 247, ${0.22 * alpha}) 0%, rgba(236, 72, 153, ${0.15 * alpha}) 45%, transparent 75%)`,
-          orb3: `radial-gradient(circle at 45% 90%, rgba(251, 146, 60, ${0.28 * alpha}) 0%, transparent 65%)`,
-          subtleGlow: `rgba(244, 63, 94, ${0.04 * alpha})`,
-          name: 'Sunset Ember',
-          desc: 'Velvet dusk terracotta & romantic rose twilight'
+          overheadWash: `radial-gradient(ellipse 90% 60% at 50% -10%, rgba(244, 63, 94, ${0.45 * alpha}) 0%, rgba(192, 38, 211, ${0.25 * alpha}) 50%, transparent 80%)`,
+          softLightBlend: `radial-gradient(circle at 75% 20%, rgba(251, 113, 133, ${0.35 * alpha}) 0%, rgba(192, 38, 211, ${0.18 * alpha}) 50%, transparent 75%)`,
+          orb1: `radial-gradient(circle, rgba(251, 113, 133, ${0.5 * alpha}) 0%, rgba(192, 38, 211, ${0.25 * alpha}) 50%, transparent 75%)`,
+          orb2: `radial-gradient(circle, rgba(216, 180, 254, ${0.55 * alpha}) 0%, rgba(244, 63, 94, ${0.2 * alpha}) 50%, transparent 75%)`,
+          orb3: `radial-gradient(circle, rgba(168, 85, 247, ${0.4 * alpha}) 0%, transparent 70%)`,
+          vignette: `radial-gradient(circle at 50% 50%, transparent 60%, rgba(192, 38, 211, ${0.08 * alpha}) 100%)`
         };
       case 'candlelight':
         return {
-          orb1: `radial-gradient(circle at 50% 20%, rgba(217, 119, 6, ${0.38 * alpha}) 0%, rgba(180, 83, 9, ${0.2 * alpha}) 35%, transparent 70%)`,
-          orb2: `radial-gradient(circle at 85% 60%, rgba(245, 158, 11, ${0.28 * alpha}) 0%, transparent 60%)`,
-          orb3: `radial-gradient(circle at 15% 75%, rgba(251, 191, 36, ${0.25 * alpha}) 0%, transparent 55%)`,
-          subtleGlow: `rgba(217, 119, 6, ${0.05 * alpha})`,
-          name: 'Candlelight',
-          desc: 'Intimate bronze hearth & warm cozy flicker'
+          overheadWash: `radial-gradient(ellipse 90% 60% at 50% -10%, rgba(245, 158, 11, ${0.48 * alpha}) 0%, rgba(217, 119, 6, ${0.28 * alpha}) 50%, transparent 80%)`,
+          softLightBlend: `radial-gradient(circle at 75% 20%, rgba(251, 191, 36, ${0.38 * alpha}) 0%, rgba(180, 83, 9, ${0.18 * alpha}) 50%, transparent 75%)`,
+          orb1: `radial-gradient(circle, rgba(251, 191, 36, ${0.55 * alpha}) 0%, rgba(217, 119, 6, ${0.28 * alpha}) 50%, transparent 75%)`,
+          orb2: `radial-gradient(circle, rgba(253, 230, 138, ${0.6 * alpha}) 0%, rgba(180, 83, 9, ${0.2 * alpha}) 50%, transparent 75%)`,
+          orb3: `radial-gradient(circle, rgba(245, 158, 11, ${0.42 * alpha}) 0%, transparent 70%)`,
+          vignette: `radial-gradient(circle at 50% 50%, transparent 60%, rgba(217, 119, 6, ${0.09 * alpha}) 100%)`
         };
       case 'clean-studio':
+        return {
+          overheadWash: `radial-gradient(ellipse 90% 60% at 50% -10%, rgba(255, 255, 255, ${0.7 * alpha}) 0%, rgba(226, 232, 240, ${0.35 * alpha}) 50%, transparent 80%)`,
+          softLightBlend: `radial-gradient(circle at 75% 20%, rgba(255, 255, 255, ${0.5 * alpha}) 0%, transparent 75%)`,
+          orb1: `radial-gradient(circle, rgba(255, 255, 255, ${0.75 * alpha}) 0%, rgba(203, 213, 225, ${0.25 * alpha}) 50%, transparent 75%)`,
+          orb2: `radial-gradient(circle, rgba(241, 245, 249, ${0.65 * alpha}) 0%, transparent 70%)`,
+          orb3: `radial-gradient(circle, rgba(226, 232, 240, ${0.5 * alpha}) 0%, transparent 70%)`,
+          vignette: `radial-gradient(circle at 50% 50%, transparent 70%, rgba(148, 163, 184, ${0.05 * alpha}) 100%)`
+        };
+      case 'golden-hour':
       default:
         return {
-          orb1: `radial-gradient(circle at 40% 30%, rgba(255, 255, 255, ${0.6 * alpha}) 0%, rgba(229, 231, 235, ${0.2 * alpha}) 40%, transparent 70%)`,
-          orb2: `radial-gradient(circle at 70% 60%, rgba(243, 244, 246, ${0.5 * alpha}) 0%, transparent 60%)`,
-          orb3: `radial-gradient(circle at 30% 80%, rgba(249, 250, 251, ${0.4 * alpha}) 0%, transparent 60%)`,
-          subtleGlow: `rgba(255, 255, 255, 0)`,
-          name: 'Clean Gallery',
-          desc: 'Pristine neutral high-fashion editorial lighting'
+          overheadWash: `radial-gradient(ellipse 90% 60% at 50% -10%, rgba(246, 173, 85, ${0.45 * alpha}) 0%, rgba(232, 115, 74, ${0.22 * alpha}) 50%, transparent 80%)`,
+          softLightBlend: `radial-gradient(circle at 75% 20%, rgba(254, 215, 170, ${0.35 * alpha}) 0%, rgba(249, 115, 22, ${0.15 * alpha}) 50%, transparent 75%)`,
+          orb1: `radial-gradient(circle, rgba(246, 173, 85, ${0.5 * alpha}) 0%, rgba(232, 115, 74, ${0.25 * alpha}) 50%, transparent 75%)`,
+          orb2: `radial-gradient(circle, rgba(254, 215, 170, ${0.55 * alpha}) 0%, rgba(249, 115, 22, ${0.2 * alpha}) 50%, transparent 75%)`,
+          orb3: `radial-gradient(circle, rgba(251, 146, 60, ${0.4 * alpha}) 0%, transparent 70%)`,
+          vignette: `radial-gradient(circle at 50% 50%, transparent 60%, rgba(232, 115, 74, ${0.08 * alpha}) 100%)`
         };
     }
   };
 
-  const style = getLightingStyle(ambientLight);
-
-  const presets: { id: AmbientLightingMode; label: string; icon: string; previewColor: string }[] = [
-    { id: 'golden-hour', label: 'Golden Hour', icon: '🌅', previewColor: 'from-amber-400 to-orange-500' },
-    { id: 'morning-dew', label: 'Morning Dew', icon: '🌿', previewColor: 'from-emerald-300 to-teal-400' },
-    { id: 'sunset-ember', label: 'Sunset Ember', icon: '🌄', previewColor: 'from-rose-400 to-purple-500' },
-    { id: 'candlelight', label: 'Candlelight', icon: '🕯️', previewColor: 'from-amber-500 to-yellow-600' },
-    { id: 'clean-studio', label: 'Studio Minimal', icon: '🏛️', previewColor: 'from-stone-200 to-stone-400' },
-  ];
+  const gradients = getGradients();
 
   return (
     <>
-      {/* Dynamic Ambient Background Glow Orbs */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-all duration-1000 ease-out">
+      {/* 1. VISIBLE OVERHEAD ATMOSPHERIC LIGHT WASH (Cast over top hero, navigation, and cards) */}
+      <div
+        className="fixed top-0 left-0 right-0 h-[650px] pointer-events-none z-10 transition-all duration-800 ease-out"
+        style={{
+          background: gradients.overheadWash
+        }}
+      />
+
+      {/* 2. SOFT-LIGHT BLEND LAYER (Smoothly tints image lighting & ambient tone) */}
+      <div
+        className="fixed inset-0 pointer-events-none z-10 transition-all duration-800 ease-out"
+        style={{
+          background: gradients.softLightBlend,
+          mixBlendMode: 'soft-light'
+        }}
+      />
+
+      {/* 3. PERIMETER EYE-SMOOTH VIGNETTE */}
+      <div
+        className="fixed inset-0 pointer-events-none z-10 transition-all duration-800 ease-out"
+        style={{
+          background: gradients.vignette
+        }}
+      />
+
+      {/* 4. DYNAMIC BACKGROUND GLOW ORBS (Z-0) */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-all duration-800 ease-out">
         {/* Top/Left Orb */}
         <div
-          className="absolute -top-[15%] -left-[10%] w-[70vw] h-[70vw] max-w-[900px] max-h-[900px] rounded-full blur-[90px] transition-all duration-1000 animate-pulse"
-          style={{ background: style.orb1, animationDuration: '8s' }}
+          className="absolute -top-[15%] -left-[10%] w-[70vw] h-[70vw] max-w-[900px] max-h-[900px] rounded-full blur-[90px] transition-all duration-800 animate-pulse"
+          style={{ background: gradients.orb1, animationDuration: '9s' }}
         />
         {/* Right Mid Orb */}
         <div
-          className="absolute top-[25%] -right-[15%] w-[65vw] h-[65vw] max-w-[850px] max-h-[850px] rounded-full blur-[100px] transition-all duration-1000 animate-pulse"
-          style={{ background: style.orb2, animationDuration: '11s' }}
+          className="absolute top-[25%] -right-[15%] w-[65vw] h-[65vw] max-w-[850px] max-h-[850px] rounded-full blur-[100px] transition-all duration-800 animate-pulse"
+          style={{ background: gradients.orb2, animationDuration: '12s' }}
         />
         {/* Bottom Ambient Glow */}
         <div
-          className="absolute -bottom-[20%] left-[15%] w-[80vw] h-[60vw] max-w-[1000px] max-h-[700px] rounded-full blur-[110px] transition-all duration-1000"
-          style={{ background: style.orb3 }}
-        />
-        {/* Micro subtle canvas tint */}
-        <div
-          className="absolute inset-0 transition-colors duration-1000"
-          style={{ backgroundColor: style.subtleGlow }}
+          className="absolute -bottom-[20%] left-[15%] w-[80vw] h-[60vw] max-w-[1000px] max-h-[700px] rounded-full blur-[110px] transition-all duration-800"
+          style={{ background: gradients.orb3 }}
         />
       </div>
 
-      {/* Floating Eye-Smooth "Inside Light" Controller Button */}
+      {/* 5. FLOATING CONTROLLER PILL & POPOVER */}
       <div className="fixed bottom-6 right-6 z-40">
+        
+        {/* Floating Pill Button */}
         <button
           onClick={() => setIsLightControlOpen(!isLightControlOpen)}
-          className="group flex items-center gap-2.5 px-4 py-2.5 bg-white/90 hover:bg-white backdrop-blur-md border border-[#E8734A]/30 text-[#2D2A26] rounded-full shadow-lg hover:shadow-xl hover:border-[#E8734A] transition-all duration-300 scale-100 hover:scale-105 active:scale-95"
+          className="group flex items-center gap-2.5 px-4 py-2.5 bg-white/95 hover:bg-white backdrop-blur-md rounded-full shadow-lg hover:shadow-xl transition-all duration-300 scale-100 hover:scale-105 active:scale-95"
+          style={{
+            border: `1.5px solid ${currentPreset.accentColor}55`,
+            boxShadow: `0 8px 24px -4px ${currentPreset.accentColor}30`
+          }}
           title="Adjust the 'Inside Light' ambient lighting"
         >
+          {/* Animated Pulsing Colored Dot */}
           <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8734A] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#E8734A]"></span>
+            <span
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+              style={{ backgroundColor: currentPreset.accentColor }}
+            />
+            <span
+              className="relative inline-flex rounded-full h-3 w-3"
+              style={{ backgroundColor: currentPreset.accentColor }}
+            />
           </span>
-          <span className="text-xs font-semibold tracking-wide flex items-center gap-1.5 uppercase font-sans">
-            <Sparkles className="w-3.5 h-3.5 text-[#E8734A]" />
-            Inside Light: <span className="text-[#E8734A]">{style.name}</span>
+
+          <span className="text-xs font-bold tracking-wider flex items-center gap-1.5 uppercase font-sans">
+            <Sparkles className="w-3.5 h-3.5" style={{ color: currentPreset.accentColor }} />
+            <span className="text-[#3D3830]">Inside Light:</span>{' '}
+            <span style={{ color: currentPreset.accentColor }}>{currentPreset.name}</span>
           </span>
         </button>
 
         {/* Ambient Light Control Popover */}
         {isLightControlOpen && (
-          <div className="absolute bottom-14 right-0 w-80 bg-white/95 backdrop-blur-xl border border-[#EAE5DF] rounded-2xl shadow-2xl p-5 text-[#2D2A26] animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F0ECE6]">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center">
+          <div className="absolute bottom-14 right-0 w-80 bg-white/98 backdrop-blur-2xl border border-[#EAE5DF] rounded-3xl shadow-2xl p-5 text-[#2D2A26] animate-in fade-in slide-in-from-bottom-3 duration-300">
+            
+            {/* Popover Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#F0ECE6]">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                  style={{ backgroundColor: currentPreset.accentBg, color: currentPreset.accentColor }}
+                >
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold font-serif">Ambient Inside Light</h4>
-                  <p className="text-[11px] text-[#7A756D]">Fine-tune the mood & eye-smooth glow</p>
+                  <h4 className="text-sm font-bold font-serif text-[#1E1B18]">Ambient Inside Light</h4>
+                  <p className="text-[11px] text-[#7A756D]">{currentPreset.tagline}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsLightControlOpen(false)}
-                className="text-[#9E978C] hover:text-[#2D2A26] text-xs px-2 py-1 rounded hover:bg-black/5"
+                className="text-[#9E978C] hover:text-[#2D2A26] p-1.5 rounded-lg hover:bg-black/5 transition-colors"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Presets List */}
+            {/* Atmospheric Presets List */}
             <div className="mt-3.5 space-y-2">
-              <label className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8477]">
+              <label className="text-[10px] uppercase tracking-wider font-bold text-[#8C8477]">
                 Atmospheric Presets
               </label>
+
               <div className="grid grid-cols-1 gap-1.5">
-                {presets.map((preset) => {
+                {PRESETS.map((preset) => {
                   const isActive = ambientLight === preset.id;
                   return (
                     <button
                       key={preset.id}
                       onClick={() => setAmbientLight(preset.id)}
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-all ${
+                      className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-left text-xs transition-all ${
                         isActive
-                          ? 'bg-[#FFF3EC] border border-[#E8734A]/40 text-[#C85228] font-semibold shadow-xs'
+                          ? 'font-bold shadow-xs scale-[1.01]'
                           : 'hover:bg-[#FAF8F5] text-[#4A453E] border border-transparent'
                       }`}
+                      style={
+                        isActive
+                          ? {
+                              backgroundColor: preset.accentBg,
+                              border: `1.5px solid ${preset.accentColor}60`,
+                              color: preset.accentColor
+                            }
+                          : undefined
+                      }
                     >
                       <div className="flex items-center gap-2.5">
                         <span className="text-base">{preset.icon}</span>
                         <div>
-                          <div className="font-medium">{preset.label}</div>
+                          <div className="font-semibold">{preset.name}</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-3.5 h-3.5 rounded-full bg-gradient-to-tr ${preset.previewColor} shadow-inner inline-block`} />
-                        {isActive && <Check className="w-3.5 h-3.5 text-[#E8734A]" />}
+
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-4 h-4 rounded-full bg-gradient-to-tr ${preset.previewColor} shadow-inner inline-block ring-1 ring-black/10`}
+                        />
+                        {isActive && <Check className="w-4 h-4" style={{ color: preset.accentColor }} />}
                       </div>
                     </button>
                   );
@@ -173,26 +312,34 @@ export const InsideLightEffect: React.FC = () => {
               </div>
             </div>
 
-            {/* Intensity Slider */}
-            <div className="mt-4 pt-3 border-t border-[#F0ECE6]">
+            {/* Warmth & Glow Intensity Slider */}
+            <div className="mt-4 pt-3.5 border-t border-[#F0ECE6]">
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="text-[11px] font-semibold text-[#8C8477] uppercase tracking-wider flex items-center gap-1">
-                  <Sun className="w-3 h-3 text-[#E8734A]" /> Light Warmth & Glow
+                <span className="text-[10px] font-bold text-[#8C8477] uppercase tracking-wider flex items-center gap-1">
+                  <Sun className="w-3.5 h-3.5" style={{ color: currentPreset.accentColor }} /> Light Warmth &amp; Glow
                 </span>
-                <span className="font-mono text-xs text-[#E8734A] font-bold">{lightIntensity}%</span>
+                <span
+                  className="font-mono text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: currentPreset.accentBg, color: currentPreset.accentColor }}
+                >
+                  {lightIntensity}%
+                </span>
               </div>
+
               <input
                 type="range"
-                min="10"
+                min="15"
                 max="100"
                 value={lightIntensity}
                 onChange={(e) => setLightIntensity(Number(e.target.value))}
-                className="w-full accent-[#E8734A] cursor-pointer h-1.5 bg-[#EAE5DF] rounded-lg"
+                className="w-full cursor-pointer h-2 bg-[#EAE5DF] rounded-lg transition-all"
+                style={{ accentColor: currentPreset.accentColor }}
               />
-              <div className="flex justify-between text-[10px] text-[#9E978C] mt-1">
-                <span>Subtle</span>
+
+              <div className="flex justify-between text-[10px] text-[#9E978C] mt-1 font-medium">
+                <span>Subtle (15%)</span>
                 <span>Warm Radiance</span>
-                <span>Max Glow</span>
+                <span>Max Glow (100%)</span>
               </div>
             </div>
           </div>
@@ -201,4 +348,3 @@ export const InsideLightEffect: React.FC = () => {
     </>
   );
 };
-

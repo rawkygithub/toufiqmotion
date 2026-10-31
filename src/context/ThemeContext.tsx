@@ -49,13 +49,36 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 'home';
   });
   const [homeVariant, setHomeVariant] = useState<HomeDesignVariant>('design1');
-  const [ambientLight, setAmbientLight] = useState<AmbientLightingMode>('golden-hour');
-  const [lightIntensity, setLightIntensity] = useState<number>(75);
+  const [ambientLight, setAmbientLight] = useState<AmbientLightingMode>(() => {
+    try {
+      const saved = localStorage.getItem('noyon_blog_ambient_light');
+      if (saved && ['golden-hour', 'morning-dew', 'sunset-ember', 'candlelight', 'clean-studio'].includes(saved)) {
+        return saved as AmbientLightingMode;
+      }
+    } catch {}
+    return 'golden-hour';
+  });
+  const [lightIntensity, setLightIntensity] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('noyon_blog_light_intensity');
+      if (saved) return Number(saved);
+    } catch {}
+    return 75;
+  });
   const [isLightControlOpen, setIsLightControlOpen] = useState<boolean>(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isBookmarksDrawerOpen, setIsBookmarksDrawerOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('noyon_blog_ambient_light', ambientLight);
+      localStorage.setItem('noyon_blog_light_intensity', String(lightIntensity));
+    } catch (e) {
+      console.warn('Could not save ambient light to localStorage', e);
+    }
+  }, [ambientLight, lightIntensity]);
 
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {

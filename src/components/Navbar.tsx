@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme, PageId, HomeDesignVariant } from '../context/ThemeContext';
+import { PRESETS } from './InsideLightEffect';
 import { Search, Bookmark, Sparkles, Menu, X, ChevronDown, Lock } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -15,6 +16,8 @@ export const Navbar: React.FC = () => {
     isLightControlOpen,
     ambientLight
   } = useTheme();
+
+  const currentLight = PRESETS.find((p) => p.id === ambientLight) || PRESETS[0];
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -133,10 +136,13 @@ export const Navbar: React.FC = () => {
                   key={item.id}
                   onClick={() => setActivePage(item.id)}
                   className={`text-[13.5px] font-medium tracking-wide uppercase transition-all duration-200 py-1.5 ${
-                    isActive
-                      ? 'text-[#E8734A] font-semibold border-b-2 border-[#E8734A]'
-                      : 'text-[#4A453E] hover:text-[#E8734A]'
+                    isActive ? 'font-bold border-b-2' : 'hover:opacity-80'
                   }`}
+                  style={
+                    isActive
+                      ? { color: currentLight.accentColor, borderColor: currentLight.accentColor }
+                      : { color: '#4A453E' }
+                  }
                 >
                   {item.label}
                 </button>
@@ -149,11 +155,16 @@ export const Navbar: React.FC = () => {
             {/* Ambient Inside Light Toggle Pill */}
             <button
               onClick={() => setIsLightControlOpen(!isLightControlOpen)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#FFF2EB] text-[#C85228] hover:bg-[#FFE6DA] transition-all text-xs font-semibold shadow-2xs border border-[#E8734A]/20"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full transition-all text-xs font-semibold shadow-2xs"
+              style={{
+                backgroundColor: currentLight.accentBg,
+                color: currentLight.accentColor,
+                border: `1px solid ${currentLight.accentColor}40`
+              }}
               title="Change Inside Light Mood"
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#E8734A] animate-spin-slow" />
-              <span className="hidden sm:inline capitalize font-sans">{ambientLight.replace('-', ' ')}</span>
+              <Sparkles className="w-3.5 h-3.5 animate-spin-slow" style={{ color: currentLight.accentColor }} />
+              <span className="hidden sm:inline font-sans">{currentLight.name}</span>
             </button>
 
             {/* Bookmarks Counter */}
