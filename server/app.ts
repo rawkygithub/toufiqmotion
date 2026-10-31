@@ -13,6 +13,7 @@ import mediaRoutes from './routes/media.js';
 import statsRoutes from './routes/stats.js';
 import categoriesRoutes from './routes/categories.js';
 import seoRoutes from './routes/seo.js';
+import settingsRoutes from './routes/settings.js';
 import { db } from './db/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -142,6 +143,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/seo', seoRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Static frontend serving (from dist directory if built)
 const distDir = path.join(__dirname, '../dist');

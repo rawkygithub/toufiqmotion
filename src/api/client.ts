@@ -36,6 +36,55 @@ export interface StatsResponse {
   topArticles: any[];
 }
 
+export interface MenuItem {
+  id: string;
+  label: string;
+  type: 'page' | 'link';
+  pageId?: string;
+  url: string;
+  hasDropdown?: boolean;
+  enabled: boolean;
+  isExternal?: boolean;
+}
+
+export interface FooterValueProp {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
+export interface LegalLink {
+  label: string;
+  url: string;
+}
+
+export interface SiteSettings {
+  logo_type?: 'text' | 'image';
+  logo_url?: string;
+  logo_height?: number | string;
+  site_title?: string;
+  site_tagline?: string;
+  header_sticky?: boolean;
+  announcement_enabled?: boolean;
+  announcement_text?: string;
+  announcement_link?: string;
+  header_cta_enabled?: boolean;
+  header_cta_text?: string;
+  header_cta_link?: string;
+  menu_items_json?: MenuItem[];
+  footer_newsletter_enabled?: boolean;
+  footer_newsletter_title?: string;
+  footer_newsletter_subtitle?: string;
+  footer_newsletter_tagline?: string;
+  footer_bio_text?: string;
+  footer_values_json?: FooterValueProp[];
+  footer_socials_json?: Record<string, string>;
+  footer_copyright_text?: string;
+  footer_made_with?: string;
+  footer_back_to_top_enabled?: boolean;
+  footer_legal_links_json?: LegalLink[];
+}
+
 export const api = {
   // Articles
   async getArticles(params: PostParams = {}): Promise<{ articles: Article[]; pagination: any }> {
@@ -436,6 +485,27 @@ export const api = {
     const res = await fetch(`${API_BASE}/seo/search-queries`);
     if (!res.ok) throw new Error('Failed to fetch search queries');
     return res.json();
+  },
+
+  // Site Appearance, Header, Menu, Logo & Footer Settings
+  async getSiteSettings(): Promise<{ settings: SiteSettings }> {
+    const res = await fetch(`${API_BASE}/settings`);
+    if (!res.ok) throw new Error('Failed to fetch site settings');
+    return res.json();
+  },
+
+  async saveSiteSettings(token: string, settings: Partial<SiteSettings>): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/settings`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(settings)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to save site settings');
+    return result;
   }
 };
 

@@ -17,7 +17,7 @@ import { InstagramIcon, YoutubeIcon, PinterestIcon, FacebookIcon } from './Socia
 import { api } from '../api/client';
 
 export const Footer: React.FC = () => {
-  const { setActivePage, openArticle } = useTheme();
+  const { setActivePage, openArticle, siteSettings } = useTheme();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -42,24 +42,60 @@ export const Footer: React.FC = () => {
 
   const santoriniArticle = ARTICLES.find((a) => a.id === 'santorini-things-to-do') || ARTICLES[0];
 
+  const defaultValues = [
+    { icon: 'Compass', title: 'Inspiring Destinations', desc: 'Guides, tips and ideas' },
+    { icon: 'Coffee', title: 'Local Food & Coffee', desc: 'Great places to eat and drink' },
+    { icon: 'Home', title: 'Lifestyle Inspiration', desc: 'For a richer everyday life' },
+    { icon: 'Heart', title: 'Health & Wellbeing', desc: 'Simple ways to live well' }
+  ];
+
+  const valueProps = siteSettings?.footer_values_json || defaultValues;
+
+  const renderValueIcon = (iconName: string) => {
+    switch (iconName?.toLowerCase()) {
+      case 'coffee':
+        return <Coffee className="w-5 h-5" />;
+      case 'heart':
+        return <Heart className="w-5 h-5" />;
+      case 'home':
+        return <HomeIcon className="w-5 h-5" />;
+      case 'sparkles':
+        return <Sparkles className="w-5 h-5" />;
+      case 'compass':
+      default:
+        return <Compass className="w-5 h-5" />;
+    }
+  };
+
+  const defaultLegalLinks = [
+    { label: 'Terms of Use', url: '#terms' },
+    { label: 'Privacy Policy', url: '#privacy' },
+    { label: 'Cookie Preferences', url: '#cookies' },
+    { label: 'Affiliate Disclosure', url: '#affiliate' },
+    { label: 'Editorial Policy', url: '#editorial' }
+  ];
+
+  const legalLinks = siteSettings?.footer_legal_links_json || defaultLegalLinks;
+
   return (
     <footer className="mt-20 border-t border-[#EAE5DF] bg-[#FAF8F5] relative overflow-hidden z-10">
       
-      {/* 1. Newsletter Banner (Top of Page 7) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-14 mb-16 relative z-20">
-        <div className="bg-gradient-to-br from-[#FFFDFC] to-[#FBF8F3] border border-[#EDE7DF] rounded-3xl shadow-xl overflow-hidden p-6 sm:p-10 lg:p-12 flex flex-col lg:flex-row items-center justify-between gap-8">
-          
-          {/* Newsletter Content */}
-          <div className="max-w-xl text-left">
-            <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#E8734A] mb-2 block font-sans">
-              Join The Journey
-            </span>
-            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#1E1B18] tracking-tight mb-3">
-              Get Travel Inspiration in Your Inbox
-            </h2>
-            <p className="text-[#686257] text-sm sm:text-base leading-relaxed mb-6 font-light">
-              Join our weekly newsletter for the latest travel guides, lifestyle ideas, wellbeing tips and exclusive content from Toufiq Motion.
-            </p>
+      {/* 1. Newsletter Banner (Top of Page 7 - Configurable in Backend) */}
+      {siteSettings?.footer_newsletter_enabled !== false && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-14 mb-16 relative z-20">
+          <div className="bg-gradient-to-br from-[#FFFDFC] to-[#FBF8F3] border border-[#EDE7DF] rounded-3xl shadow-xl overflow-hidden p-6 sm:p-10 lg:p-12 flex flex-col lg:flex-row items-center justify-between gap-8">
+            
+            {/* Newsletter Content */}
+            <div className="max-w-xl text-left">
+              <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#E8734A] mb-2 block font-sans">
+                {siteSettings?.footer_newsletter_tagline || 'Join The Journey'}
+              </span>
+              <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#1E1B18] tracking-tight mb-3">
+                {siteSettings?.footer_newsletter_title || 'Get Travel Inspiration in Your Inbox'}
+              </h2>
+              <p className="text-[#686257] text-sm sm:text-base leading-relaxed mb-6 font-light">
+                {siteSettings?.footer_newsletter_subtitle || 'Join our weekly newsletter for the latest travel guides, lifestyle ideas, wellbeing tips and exclusive content from Toufiq Motion.'}
+              </p>
 
             {/* Email Form */}
             <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
@@ -116,6 +152,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* 2. Main 5-Column Navigation Grid (Page 7) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -124,41 +161,57 @@ export const Footer: React.FC = () => {
           {/* Column 1: Brand & Socials (4 cols) */}
           <div className="lg:col-span-4">
             <h3 className="font-serif text-2xl font-bold text-[#1E1B18] tracking-tight mb-3">
-              Toufiq Motion
+              {siteSettings?.site_title || 'Toufiq Motion'}
             </h3>
             <p className="text-[#6A6357] text-sm leading-relaxed mb-6 font-light">
-              A travel and lifestyle editorial blog sharing inspiring destinations, practical travel guides, local food and coffee discoveries, lifestyle ideas and simple ways to live well.
+              {siteSettings?.footer_bio_text || 'A travel and lifestyle editorial blog sharing inspiring destinations, practical travel guides, local food and coffee discoveries, lifestyle ideas and simple ways to live well.'}
             </p>
             {/* Social Icons */}
             <div className="flex items-center gap-3 text-[#4A453E]">
-              <a
-                href="#instagram"
-                className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
-                title="Instagram @toufiqmotion"
-              >
-                <InstagramIcon className="w-4 h-4" />
-              </a>
-              <a
-                href="#youtube"
-                className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
-                title="YouTube"
-              >
-                <YoutubeIcon className="w-4 h-4" />
-              </a>
-              <a
-                href="#pinterest"
-                className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
-                title="Pinterest"
-              >
-                <PinterestIcon className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="#facebook"
-                className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
-                title="Facebook"
-              >
-                <FacebookIcon className="w-4 h-4" />
-              </a>
+              {siteSettings?.footer_socials_json?.instagram && (
+                <a
+                  href={siteSettings.footer_socials_json.instagram}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
+                  title="Instagram"
+                >
+                  <InstagramIcon className="w-4 h-4" />
+                </a>
+              )}
+              {siteSettings?.footer_socials_json?.youtube && (
+                <a
+                  href={siteSettings.footer_socials_json.youtube}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
+                  title="YouTube"
+                >
+                  <YoutubeIcon className="w-4 h-4" />
+                </a>
+              )}
+              {siteSettings?.footer_socials_json?.pinterest && (
+                <a
+                  href={siteSettings.footer_socials_json.pinterest}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
+                  title="Pinterest"
+                >
+                  <PinterestIcon className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {siteSettings?.footer_socials_json?.facebook && (
+                <a
+                  href={siteSettings.footer_socials_json.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-white border border-[#E5E0D8] hover:border-[#E8734A] hover:text-[#E8734A] flex items-center justify-center transition-all"
+                  title="Facebook"
+                >
+                  <FacebookIcon className="w-4 h-4" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -288,72 +341,51 @@ export const Footer: React.FC = () => {
       {/* 3. Value Proposition Strip (Page 7) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-[#EAE5DF]">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 rounded-full bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center mb-2 shadow-2xs">
-              <Compass className="w-5 h-5" />
+          {valueProps.map((val, idx) => (
+            <div key={idx} className="flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center mb-2 shadow-2xs">
+                {renderValueIcon(val.icon)}
+              </div>
+              <h5 className="font-serif font-bold text-sm text-[#1E1B18]">{val.title}</h5>
+              <p className="text-[11px] text-[#8C8477] mt-0.5">{val.desc}</p>
             </div>
-            <h5 className="font-serif font-bold text-sm text-[#1E1B18]">Inspiring Destinations</h5>
-            <p className="text-[11px] text-[#8C8477] mt-0.5">Guides, tips and ideas</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 rounded-full bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center mb-2 shadow-2xs">
-              <Coffee className="w-5 h-5" />
-            </div>
-            <h5 className="font-serif font-bold text-sm text-[#1E1B18]">Local Food & Coffee</h5>
-            <p className="text-[11px] text-[#8C8477] mt-0.5">Great places to eat and drink</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 rounded-full bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center mb-2 shadow-2xs">
-              <HomeIcon className="w-5 h-5" />
-            </div>
-            <h5 className="font-serif font-bold text-sm text-[#1E1B18]">Lifestyle Inspiration</h5>
-            <p className="text-[11px] text-[#8C8477] mt-0.5">For a richer everyday life</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 rounded-full bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center mb-2 shadow-2xs">
-              <Heart className="w-5 h-5" />
-            </div>
-            <h5 className="font-serif font-bold text-sm text-[#1E1B18]">Health & Wellbeing</h5>
-            <p className="text-[11px] text-[#8C8477] mt-0.5">Simple ways to live well</p>
-          </div>
-
+          ))}
         </div>
       </div>
 
       {/* 4. Copyright & Legal Bar with Back to Top */}
       <div className="bg-[#F3EFEA] border-t border-[#EAE5DF] py-6 text-xs text-[#8C8477]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            &copy; {new Date().getFullYear()} Toufiq Motion. All rights reserved.
+          <div className="flex items-center gap-2">
+            <span>{siteSettings?.footer_copyright_text || `© ${new Date().getFullYear()} Toufiq Motion. All rights reserved.`}</span>
+            {siteSettings?.footer_made_with && (
+              <span className="hidden sm:inline text-[#B5AFA4]">• {siteSettings.footer_made_with}</span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-[11px]">
-            <a href="#terms" className="hover:text-[#1E1B18] transition-colors">Terms of Use</a>
-            <span>&bull;</span>
-            <a href="#privacy" className="hover:text-[#1E1B18] transition-colors">Privacy Policy</a>
-            <span>&bull;</span>
-            <a href="#cookies" className="hover:text-[#1E1B18] transition-colors">Cookie Preferences</a>
-            <span>&bull;</span>
-            <a href="#affiliate" className="hover:text-[#1E1B18] transition-colors">Affiliate Disclosure</a>
-            <span>&bull;</span>
-            <a href="#editorial" className="hover:text-[#1E1B18] transition-colors">Editorial Policy</a>
-            <span>&bull;</span>
+            {legalLinks.map((link, idx) => (
+              <React.Fragment key={idx}>
+                <a href={link.url} className="hover:text-[#1E1B18] transition-colors">
+                  {link.label}
+                </a>
+                <span>&bull;</span>
+              </React.Fragment>
+            ))}
             <button onClick={() => setActivePage('admin')} className="text-[#E8734A] hover:underline font-semibold flex items-center gap-1">
               Studio 🔐
             </button>
           </div>
 
-          <button
-            onClick={scrollToTop}
-            className="flex items-center gap-1.5 p-2 rounded-full bg-white border border-[#E2DDD5] text-[#4A453E] hover:text-[#E8734A] hover:border-[#E8734A] shadow-2xs transition-all"
-            title="Back to Top"
-          >
-            <ArrowUp className="w-4 h-4" />
-          </button>
+          {siteSettings?.footer_back_to_top_enabled !== false && (
+            <button
+              onClick={scrollToTop}
+              className="flex items-center gap-1.5 p-2 rounded-full bg-white border border-[#E2DDD5] text-[#4A453E] hover:text-[#E8734A] hover:border-[#E8734A] shadow-2xs transition-all cursor-pointer"
+              title="Back to Top"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </footer>

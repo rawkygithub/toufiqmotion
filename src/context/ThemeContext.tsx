@@ -1,9 +1,62 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Article, ARTICLES } from '../data/articles';
+import { api, SiteSettings, MenuItem, FooterValueProp, LegalLink } from '../api/client';
 
 export type PageId = 'home' | 'travel' | 'lifestyle' | 'health' | 'work' | 'about' | 'contact' | 'admin';
 export type HomeDesignVariant = 'design1' | 'design2' | 'design3';
 export type AmbientLightingMode = 'golden-hour' | 'morning-dew' | 'sunset-ember' | 'candlelight' | 'clean-studio';
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  logo_type: 'text',
+  logo_url: '',
+  logo_height: 36,
+  site_title: 'Toufiq Motion',
+  site_tagline: 'Travel • Lifestyle • Wellbeing',
+  header_sticky: true,
+  announcement_enabled: true,
+  announcement_text: '✨ Spring 2026 Editorial Issue is live: Discover the Amalfi Coast & Slow Coffee Chronicles',
+  announcement_link: '/travel',
+  header_cta_enabled: true,
+  header_cta_text: 'Work with Us',
+  header_cta_link: '/work',
+  menu_items_json: [
+    { id: 'm-home', label: 'Home', type: 'page', pageId: 'home', url: '/', hasDropdown: true, enabled: true },
+    { id: 'm-travel', label: 'Travel', type: 'page', pageId: 'travel', url: '/travel', hasDropdown: false, enabled: true },
+    { id: 'm-lifestyle', label: 'Lifestyle', type: 'page', pageId: 'lifestyle', url: '/lifestyle', hasDropdown: false, enabled: true },
+    { id: 'm-health', label: 'Health & Wellbeing', type: 'page', pageId: 'health', url: '/health', hasDropdown: false, enabled: true },
+    { id: 'm-work', label: 'Work with Us', type: 'page', pageId: 'work', url: '/work', hasDropdown: false, enabled: true },
+    { id: 'm-about', label: 'About', type: 'page', pageId: 'about', url: '/about', hasDropdown: false, enabled: true },
+    { id: 'm-contact', label: 'Contact', type: 'page', pageId: 'contact', url: '/contact', hasDropdown: false, enabled: true }
+  ],
+  footer_newsletter_enabled: true,
+  footer_newsletter_title: 'Get Travel Inspiration in Your Inbox',
+  footer_newsletter_subtitle: 'Join our weekly newsletter for the latest travel guides, lifestyle ideas, wellbeing tips and exclusive content from Toufiq Motion.',
+  footer_newsletter_tagline: 'Join The Journey',
+  footer_bio_text: 'Toufiq Motion is a visual storytelling journal documenting mindful travel, slow living, and conscious wellbeing around the globe with luminous photography.',
+  footer_values_json: [
+    { icon: 'Compass', title: 'Inspiring Destinations', desc: 'Guides, tips and ideas' },
+    { icon: 'Coffee', title: 'Local Food & Coffee', desc: 'Great places to eat and drink' },
+    { icon: 'Home', title: 'Lifestyle Inspiration', desc: 'For a richer everyday life' },
+    { icon: 'Heart', title: 'Health & Wellbeing', desc: 'Simple ways to live well' }
+  ],
+  footer_socials_json: {
+    instagram: 'https://instagram.com/toufiqmotion',
+    youtube: 'https://youtube.com/@toufiqmotion',
+    pinterest: 'https://pinterest.com/toufiqmotion',
+    facebook: 'https://facebook.com/toufiqmotion',
+    twitter: 'https://twitter.com/toufiqmotion'
+  },
+  footer_copyright_text: '© 2026 Toufiq Motion. Handcrafted with luminous intention. All rights reserved.',
+  footer_made_with: 'Designed with Inside Light',
+  footer_back_to_top_enabled: true,
+  footer_legal_links_json: [
+    { label: 'Terms of Use', url: '#terms' },
+    { label: 'Privacy Policy', url: '#privacy' },
+    { label: 'Cookie Preferences', url: '#cookies' },
+    { label: 'Affiliate Disclosure', url: '#affiliate' },
+    { label: 'Editorial Policy', url: '#editorial' }
+  ]
+};
 
 interface ThemeContextType {
   activePage: PageId;
@@ -28,6 +81,9 @@ interface ThemeContextType {
   setIsBookmarksDrawerOpen: (open: boolean) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  siteSettings: SiteSettings;
+  setSiteSettings: React.Dispatch<React.SetStateAction<SiteSettings>>;
+  refreshSiteSettings: () => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -70,6 +126,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isBookmarksDrawerOpen, setIsBookmarksDrawerOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
+
+  const refreshSiteSettings = async () => {
+    try {
+      const res = await api.getSiteSettings();
+      if (res.settings) {
+        setSiteSettings((prev) => ({
+          ...prev,
+          ...res.settings
+        }));
+      }
+    } catch (err) {
+      console.warn('Could not load site settings from backend:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshSiteSettings();
+  }, []);
 
   useEffect(() => {
     try {
@@ -183,6 +258,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsBookmarksDrawerOpen,
         searchQuery,
         setSearchQuery,
+        siteSettings,
+        setSiteSettings,
+        refreshSiteSettings,
       }}
     >
       {children}

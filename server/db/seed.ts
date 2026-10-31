@@ -299,5 +299,63 @@ export function seedDatabase() {
     }
     console.log('📊 Seeded Google Search Console query performance analytics.');
   }
+
+  // Seed Site Appearance, Logo, Header, Menu & Footer Settings
+  const siteSettingCount = db.prepare('SELECT COUNT(*) as count FROM site_settings').get() as { count: number };
+  if (siteSettingCount.count === 0) {
+    const insertSiteSetting = db.prepare(`INSERT INTO site_settings (key, value) VALUES (?, ?)`);
+
+    insertSiteSetting.run('logo_type', 'text');
+    insertSiteSetting.run('logo_url', '');
+    insertSiteSetting.run('logo_height', '36');
+    insertSiteSetting.run('site_title', 'Toufiq Motion');
+    insertSiteSetting.run('site_tagline', 'Travel • Lifestyle • Wellbeing');
+    insertSiteSetting.run('header_sticky', 'true');
+    insertSiteSetting.run('announcement_enabled', 'true');
+    insertSiteSetting.run('announcement_text', '✨ Spring 2026 Editorial Issue is live: Discover the Amalfi Coast & Slow Coffee Chronicles');
+    insertSiteSetting.run('announcement_link', '/travel');
+    insertSiteSetting.run('header_cta_enabled', 'true');
+    insertSiteSetting.run('header_cta_text', 'Work with Us');
+    insertSiteSetting.run('header_cta_link', '/work');
+    insertSiteSetting.run('menu_items_json', JSON.stringify([
+      { id: 'm-home', label: 'Home', type: 'page', pageId: 'home', url: '/', hasDropdown: true, enabled: true },
+      { id: 'm-travel', label: 'Travel', type: 'page', pageId: 'travel', url: '/travel', hasDropdown: false, enabled: true },
+      { id: 'm-lifestyle', label: 'Lifestyle', type: 'page', pageId: 'lifestyle', url: '/lifestyle', hasDropdown: false, enabled: true },
+      { id: 'm-health', label: 'Health & Wellbeing', type: 'page', pageId: 'health', url: '/health', hasDropdown: false, enabled: true },
+      { id: 'm-work', label: 'Work with Us', type: 'page', pageId: 'work', url: '/work', hasDropdown: false, enabled: true },
+      { id: 'm-about', label: 'About', type: 'page', pageId: 'about', url: '/about', hasDropdown: false, enabled: true },
+      { id: 'm-contact', label: 'Contact', type: 'page', pageId: 'contact', url: '/contact', hasDropdown: false, enabled: true }
+    ]));
+    insertSiteSetting.run('footer_newsletter_enabled', 'true');
+    insertSiteSetting.run('footer_newsletter_title', 'Get Travel Inspiration in Your Inbox');
+    insertSiteSetting.run('footer_newsletter_subtitle', 'Join our weekly newsletter for the latest travel guides, lifestyle ideas, wellbeing tips and exclusive content from Toufiq Motion.');
+    insertSiteSetting.run('footer_newsletter_tagline', 'Join The Journey');
+    insertSiteSetting.run('footer_bio_text', 'Toufiq Motion is a visual storytelling journal documenting mindful travel, slow living, and conscious wellbeing around the globe with luminous photography.');
+    insertSiteSetting.run('footer_values_json', JSON.stringify([
+      { icon: 'Compass', title: 'Inspiring Destinations', desc: 'Guides, tips and ideas' },
+      { icon: 'Coffee', title: 'Local Food & Coffee', desc: 'Great places to eat and drink' },
+      { icon: 'Home', title: 'Lifestyle Inspiration', desc: 'For a richer everyday life' },
+      { icon: 'Heart', title: 'Health & Wellbeing', desc: 'Simple ways to live well' }
+    ]));
+    insertSiteSetting.run('footer_socials_json', JSON.stringify({
+      instagram: 'https://instagram.com/toufiqmotion',
+      youtube: 'https://youtube.com/@toufiqmotion',
+      pinterest: 'https://pinterest.com/toufiqmotion',
+      facebook: 'https://facebook.com/toufiqmotion',
+      twitter: 'https://twitter.com/toufiqmotion'
+    }));
+    insertSiteSetting.run('footer_copyright_text', '© 2026 Toufiq Motion. Handcrafted with luminous intention. All rights reserved.');
+    insertSiteSetting.run('footer_made_with', 'Designed with Inside Light');
+    insertSiteSetting.run('footer_back_to_top_enabled', 'true');
+    insertSiteSetting.run('footer_legal_links_json', JSON.stringify([
+      { label: 'Terms of Use', url: '#terms' },
+      { label: 'Privacy Policy', url: '#privacy' },
+      { label: 'Cookie Preferences', url: '#cookies' },
+      { label: 'Affiliate Disclosure', url: '#affiliate' },
+      { label: 'Editorial Policy', url: '#editorial' }
+    ]));
+
+    console.log('🎨 Seeded site appearance, header, logo, menu & footer settings.');
+  }
 }
 

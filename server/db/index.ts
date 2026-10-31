@@ -219,5 +219,14 @@ export function initDatabase() {
     );
   `);
 
-  console.log('✅ SQLite Database schema initialized with Categories & Yoast SEO Command Center tables at:', dbPath);
+  // 12. Site Appearance, Header, Logo, Menu & Footer Settings Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  console.log('✅ SQLite Database schema initialized with Categories, SEO & Site Customizer tables at:', dbPath);
 }

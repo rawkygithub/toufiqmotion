@@ -4,6 +4,7 @@ import { Article } from '../../data/articles';
 import { RichTextEditor } from '../admin/RichTextEditor';
 import { YoastSeoPanel, SeoData } from '../admin/YoastSeoPanel';
 import { YoastSeoCommandCenter } from '../admin/YoastSeoCommandCenter';
+import { SiteAppearanceManager } from '../admin/SiteAppearanceManager';
 import {
   Lock,
   LogOut,
@@ -26,7 +27,8 @@ import {
   Compass,
   FolderPlus,
   CheckCircle2,
-  Check
+  Check,
+  LayoutTemplate
 } from 'lucide-react';
 
 export const AdminStudio: React.FC = () => {
@@ -40,7 +42,7 @@ export const AdminStudio: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Dashboard active tab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'appearance' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
 
   // Data states
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -543,6 +545,20 @@ export const AdminStudio: React.FC = () => {
           <Tag className="w-4 h-4" /> Categories &amp; Taxonomies ({categories.length})
         </button>
         <button
+          onClick={() => setActiveTab('appearance')}
+          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'appearance'
+              ? 'border-[#E8734A] text-[#E8734A]'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
+          }`}
+        >
+          <LayoutTemplate className="w-4 h-4 text-[#E8734A]" />
+          <span>Header, Logo &amp; Footer</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF2EB] text-[#E8734A] border border-[#FFCEBA]">
+            Appearance
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('seo_center')}
           className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'seo_center'
@@ -871,6 +887,11 @@ export const AdminStudio: React.FC = () => {
             if (art) openEditArticleModal(art);
           }}
         />
+      )}
+
+      {/* Tab 6: Site Appearance (Logo, Header, Menu, Footer & Credits) */}
+      {activeTab === 'appearance' && (
+        <SiteAppearanceManager token={token} />
       )}
 
       {/* --- MODAL 1: WRITE / EDIT ARTICLE WITH RICH TEXT EDITOR & YOAST SEO PREMIUM --- */}
