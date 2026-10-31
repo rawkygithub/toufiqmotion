@@ -228,5 +228,28 @@ export function initDatabase() {
     );
   `);
 
-  console.log('✅ SQLite Database schema initialized with Categories, SEO & Site Customizer tables at:', dbPath);
+  // 13. Media Library Table (with WebP optimization & SEO metadata)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS media (
+      id TEXT PRIMARY KEY,
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      mimetype TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      width INTEGER,
+      height INTEGER,
+      alt_text TEXT DEFAULT '',
+      title TEXT DEFAULT '',
+      caption TEXT DEFAULT '',
+      is_optimized INTEGER DEFAULT 0,
+      original_size INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_media_created ON media(created_at);
+    CREATE INDEX IF NOT EXISTS idx_media_mimetype ON media(mimetype);
+  `);
+
+  console.log('✅ SQLite Database schema initialized with Categories, SEO, Media Library & Site Customizer tables at:', dbPath);
 }

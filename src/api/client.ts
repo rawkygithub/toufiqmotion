@@ -85,6 +85,56 @@ export interface SiteSettings {
   footer_legal_links_json?: LegalLink[];
 }
 
+export interface MediaItem {
+  id: string;
+  filename: string;
+  original_name: string;
+  url: string;
+  mimetype: string;
+  size: number;
+  width?: number | null;
+  height?: number | null;
+  alt_text?: string;
+  title?: string;
+  caption?: string;
+  is_optimized?: boolean | number;
+  original_size?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface MediaStats {
+  totalItems: number;
+  totalStorageBytes: number;
+  optimizedCount: number;
+  unoptimizedCount: number;
+}
+
+export interface MediaListResponse {
+  success: boolean;
+  media: MediaItem[];
+  total: number;
+  page: number;
+  limit: number;
+  stats: MediaStats;
+}
+
+export interface OptimizationToolResponse {
+  success: boolean;
+  originalName: string;
+  originalSize: number;
+  optimizedSize: number;
+  savingsBytes: number;
+  savingsPercent: number;
+  width: number;
+  height: number;
+  format: string;
+  url: string;
+  base64Data: string;
+  mediaItem?: MediaItem;
+  qualityUsed: number;
+}
+
 export const api = {
   // Articles
   async getArticles(params: PostParams = {}): Promise<{ articles: Article[]; pagination: any }> {
@@ -252,18 +302,111 @@ export const api = {
     return data;
   },
 
-  // Media Upload
-  async uploadMedia(token: string, file: File) {
-    const formData = new FormData();
-    formData.append('image', file);
+  // Media Library & WebP Optimization
+  async getMedia(params: { page?: number; limit?: number; q?: string; filter?: string; sort?: string } = {}): Promise<MediaListResponse> {
+    const sp = new URLSearchParams();
+    if (params.page) sp.set('page', String(params.page));
+    if (params.limit) sp.set('limit', String(params.limit));
+    if (params.q) sp.set('q', params.q);
+    if (params.filter) sp.set('filter', params.filter);
+    if (params.sort) sp.set('sort', params.sort);
 
-    const res = await fetch(`${API_BASE}/media/upload`, {
+    const res = await fetch(`${API_BASE}/media?${sp.toString()}`);
+    if (!res.ok) throw new Error('Failed to load media assets');
+    return res.json();
+  },
+
+  async uploadMedia(token: string, file: File, autoOptimize = false) {
+    const formData = new FormData();
+    formData.append('files', file);
+
+    const res = await fetch(`${API_BASE}/media/upload?autoOptimize=${autoOptimize}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data;
+  },
+
+  async uploadMultipleMedia(token: string, files: File[], autoOptimize = false): Promise<{ success: boolean; media: MediaItem[] }> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('files', file);
+    }
+
+    const res = await fetch(`${API_BASE}/media/upload?autoOptimize=${autoOptimize}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data;
+  },
+
+  async optimizeMediaItem(token: string, id: string): Promise<{ success: boolean; message: string; item: MediaItem; report: any }> {
+    const res = await fetch(`${API_BASE}/media/${id}/optimize`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Optimization failed');
+    return data;
+  },
+
+  async optimizeImageTool(fileOrUrl: File | string, saveToLibrary = false): Promise<OptimizationToolResponse> {
+    const formData = new FormData();
+    if (typeof fileOrUrl === 'string') {
+      formData.append('imageUrl', fileOrUrl);
+    } else {
+      formData.append('image', fileOrUrl);
+    }
+    if (saveToLibrary) {
+      formData.append('saveToLibrary', 'true');
+    }
+
+    const res = await fetch(`${API_BASE}/media/optimize-tool`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Tool optimization failed');
+    return data;
+  },
+
+  async batchOptimizeMedia(token: string): Promise<{ success: boolean; processedCount: number; totalSavingsBytes: number; message: string }> {
+    const res = await fetch(`${API_BASE}/media/batch-optimize`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Batch optimization failed');
+    return data;
+  },
+
+  async updateMediaItem(token: string, id: string, meta: { alt_text?: string; title?: string; caption?: string }): Promise<{ success: boolean; item: MediaItem }> {
+    const res = await fetch(`${API_BASE}/media/${id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(meta)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update media');
+    return data;
+  },
+
+  async deleteMediaItem(token: string, id: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/media/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete media asset');
     return data;
   },
 

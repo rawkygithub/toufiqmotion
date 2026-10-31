@@ -357,5 +357,149 @@ export function seedDatabase() {
 
     console.log('🎨 Seeded site appearance, header, logo, menu & footer settings.');
   }
+
+  // Seed Media Library items
+  const mediaCount = db.prepare('SELECT COUNT(*) as count FROM media').get() as { count: number };
+  if (mediaCount.count === 0) {
+    const insertMedia = db.prepare(`
+      INSERT INTO media (id, filename, original_name, url, mimetype, size, width, height, alt_text, title, caption, is_optimized, original_size, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const initialMedia = [
+      [
+        'med-1',
+        'amalfi-coast-panoramic.webp',
+        'amalfi-coast-cliffside-4k.jpg',
+        'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
+        'image/webp',
+        188420, // 184 KB (< 250 KB)
+        1920,
+        1080,
+        'Pastel cliffside villas overlooking turquoise Amalfi waters',
+        'Amalfi Coast Panoramic Vista',
+        'Captured during golden hour above Positano village',
+        1,
+        2845000, // Was 2.8 MB
+        "datetime('now', '-3 days')"
+      ],
+      [
+        'med-2',
+        'swiss-alps-sunrise.webp',
+        'swiss-alps-raw-morning.png',
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+        'image/webp',
+        214800, // 209 KB (< 250 KB)
+        1920,
+        1280,
+        'Alpine mountain peaks reflecting in crystal glacial lake',
+        'Swiss Alps Morning Light',
+        'First light catching the Matterhorn ridge',
+        1,
+        4190000, // Was 4.1 MB
+        "datetime('now', '-2 days')"
+      ],
+      [
+        'med-3',
+        'kyoto-bamboo-grove.webp',
+        'kyoto-arashiyama-path.jpg',
+        'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80',
+        'image/webp',
+        175200, // 171 KB (< 250 KB)
+        1600,
+        1066,
+        'Towering bamboo stalks in Arashiyama quiet morning',
+        'Kyoto Bamboo Grove',
+        'Mindful walk through Kyoto bamboo forest at dawn',
+        1,
+        3450000, // Was 3.4 MB
+        "datetime('now', '-1 day')"
+      ],
+      [
+        'med-4',
+        'santorini-oia-sunset.jpg',
+        'santorini-oia-sunset.jpg',
+        'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1200&q=80',
+        'image/jpeg',
+        1420500, // 1.4 MB (Needs optimization to < 250 KB WebP!)
+        2400,
+        1600,
+        'White cave dwellings and blue domes of Oia overlooking caldera',
+        'Santorini Caldera Sunset',
+        'Cycladic architecture bathed in warm sunset hues',
+        0, // Not yet optimized!
+        1420500,
+        "datetime('now', '-12 hours')"
+      ],
+      [
+        'med-5',
+        'pour-over-coffee-ritual.png',
+        'pour-over-coffee-ritual.png',
+        'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80',
+        'image/png',
+        2890000, // 2.89 MB (Needs optimization to < 250 KB WebP!)
+        2048,
+        1365,
+        'Artisan slow pour over coffee kettle and hand-crafted ceramic dripper',
+        'Artisan Pour Over Ritual',
+        'Morning slow living and coffee brewing aesthetics',
+        0, // Not yet optimized!
+        2890000,
+        "datetime('now', '-6 hours')"
+      ],
+      [
+        'med-6',
+        'minimalist-workspace-aesthetic.webp',
+        'nordic-desk-setup.jpg',
+        'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=1200&q=80',
+        'image/webp',
+        148900, // 145 KB (< 250 KB)
+        1600,
+        1067,
+        'Minimalist birchwood writing desk with journal and warm tea cup',
+        'Mindful Workspace Aesthetics',
+        'Curated slow work environment with natural linen and daylight',
+        1,
+        1980000,
+        "datetime('now', '-4 hours')"
+      ],
+      [
+        'med-7',
+        'mediterranean-summer-produce.jpg',
+        'fresh-figs-and-olives.jpg',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+        'image/jpeg',
+        985000, // 985 KB (Needs optimization to < 250 KB WebP!)
+        1920,
+        1280,
+        'Fresh Mediterranean harvest of purple figs, green olives, and sourdough',
+        'Mediterranean Seasonal Table',
+        'Slow culinary journey inspired by Southern European markets',
+        0, // Not yet optimized!
+        985000,
+        "datetime('now', '-1 hour')"
+      ]
+    ];
+
+    for (const m of initialMedia) {
+      insertMedia.run(
+        m[0],
+        m[1],
+        m[2],
+        m[3],
+        m[4],
+        m[5],
+        m[6],
+        m[7],
+        m[8],
+        m[9],
+        m[10],
+        m[11],
+        m[12],
+        new Date().toISOString()
+      );
+    }
+    console.log('📸 Seeded 7 initial media library assets with WebP and unoptimized examples.');
+  }
 }
 

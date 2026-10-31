@@ -6,6 +6,7 @@ import { RichTextEditor } from '../admin/RichTextEditor';
 import { YoastSeoPanel, SeoData } from '../admin/YoastSeoPanel';
 import { YoastSeoCommandCenter } from '../admin/YoastSeoCommandCenter';
 import { SiteAppearanceManager } from '../admin/SiteAppearanceManager';
+import { MediaLibrary } from '../admin/MediaLibrary';
 import {
   Lock,
   LogOut,
@@ -31,7 +32,8 @@ import {
   Check,
   LayoutTemplate,
   Globe,
-  ChevronRight
+  ChevronRight,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export const AdminStudio: React.FC = () => {
@@ -46,7 +48,8 @@ export const AdminStudio: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Dashboard active tab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'appearance' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'media' | 'appearance' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
 
   // Data states
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -463,6 +466,7 @@ export const AdminStudio: React.FC = () => {
         >
           <option value="articles">Articles ({articles.length})</option>
           <option value="categories">Categories &amp; Tags ({categories.length})</option>
+          <option value="media">Media Library &amp; WebP Tool</option>
           <option value="appearance">Header, Logo &amp; Footer (Appearance)</option>
           <option value="seo_center">SEO Command Center (Yoast Pro)</option>
           <option value="subscribers">Newsletter ({subscribers.length})</option>
@@ -565,6 +569,23 @@ export const AdminStudio: React.FC = () => {
                       : 'bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]'
                   }`}>
                     {categories.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('media')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'media'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ImageIcon className={`w-4 h-4 ${activeTab === 'media' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Media &amp; WebP Tool</span>
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]">
+                    &le;250KB
                   </span>
                 </button>
               </nav>
@@ -713,6 +734,7 @@ export const AdminStudio: React.FC = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#E8734A]">
                   {activeTab === 'articles' && 'Editorial Post Archive'}
                   {activeTab === 'categories' && 'Taxonomy Structure'}
+                  {activeTab === 'media' && 'Digital Assets & Optimization'}
                   {activeTab === 'appearance' && 'Brand & Customizer'}
                   {activeTab === 'seo_center' && 'Google SERP & Optimization'}
                   {activeTab === 'subscribers' && 'Newsletter Audience'}
@@ -726,6 +748,7 @@ export const AdminStudio: React.FC = () => {
               <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18]">
                 {activeTab === 'articles' && 'All Blog Articles'}
                 {activeTab === 'categories' && 'Categories & Taxonomies'}
+                {activeTab === 'media' && 'Media Library & WebP Optimizer'}
                 {activeTab === 'appearance' && 'Header, Logo & Footer Studio'}
                 {activeTab === 'seo_center' && 'Yoast SEO Command Center'}
                 {activeTab === 'subscribers' && 'Newsletter Subscribers'}
@@ -734,6 +757,7 @@ export const AdminStudio: React.FC = () => {
               <p className="text-xs text-[#8C8477] mt-1 max-w-2xl">
                 {activeTab === 'articles' && 'Manage drafts, edit stories with the complete Rich Text Editor, inspect SEO scores, and publish new articles.'}
                 {activeTab === 'categories' && 'Create and organize blog categories, subcategory tags, and icons dynamically stored in SQLite.'}
+                {activeTab === 'media' && 'Manage photos, inspect SEO image alt texts, and compress images to WebP under 250 KB.'}
                 {activeTab === 'appearance' && 'Upload brand logos, customize top announcement banner, navigation menu items, and footer legal credits.'}
                 {activeTab === 'seo_center' && 'Real-time on-page SEO algorithms, Google SERP previews, JSON-LD schema graphs, and 301 redirects.'}
                 {activeTab === 'subscribers' && 'Export and monitor email subscribers collected from editorial banners across the blog.'}
@@ -1107,6 +1131,11 @@ export const AdminStudio: React.FC = () => {
         <SiteAppearanceManager token={token} />
       )}
 
+      {/* Tab 7: Media Library & WebP Optimizer (< 250 KB) */}
+      {activeTab === 'media' && (
+        <MediaLibrary token={token} />
+      )}
+
         </div>
       </div>
 
@@ -1224,6 +1253,14 @@ export const AdminStudio: React.FC = () => {
                       placeholder="https://images.unsplash.com/..."
                       className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setIsMediaPickerOpen(true)}
+                      className="cursor-pointer px-3.5 py-2.5 rounded-xl bg-[#FFF2EB] border border-[#FFCEBA] text-xs font-bold text-[#E8734A] hover:bg-[#FFE5D6] flex items-center gap-1.5 shrink-0 shadow-2xs transition-all"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Media Library</span>
+                    </button>
                     <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-semibold text-[#4A453E] hover:border-[#E8734A] flex items-center gap-1.5 shrink-0 shadow-2xs">
                       <Upload className="w-3.5 h-3.5" />
                       <span>{uploading ? '...' : 'Upload'}</span>
@@ -1448,6 +1485,40 @@ export const AdminStudio: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL 3: MEDIA LIBRARY PICKER (Select WebP optimized asset directly into article) --- */}
+      {isMediaPickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-5xl bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] max-h-[92vh] overflow-y-auto p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EAE5DF]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-2xl text-[#1E1B18]">Select from Media Library</h3>
+                  <p className="text-xs text-[#8C8477]">Click any WebP image to select as cover, or upload and auto-compress new files.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMediaPickerOpen(false)}
+                className="w-8 h-8 rounded-full bg-white border border-[#E0DCD4] hover:bg-black/5 flex items-center justify-center text-[#8C8477] text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <MediaLibrary
+              token={token}
+              selectionMode={true}
+              onSelectImage={(url) => {
+                setArticleForm((prev) => ({ ...prev, image: url }));
+                setIsMediaPickerOpen(false);
+              }}
+            />
           </div>
         </div>
       )}
