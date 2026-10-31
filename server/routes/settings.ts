@@ -61,3 +61,4 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
 });
 
 export default router;
+

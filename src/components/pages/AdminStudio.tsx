@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import { api, StatsResponse, Category } from '../../api/client';
 import { Article } from '../../data/articles';
 import { RichTextEditor } from '../admin/RichTextEditor';
@@ -28,10 +29,13 @@ import {
   FolderPlus,
   CheckCircle2,
   Check,
-  LayoutTemplate
+  LayoutTemplate,
+  Globe,
+  ChevronRight
 } from 'lucide-react';
 
 export const AdminStudio: React.FC = () => {
+  const { setActivePage } = useTheme();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('toufiq_admin_token'));
   const [adminUser, setAdminUser] = useState<any>(null);
 
@@ -358,6 +362,16 @@ export const AdminStudio: React.FC = () => {
     }
   };
 
+  const handleExportSubscribers = () => {
+    const csv = 'Email,Name,Source,SubscribedAt\n' + subscribers.map((s) => `${s.email},${s.name || ''},${s.source},${s.subscribed_at}`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `newsletter-subscribers-${Date.now()}.csv`;
+    a.click();
+  };
+
   // If not logged in, show Login Form
   if (!token) {
     return (
@@ -429,170 +443,369 @@ export const AdminStudio: React.FC = () => {
   const currentSelectedCategory = categories.find(c => c.name === articleForm.category);
 
   return (
-    <div className="space-y-10 pt-2 pb-16">
+    <div className="pt-2 pb-16">
       
-      {/* Studio Top Header */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EDE7DF] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center text-xl shadow-xs">
+      {/* Mobile Selector for < lg screens */}
+      <div className="lg:hidden mb-6 bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-xs flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold text-sm">
             ✨
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="font-serif font-bold text-sm text-[#1E1B18]">Studio Menu</div>
+            <div className="text-[10px] text-[#8C8477]">Switch panel section</div>
+          </div>
+        </div>
+        <select
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value as any)}
+          className="px-3 py-2 rounded-xl border border-[#E0DCD4] bg-[#FAF8F5] text-xs font-semibold text-[#1E1B18] focus:outline-hidden focus:border-[#E8734A]"
+        >
+          <option value="articles">Articles ({articles.length})</option>
+          <option value="categories">Categories &amp; Tags ({categories.length})</option>
+          <option value="appearance">Header, Logo &amp; Footer (Appearance)</option>
+          <option value="seo_center">SEO Command Center (Yoast Pro)</option>
+          <option value="subscribers">Newsletter ({subscribers.length})</option>
+          <option value="inquiries">Inquiries &amp; Leads ({inquiries.length})</option>
+        </select>
+      </div>
+
+      <div className="flex flex-col lg:flex-row items-start gap-8">
+        
+        {/* Left Sidebar Navigation */}
+        <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-24 space-y-4">
+          
+          {/* Studio Brand & Quick Action Card */}
+          <div className="bg-white rounded-3xl p-5 border border-[#EDE7DF] shadow-xs space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FFF2EB] to-[#FFE5D6] text-[#E8734A] flex items-center justify-center text-xl shadow-2xs font-bold border border-[#FFCEBA]/60">
+                ✨
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-serif font-bold text-base text-[#1E1B18] truncate">
+                    Toufiq Studio
+                  </h2>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" title="Online" />
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]">
+                    Yoast Active
+                  </span>
+                  <span className="text-[10px] text-[#8C8477]">&bull; Node.js</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="space-y-2 pt-1 border-t border-[#F0ECE6]">
+              <button
+                onClick={openNewArticleModal}
+                className="w-full py-2.5 px-4 rounded-xl bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                <span>Write Story</span>
+              </button>
+
+              <button
+                onClick={openNewCategoryModal}
+                className="w-full py-2 px-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] hover:border-[#E8734A] hover:bg-white text-[#2D2A26] text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <FolderPlus className="w-3.5 h-3.5 text-[#E8734A]" />
+                <span>New Category</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Clean Grouped Menu */}
+          <div className="bg-white rounded-3xl p-3.5 border border-[#EDE7DF] shadow-xs space-y-4">
+            
+            {/* Group 1: Editorial Content */}
+            <div>
+              <div className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A39B8E]">
+                Editorial Content
+              </div>
+              <nav className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('articles')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'articles'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileText className={`w-4 h-4 ${activeTab === 'articles' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Articles</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === 'articles'
+                      ? 'bg-white text-[#C85228] border border-[#FFCEBA]'
+                      : 'bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]'
+                  }`}>
+                    {articles.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('categories')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'categories'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Tag className={`w-4 h-4 ${activeTab === 'categories' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Categories &amp; Tags</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === 'categories'
+                      ? 'bg-white text-[#C85228] border border-[#FFCEBA]'
+                      : 'bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]'
+                  }`}>
+                    {categories.length}
+                  </span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Group 2: Site & Identity Customizer */}
+            <div className="pt-2 border-t border-[#F5F2EB]">
+              <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A39B8E]">
+                Design &amp; Identity
+              </div>
+              <nav className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('appearance')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'appearance'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LayoutTemplate className={`w-4 h-4 ${activeTab === 'appearance' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Header, Logo &amp; Footer</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF2EB] text-[#E8734A] border border-[#FFCEBA]">
+                    Appearance
+                  </span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Group 3: SEO & Growth */}
+            <div className="pt-2 border-t border-[#F5F2EB]">
+              <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A39B8E]">
+                SEO &amp; Growth
+              </div>
+              <nav className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('seo_center')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'seo_center'
+                      ? 'bg-[#ECFDF5] text-[#065F46] font-bold shadow-2xs border-l-3 border-emerald-500'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Search className={`w-4 h-4 ${activeTab === 'seo_center' ? 'text-emerald-600' : 'text-[#8C8477]'}`} />
+                    <span>SEO Command Center</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Yoast Pro
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('subscribers')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'subscribers'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Mail className={`w-4 h-4 ${activeTab === 'subscribers' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Newsletter</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === 'subscribers'
+                      ? 'bg-white text-[#C85228] border border-[#FFCEBA]'
+                      : 'bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]'
+                  }`}>
+                    {subscribers.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('inquiries')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'inquiries'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className={`w-4 h-4 ${activeTab === 'inquiries' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Inquiries &amp; Leads</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    stats?.newInquiries
+                      ? 'bg-sky-100 text-sky-800 border border-sky-200'
+                      : 'bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]'
+                  }`}>
+                    {inquiries.length}
+                  </span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Group 4: Quick Links / System */}
+            <div className="pt-2 border-t border-[#F5F2EB] space-y-1">
+              <button
+                onClick={() => setActivePage('home')}
+                className="w-full flex items-center justify-between px-3.5 py-2 rounded-2xl text-xs text-[#6A6357] hover:bg-[#FAF8F5] hover:text-[#E8734A] transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Globe className="w-4 h-4 text-[#8C8477] group-hover:text-[#E8734A]" />
+                  <span>View Public Site</span>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 text-[#B5AFA4] group-hover:text-[#E8734A]" />
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-2xl text-xs text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Admin User Card */}
+          <div className="p-3.5 rounded-2xl bg-white border border-[#EDE7DF] shadow-2xs flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-[#1E1B18] text-[#FFF2EB] flex items-center justify-center font-bold text-xs">
+                TM
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-[#1E1B18] leading-tight truncate">Toufiq Motion</div>
+                <div className="text-[10px] text-[#8C8477] truncate">admin@toufiqmotion.com</div>
+              </div>
+            </div>
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]">
+              Admin
+            </span>
+          </div>
+
+        </aside>
+
+        {/* Right Workspace Column */}
+        <div className="flex-1 min-w-0 w-full space-y-6">
+          
+          {/* Workspace Top Header Bar */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDE7DF] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#E8734A]">
+                  {activeTab === 'articles' && 'Editorial Post Archive'}
+                  {activeTab === 'categories' && 'Taxonomy Structure'}
+                  {activeTab === 'appearance' && 'Brand & Customizer'}
+                  {activeTab === 'seo_center' && 'Google SERP & Optimization'}
+                  {activeTab === 'subscribers' && 'Newsletter Audience'}
+                  {activeTab === 'inquiries' && 'Partnership Inquiries'}
+                </span>
+                <span className="text-[#C5BEB3]">&bull;</span>
+                <span className="text-[11px] text-[#8C8477]">
+                  Toufiq Motion Studio
+                </span>
+              </div>
               <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18]">
-                Toufiq Motion Studio
+                {activeTab === 'articles' && 'All Blog Articles'}
+                {activeTab === 'categories' && 'Categories & Taxonomies'}
+                {activeTab === 'appearance' && 'Header, Logo & Footer Studio'}
+                {activeTab === 'seo_center' && 'Yoast SEO Command Center'}
+                {activeTab === 'subscribers' && 'Newsletter Subscribers'}
+                {activeTab === 'inquiries' && 'Contact Inquiries & Leads'}
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]">
-                Node.js &bull; Yoast SEO Active
-              </span>
+              <p className="text-xs text-[#8C8477] mt-1 max-w-2xl">
+                {activeTab === 'articles' && 'Manage drafts, edit stories with the complete Rich Text Editor, inspect SEO scores, and publish new articles.'}
+                {activeTab === 'categories' && 'Create and organize blog categories, subcategory tags, and icons dynamically stored in SQLite.'}
+                {activeTab === 'appearance' && 'Upload brand logos, customize top announcement banner, navigation menu items, and footer legal credits.'}
+                {activeTab === 'seo_center' && 'Real-time on-page SEO algorithms, Google SERP previews, JSON-LD schema graphs, and 301 redirects.'}
+                {activeTab === 'subscribers' && 'Export and monitor email subscribers collected from editorial banners across the blog.'}
+                {activeTab === 'inquiries' && 'Manage incoming collaboration pitches, sponsorship proposals, and reader messages.'}
+              </p>
             </div>
-            <p className="text-xs text-[#8C8477] mt-0.5">
-              Categories &bull; Complete Rich Text Editor &bull; Yoast SEO Premium 2026
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={openNewCategoryModal}
-            className="px-4 py-2.5 rounded-full bg-[#FAF8F5] border border-[#E0DCD4] hover:border-[#E8734A] text-[#2D2A26] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs"
-          >
-            <FolderPlus className="w-4 h-4 text-[#E8734A]" /> New Category
-          </button>
-          <button
-            onClick={openNewArticleModal}
-            className="px-5 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-1.5 transition-all"
-          >
-            <Plus className="w-4 h-4" /> Write Story
-          </button>
-          <button
-            onClick={handleLogout}
-            className="p-2.5 rounded-full bg-[#FAF8F5] border border-[#E5E0D8] text-[#6A6357] hover:text-rose-600 hover:border-rose-300 transition-all"
-            title="Sign out"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Analytics Overview Cards */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-1">
-            <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Total Articles</span>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18]">{stats.totalArticles}</div>
-            <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> Published
-            </span>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-1">
-            <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Total Views</span>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18]">
-              {stats.totalViews.toLocaleString()}
+            {/* Contextual Action Button */}
+            <div className="flex items-center gap-3 shrink-0">
+              {activeTab === 'articles' && (
+                <button
+                  onClick={openNewArticleModal}
+                  className="px-5 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Write Story
+                </button>
+              )}
+              {activeTab === 'categories' && (
+                <button
+                  onClick={openNewCategoryModal}
+                  className="px-5 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Add Category
+                </button>
+              )}
+              {activeTab === 'subscribers' && (
+                <button
+                  onClick={handleExportSubscribers}
+                  className="px-4 py-2 rounded-full bg-[#FAF8F5] border border-[#E5E0D8] text-xs font-bold text-[#4A453E] hover:border-[#E8734A] transition-all cursor-pointer shadow-2xs"
+                >
+                  Export CSV
+                </button>
+              )}
             </div>
-            <span className="text-[11px] text-[#8C8477]">Global Readers</span>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-1">
-            <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Categories</span>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18]">
-              {categories.length}
+          {/* Compact 5-Metric Quick Stats Overview */}
+          {stats && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+              <div className="bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Articles</span>
+                <div className="font-serif text-xl sm:text-2xl font-bold text-[#1E1B18] mt-0.5">{stats.totalArticles}</div>
+                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                  <TrendingUp className="w-3 h-3" /> Published
+                </span>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Total Views</span>
+                <div className="font-serif text-xl sm:text-2xl font-bold text-[#1E1B18] mt-0.5">{stats.totalViews.toLocaleString()}</div>
+                <span className="text-[10px] text-[#8C8477] mt-0.5 block">Global Readers</span>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Categories</span>
+                <div className="font-serif text-xl sm:text-2xl font-bold text-[#1E1B18] mt-0.5">{categories.length}</div>
+                <span className="text-[10px] text-[#E8734A] font-semibold mt-0.5 block">Custom Topics</span>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Subscribers</span>
+                <div className="font-serif text-xl sm:text-2xl font-bold text-[#1E1B18] mt-0.5">{stats.totalSubscribers.toLocaleString()}</div>
+                <span className="text-[10px] text-[#E8734A] font-semibold mt-0.5 block">Newsletter</span>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-2xs col-span-2 sm:col-span-1">
+                <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Inquiries</span>
+                <div className="font-serif text-xl sm:text-2xl font-bold text-[#1E1B18] mt-0.5">{stats.totalInquiries}</div>
+                <span className="text-[10px] text-sky-600 font-semibold mt-0.5 block">{stats.newInquiries} new leads</span>
+              </div>
             </div>
-            <span className="text-[11px] text-[#E8734A] font-semibold flex items-center gap-1">
-              <Tag className="w-3 h-3" /> Custom Taxonomies
-            </span>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-1">
-            <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Subscribers</span>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18]">
-              {stats.totalSubscribers.toLocaleString()}
-            </div>
-            <span className="text-[11px] text-[#E8734A] font-semibold">Newsletter Audience</span>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-1">
-            <span className="text-[10px] uppercase font-bold text-[#8C8477] tracking-wider block">Inquiries</span>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18]">{stats.totalInquiries}</div>
-            <span className="text-[11px] text-sky-600 font-semibold">
-              {stats.newInquiries} new leads
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Main Tabs Navigation */}
-      <div className="flex border-b border-[#EAE5DF] gap-6 text-sm font-semibold overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setActiveTab('articles')}
-          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'articles'
-              ? 'border-[#E8734A] text-[#E8734A]'
-              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
-          }`}
-        >
-          <FileText className="w-4 h-4" /> Articles ({articles.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('categories')}
-          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'categories'
-              ? 'border-[#E8734A] text-[#E8734A]'
-              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
-          }`}
-        >
-          <Tag className="w-4 h-4" /> Categories &amp; Taxonomies ({categories.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('appearance')}
-          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'appearance'
-              ? 'border-[#E8734A] text-[#E8734A]'
-              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
-          }`}
-        >
-          <LayoutTemplate className="w-4 h-4 text-[#E8734A]" />
-          <span>Header, Logo &amp; Footer</span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF2EB] text-[#E8734A] border border-[#FFCEBA]">
-            Appearance
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab('seo_center')}
-          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'seo_center'
-              ? 'border-emerald-500 text-emerald-600 font-bold'
-              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
-          }`}
-        >
-          <Search className="w-4 h-4 text-emerald-500" />
-          <span>SEO Command Center</span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Yoast Pro
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab('subscribers')}
-          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'subscribers'
-              ? 'border-[#E8734A] text-[#E8734A]'
-              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
-          }`}
-        >
-          <Mail className="w-4 h-4" /> Newsletter ({subscribers.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('inquiries')}
-          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'inquiries'
-              ? 'border-[#E8734A] text-[#E8734A]'
-              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
-          }`}
-        >
-          <Users className="w-4 h-4" /> Inquiries &amp; Leads ({inquiries.length})
-        </button>
-      </div>
+          )}
 
       {/* Tab 1: Articles Table */}
       {activeTab === 'articles' && (
@@ -893,6 +1106,9 @@ export const AdminStudio: React.FC = () => {
       {activeTab === 'appearance' && (
         <SiteAppearanceManager token={token} />
       )}
+
+        </div>
+      </div>
 
       {/* --- MODAL 1: WRITE / EDIT ARTICLE WITH RICH TEXT EDITOR & YOAST SEO PREMIUM --- */}
       {isArticleModalOpen && (
