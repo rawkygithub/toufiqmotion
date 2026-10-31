@@ -194,5 +194,110 @@ export function seedDatabase() {
       'new'
     );
   }
+
+  // Seed SEO 301/302 Redirects (Matches Command Center 11 Active Redirects)
+  const redirectCount = db.prepare('SELECT COUNT(*) as count FROM seo_redirects').get() as { count: number };
+  if (redirectCount.count === 0) {
+    const insertRedirect = db.prepare(`
+      INSERT INTO seo_redirects (id, source_path, target_path, redirect_code, hits_count, notes, last_accessed)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now', '-2 hours'))
+    `);
+
+    const redirects = [
+      ['red-1', '/old-travel-guide', '/travel', 301, 142, 'Migrated legacy travel archive'],
+      ['red-2', '/posts/amalfi-coast-2023', '/travel', 301, 310, 'Consolidated Amalfi Coast cornerstone guide'],
+      ['red-3', '/lifestyle/coffee-shops-2024', '/lifestyle', 301, 88, 'Redirect old coffee shop listing'],
+      ['red-4', '/wellness/10-habits', '/health', 301, 215, 'Updated 10 simple habits URL'],
+      ['red-5', '/category/journal', '/', 301, 64, 'Old WordPress category taxonomy'],
+      ['red-6', '/contact-us', '/about', 301, 93, 'Combined About & Contact page'],
+      ['red-7', '/media-kit', '/work-with-us', 301, 172, 'Partnership & Media kit landing page'],
+      ['red-8', '/stories/swiss-alps', '/travel', 301, 55, 'Updated Swiss Alps photography guide'],
+      ['red-9', '/tips/packing-light', '/travel', 301, 120, 'Travel essentials guide redirect'],
+      ['red-10', '/morning-rituals-guide', '/health', 301, 78, 'Health & wellbeing daily routine redirect'],
+      ['red-11', '/gear-talk/cinematography', '/', 301, 41, 'Old lens review archive redirect']
+    ];
+
+    for (const r of redirects) {
+      insertRedirect.run(...r);
+    }
+    console.log('🔗 Seeded 11 active SEO 301 redirects.');
+  }
+
+  // Seed SEO 404 Crawl Error Logs (Matches Command Center 404 Monitor)
+  const crawlErrorCount = db.prepare('SELECT COUNT(*) as count FROM seo_crawl_errors').get() as { count: number };
+  if (crawlErrorCount.count === 0) {
+    const insertCrawlError = db.prepare(`
+      INSERT INTO seo_crawl_errors (id, path, hits_count, referer, user_agent, ip, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const errors = [
+      ['err-1', '/wp-login.php', 14, 'Direct Navigation', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', '66.249.66.1', 'active'],
+      ['err-2', '/tag/old-camera', 8, 'https://pinterest.com/pin/12345', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4)', '172.56.21.8', 'active'],
+      ['err-3', '/feed/rss2', 12, 'https://feedly.com', 'Feedly/1.0 (+http://feedly.com/fetcher.html)', '54.210.12.33', 'active'],
+      ['err-4', '/category/uncategorized', 5, 'https://bing.com', 'Mozilla/5.0 (compatible; bingbot/2.0)', '157.55.39.42', 'active'],
+      ['err-5', '/author/admin', 6, 'Direct Navigation', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '192.168.1.1', 'active'],
+      ['err-6', '/wp-content/uploads/2023/photo.jpg', 3, 'https://twitter.com', 'Twitterbot/1.0', '199.16.157.18', 'active'],
+      ['err-7', '/archives/2022/11', 2, 'https://yandex.com', 'YandexBot/3.0', '141.8.142.10', 'active']
+    ];
+
+    for (const err of errors) {
+      insertCrawlError.run(...err);
+    }
+    console.log('🚨 Seeded SEO 404 crawl error logs.');
+  }
+
+  // Seed SEO Global Settings
+  const settingCount = db.prepare('SELECT COUNT(*) as count FROM seo_settings').get() as { count: number };
+  if (settingCount.count === 0) {
+    const insertSetting = db.prepare(`INSERT INTO seo_settings (key, value) VALUES (?, ?)`);
+
+    insertSetting.run('site_title_format', '%title% — Toufiq Motion Editorial');
+    insertSetting.run('meta_description', 'Toufiq Motion is an editorial lifestyle, mindful wellbeing and world travel journal with luminous photography and thoughtful stories.');
+    insertSetting.run('canonical_domain', 'https://toufiqmotion.com');
+    insertSetting.run('og_image', 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80');
+    insertSetting.run('twitter_card', 'summary_large_image');
+    insertSetting.run('google_site_verification', 'google-site-verification=toufiqmotion2026seo');
+    insertSetting.run('bing_site_verification', 'bing-verification-toufiq2026');
+    insertSetting.run('knowledge_type', 'Organization');
+    insertSetting.run('knowledge_name', 'Toufiq Motion');
+    insertSetting.run('knowledge_logo', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80');
+    insertSetting.run('knowledge_founder', 'Toufiq Motion');
+    insertSetting.run('knowledge_socials_json', JSON.stringify([
+      'https://instagram.com/toufiqmotion',
+      'https://youtube.com/@toufiqmotion',
+      'https://twitter.com/toufiqmotion',
+      'https://pinterest.com/toufiqmotion'
+    ]));
+    insertSetting.run('robots_txt', `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: http://localhost:3000/sitemap.xml`);
+    insertSetting.run('last_pinged_at', new Date().toISOString());
+
+    console.log('⚙️ Seeded global SEO configuration.');
+  }
+
+  // Seed Search Console Analytics Queries
+  const queryCount = db.prepare('SELECT COUNT(*) as count FROM seo_search_queries').get() as { count: number };
+  if (queryCount.count === 0) {
+    const insertQuery = db.prepare(`
+      INSERT INTO seo_search_queries (id, query, clicks, impressions, ctr, position)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    const queries = [
+      ['q-1', 'amalfi coast photography guide', 1420, 18500, 7.68, 2.1],
+      ['q-2', 'coffee brewing aesthetics ritual', 980, 14200, 6.90, 3.4],
+      ['q-3', '10 simple habits slow living', 860, 12100, 7.11, 2.8],
+      ['q-4', 'cinematic travel photography tips', 740, 10900, 6.79, 4.2],
+      ['q-5', 'mindful morning routine guide', 620, 9400, 6.60, 3.9],
+      ['q-6', 'artisan slow living essays', 510, 8200, 6.22, 5.1],
+      ['q-7', 'anamorphic vintage lenses filmmaking', 430, 6900, 6.23, 4.7],
+      ['q-8', 'swiss alps sunrise photography spot', 380, 5800, 6.55, 3.1]
+    ];
+
+    for (const q of queries) {
+      insertQuery.run(...q);
+    }
+    console.log('📊 Seeded Google Search Console query performance analytics.');
+  }
 }
 

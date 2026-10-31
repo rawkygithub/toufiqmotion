@@ -153,5 +153,71 @@ export function initDatabase() {
     );
   `);
 
-  console.log('✅ SQLite Database schema initialized with Categories & Yoast SEO fields at:', dbPath);
+  // 7. SEO 301/302 Redirects Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS seo_redirects (
+      id TEXT PRIMARY KEY,
+      source_path TEXT UNIQUE NOT NULL,
+      target_path TEXT NOT NULL,
+      redirect_code INTEGER DEFAULT 301,
+      hits_count INTEGER DEFAULT 0,
+      notes TEXT,
+      last_accessed DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_seo_redirects_source ON seo_redirects(source_path);
+  `);
+
+  // 8. SEO 404 Crawl Error Logs Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS seo_crawl_errors (
+      id TEXT PRIMARY KEY,
+      path TEXT UNIQUE NOT NULL,
+      hits_count INTEGER DEFAULT 1,
+      referer TEXT,
+      user_agent TEXT,
+      ip TEXT,
+      status TEXT DEFAULT 'active',
+      last_detected DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_seo_crawl_errors_path ON seo_crawl_errors(path);
+  `);
+
+  // 9. SEO Global Settings & Knowledge Graph Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS seo_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // 10. SEO Search Console Queries & Analytics Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS seo_search_queries (
+      id TEXT PRIMARY KEY,
+      query TEXT UNIQUE NOT NULL,
+      clicks INTEGER DEFAULT 0,
+      impressions INTEGER DEFAULT 0,
+      ctr REAL DEFAULT 0.0,
+      position REAL DEFAULT 1.0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // 11. SEO Instant Indexing Logs Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS seo_indexing_logs (
+      id TEXT PRIMARY KEY,
+      url TEXT NOT NULL,
+      engine TEXT NOT NULL,
+      action TEXT NOT NULL,
+      response_status INTEGER DEFAULT 200,
+      message TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  console.log('✅ SQLite Database schema initialized with Categories & Yoast SEO Command Center tables at:', dbPath);
 }

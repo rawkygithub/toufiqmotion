@@ -261,6 +261,181 @@ export const api = {
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Failed to delete category');
     return result;
+  },
+
+  // SEO Command Center Methods
+  async getSeoOverview(): Promise<{
+    siteSeoHealth: number;
+    grade: string;
+    totalIndexedUrls: number;
+    breakdown: { articles: number; categories: number; staticPages: number };
+    activeRedirectsCount: number;
+    crawlErrorsCount: number;
+    sitemapUrl: string;
+    lastPingedAt: string;
+  }> {
+    const res = await fetch(`${API_BASE}/seo/overview`);
+    if (!res.ok) throw new Error('Failed to fetch SEO overview');
+    return res.json();
+  },
+
+  async getSeoAudit(): Promise<{ auditItems: any[] }> {
+    const res = await fetch(`${API_BASE}/seo/audit`);
+    if (!res.ok) throw new Error('Failed to fetch SEO audit');
+    return res.json();
+  },
+
+  async updateArticleSeo(token: string, id: string, data: any): Promise<{ success: boolean; seoScore: number }> {
+    const res = await fetch(`${API_BASE}/seo/audit/${id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to update article SEO');
+    return result;
+  },
+
+  async reanalyzeSeo(token: string): Promise<{ success: boolean; updatedCount: number; message: string }> {
+    const res = await fetch(`${API_BASE}/seo/reanalyze`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to re-analyze SEO');
+    return result;
+  },
+
+  async getSeoRedirects(): Promise<{ redirects: any[] }> {
+    const res = await fetch(`${API_BASE}/seo/redirects`);
+    if (!res.ok) throw new Error('Failed to fetch redirects');
+    return res.json();
+  },
+
+  async createSeoRedirect(token: string, data: { sourcePath: string; targetPath: string; redirectCode?: number; notes?: string }): Promise<{ redirect: any }> {
+    const res = await fetch(`${API_BASE}/seo/redirects`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to create redirect');
+    return result;
+  },
+
+  async updateSeoRedirect(token: string, id: string, data: { sourcePath: string; targetPath: string; redirectCode?: number; notes?: string }): Promise<{ redirect: any }> {
+    const res = await fetch(`${API_BASE}/seo/redirects/${id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to update redirect');
+    return result;
+  },
+
+  async deleteSeoRedirect(token: string, id: string): Promise<{ success: boolean }> {
+    const res = await fetch(`${API_BASE}/seo/redirects/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to delete redirect');
+    return result;
+  },
+
+  async getSeoCrawlErrors(): Promise<{ errors: any[] }> {
+    const res = await fetch(`${API_BASE}/seo/crawl-errors`);
+    if (!res.ok) throw new Error('Failed to fetch crawl errors');
+    return res.json();
+  },
+
+  async resolveSeoCrawlError(token: string, id: string): Promise<{ success: boolean }> {
+    const res = await fetch(`${API_BASE}/seo/crawl-errors/resolve`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id })
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to resolve error');
+    return result;
+  },
+
+  async clearSeoCrawlErrors(token: string): Promise<{ success: boolean }> {
+    const res = await fetch(`${API_BASE}/seo/crawl-errors/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to clear crawl errors');
+    return result;
+  },
+
+  async getSeoSettings(): Promise<{ settings: Record<string, string> }> {
+    const res = await fetch(`${API_BASE}/seo/settings`);
+    if (!res.ok) throw new Error('Failed to fetch SEO settings');
+    return res.json();
+  },
+
+  async saveSeoSettings(token: string, settings: Record<string, any>): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/seo/settings`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(settings)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to save SEO settings');
+    return result;
+  },
+
+  async pingSearchEngines(): Promise<{ success: boolean; message: string; sitemapUrl: string; timestamp: string }> {
+    const res = await fetch(`${API_BASE}/seo/ping`, {
+      method: 'POST'
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to ping search engines');
+    return result;
+  },
+
+  async getSeoIndexingLogs(): Promise<{ logs: any[] }> {
+    const res = await fetch(`${API_BASE}/seo/indexing-logs`);
+    if (!res.ok) throw new Error('Failed to fetch indexing logs');
+    return res.json();
+  },
+
+  async submitIndexingUrl(token: string, data: { url: string; engine?: string; action?: string }): Promise<{ success: boolean; log: any }> {
+    const res = await fetch(`${API_BASE}/seo/indexing-submit`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to submit indexing URL');
+    return result;
+  },
+
+  async getSeoSearchQueries(): Promise<{ queries: any[] }> {
+    const res = await fetch(`${API_BASE}/seo/search-queries`);
+    if (!res.ok) throw new Error('Failed to fetch search queries');
+    return res.json();
   }
 };
 

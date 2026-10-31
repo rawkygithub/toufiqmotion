@@ -3,6 +3,7 @@ import { api, StatsResponse, Category } from '../../api/client';
 import { Article } from '../../data/articles';
 import { RichTextEditor } from '../admin/RichTextEditor';
 import { YoastSeoPanel, SeoData } from '../admin/YoastSeoPanel';
+import { YoastSeoCommandCenter } from '../admin/YoastSeoCommandCenter';
 import {
   Lock,
   LogOut,
@@ -39,7 +40,7 @@ export const AdminStudio: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Dashboard active tab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'subscribers' | 'inquiries'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
 
   // Data states
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -542,6 +543,20 @@ export const AdminStudio: React.FC = () => {
           <Tag className="w-4 h-4" /> Categories &amp; Taxonomies ({categories.length})
         </button>
         <button
+          onClick={() => setActiveTab('seo_center')}
+          className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'seo_center'
+              ? 'border-emerald-500 text-emerald-600 font-bold'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
+          }`}
+        >
+          <Search className="w-4 h-4 text-emerald-500" />
+          <span>SEO Command Center</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Yoast Pro
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('subscribers')}
           className={`pb-3 transition-colors border-b-2 flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'subscribers'
@@ -845,6 +860,17 @@ export const AdminStudio: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Tab 5: Yoast-Grade SEO Command Center */}
+      {activeTab === 'seo_center' && (
+        <YoastSeoCommandCenter
+          token={token}
+          onNavigateToPost={(postId) => {
+            const art = articles.find((a) => a.id === postId);
+            if (art) openEditArticleModal(art);
+          }}
+        />
       )}
 
       {/* --- MODAL 1: WRITE / EDIT ARTICLE WITH RICH TEXT EDITOR & YOAST SEO PREMIUM --- */}

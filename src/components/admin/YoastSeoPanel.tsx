@@ -712,3 +712,4 @@ export const YoastSeoPanel: React.FC<YoastSeoPanelProps> = ({
     </div>
   );
 };
+
