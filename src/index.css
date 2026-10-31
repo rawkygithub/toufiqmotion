@@ -11,9 +11,37 @@
     --theme-canvas: #FAF8F5;
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     background-color: var(--theme-canvas);
     transition: background-color 800ms cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
+  }
+
+  /* Tactile click micro-interactions for buttons and links */
+  button, 
+  a, 
+  [role="button"],
+  .clickable {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:active:not(:disabled),
+  a:active:not([disabled]),
+  .clickable:active {
+    transform: scale(0.978);
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  /* Prevent Cumulative Layout Shift for images */
+  img {
+    content-visibility: auto;
   }
 }
 
@@ -49,10 +77,18 @@
   z-index: 0;
 }
 
-/* Custom Scrollbar for silky smoothness */
+/* Smooth GPU hardware accelerated transitions */
+.smooth-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Silky smooth custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 ::-webkit-scrollbar-track {
   background: #f7f4ee;
@@ -60,6 +96,8 @@
 ::-webkit-scrollbar-thumb {
   background: #d8d0c4;
   border-radius: 9999px;
+  border: 2px solid #f7f4ee;
+  transition: background-color 200ms ease;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #b8ad9e;

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -23,16 +24,19 @@ const __dirname = path.dirname(__filename);
 export const app = express();
 
 // Middlewares
+app.use(compression({ level: 6, threshold: 1024 }));
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static uploads directory
+// Static uploads directory with 30-day browser caching
 const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, {
+  maxAge: '30d'
+}));
 
 // SEO 301/302 Redirects Middleware (Engineered for zero link-juice loss)
 app.use((req, res, next) => {
@@ -145,10 +149,20 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/seo', seoRoutes);
 app.use('/api/settings', settingsRoutes);
 
-// Static frontend serving (from dist directory if built)
+// Static frontend serving (from dist directory with long-term immutable caching for hashed chunks)
 const distDir = path.join(__dirname, '../dist');
 if (fs.existsSync(distDir)) {
-  app.use(express.static(distDir));
+  const assetsDir = path.join(distDir, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    app.use('/assets', express.static(assetsDir, {
+      maxAge: '1y',
+      immutable: true
+    }));
+  }
+
+  app.use(express.static(distDir, {
+    maxAge: '1h'
+  }));
 
   // Express 5 compatible SPA fallback
   app.use((req, res, next) => {

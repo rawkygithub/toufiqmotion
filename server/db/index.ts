@@ -19,6 +19,8 @@ export const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
 db.pragma('foreign_keys = ON');
+db.pragma('cache_size = -64000'); // 64MB high-speed query cache in RAM
+db.pragma('temp_store = MEMORY'); // Keep temporary tables and indices in memory
 
 export function initDatabase() {
   // 1. Users / Admins Table
