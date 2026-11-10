@@ -42,13 +42,29 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
   const { siteSettings, setSiteSettings, refreshSiteSettings } = useTheme();
 
   // Active sub-tab inside the customizer
-  const [activeSubTab, setActiveSubTab] = useState<'logo' | 'header' | 'menu' | 'footer' | 'credits'>('logo');
+  const [activeSubTab, setActiveSubTab] = useState<'home_layout' | 'logo' | 'header' | 'menu' | 'footer' | 'credits'>('home_layout');
 
   // Form local state
   const [formData, setFormData] = useState<SiteSettings>(siteSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+  // Quick instant activation of home variant
+  const handleSelectHomeVariant = async (variant: 'design1' | 'design2' | 'design3') => {
+    const updated = { ...formData, home_variant: variant };
+    setFormData(updated);
+    if (!token) return;
+    try {
+      await api.saveSiteSettings(token, { home_variant: variant });
+      setSiteSettings((prev) => ({ ...prev, home_variant: variant }));
+      await refreshSiteSettings();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.warn('Could not auto-save home variant:', err);
+    }
+  };
 
   // Menu item modal state
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
@@ -231,8 +247,20 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
       {/* Navigation Sub-Tabs */}
       <div className="flex border-b border-[#EAE5DF] gap-4 overflow-x-auto no-scrollbar">
         <button
+          onClick={() => setActiveSubTab('home_layout')}
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            activeSubTab === 'home_layout'
+              ? 'border-[#E8734A] text-[#E8734A]'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
+          }`}
+        >
+          <Layout className="w-4 h-4" />
+          <span>Homepage Layout (3 Designs)</span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('logo')}
-          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'logo'
               ? 'border-[#E8734A] text-[#E8734A]'
               : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
@@ -244,7 +272,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
 
         <button
           onClick={() => setActiveSubTab('header')}
-          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'header'
               ? 'border-[#E8734A] text-[#E8734A]'
               : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
@@ -256,7 +284,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
 
         <button
           onClick={() => setActiveSubTab('menu')}
-          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'menu'
               ? 'border-[#E8734A] text-[#E8734A]'
               : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
@@ -268,7 +296,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
 
         <button
           onClick={() => setActiveSubTab('footer')}
-          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'footer'
               ? 'border-[#E8734A] text-[#E8734A]'
               : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
@@ -280,7 +308,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
 
         <button
           onClick={() => setActiveSubTab('credits')}
-          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeSubTab === 'credits'
               ? 'border-[#E8734A] text-[#E8734A]'
               : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
@@ -290,6 +318,313 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
           <span>Footer Credits &amp; Legal</span>
         </button>
       </div>
+
+      {/* =====================================================================
+          SUB-TAB 0: HOMEPAGE DESIGNER LAYOUT SELECTION
+          ===================================================================== */}
+      {activeSubTab === 'home_layout' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="bg-white p-6 sm:p-7 rounded-2xl border border-[#EDE7DF] space-y-2 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#E8734A] block">
+                  Visitor Experience &bull; Page 1 Master Architecture
+                </span>
+                <h3 className="font-serif text-2xl font-bold text-[#1E1B18] mt-0.5">
+                  Select Active Homepage Design for Public Visitors
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.open('/', '_blank')}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FAF8F5] border border-[#DDD7CD] hover:border-[#E8734A] text-[#4A453E] hover:text-[#E8734A] text-xs font-semibold transition-all cursor-pointer shadow-2xs group self-start sm:self-auto"
+                title="Preview live site in new tab"
+              >
+                <Eye className="w-3.5 h-3.5 text-[#E8734A]" />
+                <span>View Live Homepage ↗</span>
+              </button>
+            </div>
+            <p className="text-xs sm:text-sm text-[#7A7468] leading-relaxed pt-1">
+              Select which of the 3 editorial layouts public visitors will see when landing on your blog. The layout switcher has been removed from the public frontend so readers enjoy a clean, distraction-free magazine.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* DESIGN 1: Minimal Magazine */}
+            <div
+              onClick={() => handleSelectHomeVariant('design1')}
+              className={`bg-white rounded-3xl p-6 border-2 transition-all cursor-pointer flex flex-col justify-between shadow-2xs relative ${
+                (formData.home_variant || 'design1') === 'design1'
+                  ? 'border-[#E8734A] ring-3 ring-[#E8734A]/15 bg-gradient-to-b from-[#FFFBF8] to-white shadow-md'
+                  : 'border-[#EAE5DF] hover:border-[#D5CFC5] hover:shadow-md'
+              }`}
+            >
+              {(formData.home_variant || 'design1') === 'design1' && (
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#E8734A] text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                  <Check className="w-3.5 h-3.5" /> Active on Live Site
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Visual Blueprint Diagram */}
+                <div className="rounded-2xl overflow-hidden border border-[#EAE5DF] bg-[#FAF8F5] p-3.5 aspect-[16/10] flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#EAE5DF]">
+                    <div className="w-16 h-2 rounded-full bg-[#1E1B18]/70" />
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-[#E8734A]" />
+                      <div className="w-2 h-2 rounded-full bg-[#EAE5DF]" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-12 gap-2 my-1.5 items-center">
+                    <div className="col-span-7 space-y-1">
+                      <div className="w-full h-3.5 rounded bg-[#1E1B18]/80" />
+                      <div className="w-4/5 h-2 rounded bg-[#8C8477]/40" />
+                      <div className="w-2/3 h-2 rounded bg-[#8C8477]/30" />
+                    </div>
+                    <div className="col-span-5 h-16 rounded-t-full bg-gradient-to-b from-[#FFD8C7] to-[#E8734A]/80 flex items-center justify-center text-[10px] font-bold text-white shadow-2xs">
+                      Arch Hero
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 pt-1.5 border-t border-[#EAE5DF]">
+                    <div className="h-4 rounded bg-white flex items-center justify-center text-[9px]">✈️</div>
+                    <div className="h-4 rounded bg-white flex items-center justify-center text-[9px]">☕</div>
+                    <div className="h-4 rounded bg-white flex items-center justify-center text-[9px]">🌿</div>
+                    <div className="h-4 rounded bg-white flex items-center justify-center text-[9px]">💼</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#E8734A]">Style 1 &bull; PDF Page 1</div>
+                  <h4 className="font-serif font-bold text-xl text-[#1E1B18] mt-0.5">Design 1 — Minimal Magazine</h4>
+                  <p className="text-xs text-[#7A7468] mt-1.5 leading-relaxed">
+                    Split hero section with signature arched photography, 4 circular category icons, Swiss Alps editorial feature card, and a 3-column curated story grid.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-[#F0ECE6] space-y-2 text-xs text-[#554E42]">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>Signature Arched Feature Photo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>4 Circular Category Navigation Badges</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>Swiss Alps Featured Story Card</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 mt-4">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectHomeVariant('design1');
+                  }}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    (formData.home_variant || 'design1') === 'design1'
+                      ? 'bg-[#E8734A] text-white shadow-sm'
+                      : 'bg-[#FAF8F5] text-[#4A453E] border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-white'
+                  }`}
+                >
+                  {(formData.home_variant || 'design1') === 'design1' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" /> Currently Active
+                    </>
+                  ) : (
+                    'Activate Design 1'
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* DESIGN 2: Clean Editorial */}
+            <div
+              onClick={() => handleSelectHomeVariant('design2')}
+              className={`bg-white rounded-3xl p-6 border-2 transition-all cursor-pointer flex flex-col justify-between shadow-2xs relative ${
+                formData.home_variant === 'design2'
+                  ? 'border-[#E8734A] ring-3 ring-[#E8734A]/15 bg-gradient-to-b from-[#FFFBF8] to-white shadow-md'
+                  : 'border-[#EAE5DF] hover:border-[#D5CFC5] hover:shadow-md'
+              }`}
+            >
+              {formData.home_variant === 'design2' && (
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#E8734A] text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                  <Check className="w-3.5 h-3.5" /> Active on Live Site
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Visual Blueprint Diagram */}
+                <div className="rounded-2xl overflow-hidden border border-[#EAE5DF] bg-[#FAF8F5] p-3.5 aspect-[16/10] flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#EAE5DF]">
+                    <div className="w-16 h-2 rounded-full bg-[#1E1B18]/70" />
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-[#E8734A]" />
+                      <div className="w-2 h-2 rounded-full bg-[#EAE5DF]" />
+                    </div>
+                  </div>
+                  {/* Full Bleed Panorama Box */}
+                  <div className="h-16 rounded-xl bg-gradient-to-r from-[#2A2622] via-[#4A423A] to-[#2A2622] text-white p-2 flex flex-col justify-end shadow-2xs my-1">
+                    <div className="w-2/3 h-2.5 rounded bg-white/90" />
+                    <div className="w-1/3 h-1.5 rounded bg-white/60 mt-1" />
+                  </div>
+                  {/* 3 Category Cards Grid */}
+                  <div className="grid grid-cols-3 gap-1 pt-1.5 border-t border-[#EAE5DF]">
+                    <div className="h-5 rounded-lg bg-white border border-[#EAE5DF] flex items-center justify-center text-[8px] font-bold text-[#4A453E]">Travel</div>
+                    <div className="h-5 rounded-lg bg-white border border-[#EAE5DF] flex items-center justify-center text-[8px] font-bold text-[#4A453E]">Lifestyle</div>
+                    <div className="h-5 rounded-lg bg-white border border-[#EAE5DF] flex items-center justify-center text-[8px] font-bold text-[#4A453E]">Health</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#E8734A]">Style 2 &bull; PDF Page 1</div>
+                  <h4 className="font-serif font-bold text-xl text-[#1E1B18] mt-0.5">Design 2 — Clean Editorial</h4>
+                  <p className="text-xs text-[#7A7468] mt-1.5 leading-relaxed">
+                    Full-bleed alpine panoramic hero header, 3 large rounded destination showcase cards, and a spacious, elegant reading flow.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-[#F0ECE6] space-y-2 text-xs text-[#554E42]">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>Full-Width Panoramic Alpine Hero</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>3 Large Rounded Destination Cards</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>Editorial Flow with Bold Typography</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 mt-4">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectHomeVariant('design2');
+                  }}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    formData.home_variant === 'design2'
+                      ? 'bg-[#E8734A] text-white shadow-sm'
+                      : 'bg-[#FAF8F5] text-[#4A453E] border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-white'
+                  }`}
+                >
+                  {formData.home_variant === 'design2' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" /> Currently Active
+                    </>
+                  ) : (
+                    'Activate Design 2'
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* DESIGN 3: Modern Card Style */}
+            <div
+              onClick={() => handleSelectHomeVariant('design3')}
+              className={`bg-white rounded-3xl p-6 border-2 transition-all cursor-pointer flex flex-col justify-between shadow-2xs relative ${
+                formData.home_variant === 'design3'
+                  ? 'border-[#E8734A] ring-3 ring-[#E8734A]/15 bg-gradient-to-b from-[#FFFBF8] to-white shadow-md'
+                  : 'border-[#EAE5DF] hover:border-[#D5CFC5] hover:shadow-md'
+              }`}
+            >
+              {formData.home_variant === 'design3' && (
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#E8734A] text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                  <Check className="w-3.5 h-3.5" /> Active on Live Site
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Visual Blueprint Diagram */}
+                <div className="rounded-2xl overflow-hidden border border-[#EAE5DF] bg-[#FAF8F5] p-3.5 aspect-[16/10] flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#EAE5DF]">
+                    <div className="w-16 h-2 rounded-full bg-[#1E1B18]/70" />
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-[#E8734A]" />
+                      <div className="w-2 h-2 rounded-full bg-[#EAE5DF]" />
+                    </div>
+                  </div>
+                  {/* Asymmetric 2-Column Mockup */}
+                  <div className="grid grid-cols-12 gap-2 my-1 items-stretch">
+                    <div className="col-span-7 h-16 rounded-xl bg-gradient-to-br from-[#1E1B18] to-[#3A332C] text-white p-2 flex flex-col justify-between shadow-2xs">
+                      <span className="text-[7px] text-[#FFB599] uppercase font-bold">Amalfi Feature</span>
+                      <div className="w-full h-2 rounded bg-white/80" />
+                    </div>
+                    <div className="col-span-5 flex flex-col gap-1 justify-between">
+                      <div className="h-7 rounded-lg bg-white border border-[#EAE5DF] p-1 flex items-center">
+                        <div className="w-3/4 h-1.5 rounded bg-[#8C8477]/40" />
+                      </div>
+                      <div className="h-7 rounded-lg bg-white border border-[#EAE5DF] p-1 flex items-center">
+                        <div className="w-2/3 h-1.5 rounded bg-[#8C8477]/40" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1.5 border-t border-[#EAE5DF] text-[8px] text-[#8C8477]">
+                    <span>Stamp Overlay</span>
+                    <span className="text-[#E8734A] font-bold">Handcrafted Ethos</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#E8734A]">Style 3 &bull; PDF Page 1</div>
+                  <h4 className="font-serif font-bold text-xl text-[#1E1B18] mt-0.5">Design 3 — Modern Card Style</h4>
+                  <p className="text-xs text-[#7A7468] mt-1.5 leading-relaxed">
+                    Asymmetric layout with dark coastal Amalfi feature card, handwritten script stamp overlay, and stacked secondary stories.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-[#F0ECE6] space-y-2 text-xs text-[#554E42]">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>Asymmetric Amalfi Feature Card</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>Handwritten Script Stamp Badge</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A] shrink-0" />
+                    <span>Stacked Secondary Editorial Cards</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 mt-4">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectHomeVariant('design3');
+                  }}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    formData.home_variant === 'design3'
+                      ? 'bg-[#E8734A] text-white shadow-sm'
+                      : 'bg-[#FAF8F5] text-[#4A453E] border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-white'
+                  }`}
+                >
+                  {formData.home_variant === 'design3' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" /> Currently Active
+                    </>
+                  ) : (
+                    'Activate Design 3'
+                  )}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* =====================================================================
           SUB-TAB 1: BRAND LOGO & IDENTITY

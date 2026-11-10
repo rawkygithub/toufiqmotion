@@ -15,8 +15,11 @@ import statsRoutes from './routes/stats.js';
 import categoriesRoutes from './routes/categories.js';
 import seoRoutes from './routes/seo.js';
 import settingsRoutes from './routes/settings.js';
+import pagesRoutes from './routes/pages.js';
+import affiliateRoutes from './routes/affiliate.js';
 import { db } from './db/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { injectHeadTagsIntoHtml } from './services/headTags.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,6 +82,10 @@ app.get('/sitemap.xml', (req, res) => {
 
     const articles = db.prepare('SELECT slug, updated_at, created_at FROM articles WHERE published = 1 AND no_index = 0').all() as any[];
     const categories = db.prepare('SELECT slug FROM categories').all() as any[];
+    let customPages: any[] = [];
+    try {
+      customPages = db.prepare("SELECT slug, updated_at, created_at FROM pages WHERE status = 'published' AND no_index = 0").all() as any[];
+    } catch {}
 
     const staticPages = [
       { loc: `${baseUrl}/`, priority: '1.0', changefreq: 'daily' },
@@ -103,6 +110,11 @@ app.get('/sitemap.xml', (req, res) => {
     for (const a of articles) {
       const lastmod = (a.updated_at || a.created_at || new Date().toISOString()).split(' ')[0];
       xml += `  <url>\n    <loc>${baseUrl}/${a.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.90</priority>\n  </url>\n`;
+    }
+
+    for (const cp of customPages) {
+      const lastmod = (cp.updated_at || cp.created_at || new Date().toISOString()).split(' ')[0];
+      xml += `  <url>\n    <loc>${baseUrl}/${cp.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.85</priority>\n  </url>\n`;
     }
 
     xml += `</urlset>`;
@@ -137,6 +149,42 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Affiliate Link Cloaker & Conversion Redirection Engine (/go/:slug)
+app.get('/go/:slug', (req, res) => {
+  const slug = (req.params.slug || '').toLowerCase().trim();
+  try {
+    const link = db.prepare('SELECT * FROM affiliate_links WHERE LOWER(slug) = ? AND is_active = 1').get(slug) as any;
+    if (link) {
+      // 1. Increment link click counter
+      db.prepare(`
+        UPDATE affiliate_links 
+        SET clicks_count = clicks_count + 1, last_clicked_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `).run(link.id);
+
+      // 2. Log click details
+      db.prepare(`
+        INSERT INTO affiliate_clicks (id, link_id, slug, merchant, referer, user_agent, ip, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(
+        'clk-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+        link.id,
+        link.slug,
+        link.merchant,
+        req.get('referer') || 'Direct Navigation',
+        req.get('user-agent') || 'Browser',
+        req.ip || '127.0.0.1'
+      );
+
+      // 3. 302 Temporary Redirect to target raw affiliate URL
+      return res.redirect(302, link.target_url);
+    }
+  } catch (err) {
+    console.error('Error redirecting cloaked affiliate link:', err);
+  }
+  return res.redirect('/');
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
@@ -148,6 +196,8 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/seo', seoRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/pages', pagesRoutes);
+app.use('/api/affiliate', affiliateRoutes);
 
 // Static frontend serving (from dist directory with long-term immutable caching for hashed chunks)
 const distDir = path.join(__dirname, '../dist');
@@ -160,14 +210,34 @@ if (fs.existsSync(distDir)) {
     }));
   }
 
+  // Set index: false so express.static does not bypass dynamic head injection on root requests
   app.use(express.static(distDir, {
-    maxAge: '1h'
+    index: false,
+    maxAge: 0,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
   }));
 
-  // Express 5 compatible SPA fallback
+  // Express 5 compatible SPA fallback with dynamic head tag injection
   app.use((req, res, next) => {
     if ((req.method === 'GET' || req.method === 'HEAD') && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-      return res.sendFile(path.join(distDir, 'index.html'));
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+      const indexPath = path.join(distDir, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        const rawHtml = fs.readFileSync(indexPath, 'utf-8');
+        const finalHtml = injectHeadTagsIntoHtml(rawHtml);
+        return res.send(finalHtml);
+      }
+      return res.status(404).send('Not Found');
     }
     next();
   });

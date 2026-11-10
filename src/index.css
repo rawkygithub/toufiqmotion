@@ -12,18 +12,19 @@
   }
 
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizeSpeed;
+    overscroll-behavior-y: none;
   }
 
   body {
     background-color: var(--theme-canvas);
-    transition: background-color 800ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 600ms cubic-bezier(0.4, 0, 0.2, 1);
     overflow-x: hidden;
   }
 
-  /* Tactile click micro-interactions for buttons and links */
+  /* Tactile click micro-interactions for buttons only - doesn't hijack scroll gestures */
   button, 
   a, 
   [role="button"],
@@ -32,16 +33,15 @@
     touch-action: manipulation;
   }
 
-  button:active:not(:disabled),
-  a:active:not([disabled]),
-  .clickable:active {
-    transform: scale(0.978);
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+  button:active:not(:disabled) {
+    transform: scale(0.98);
+    transition: transform 60ms ease-out;
   }
 
-  /* Prevent Cumulative Layout Shift for images */
+  /* Hardware-accelerated image rendering for zero scroll hitching */
   img {
-    content-visibility: auto;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 }
 

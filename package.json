@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "export:mysql": "tsx scripts/export-to-mysql.ts",
+    "build:hostinger": "tsc -b && vite build && tsx scripts/build-hostinger.ts",
     "start": "tsx server/index.ts",
     "server": "tsx server/index.ts",
     "server:dev": "tsx watch server/index.ts",

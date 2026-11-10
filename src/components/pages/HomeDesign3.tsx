@@ -66,6 +66,7 @@ export const HomeDesign3: React.FC = () => {
               <img
                 src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80"
                 alt="Toufiq Motion"
+                decoding="async"
                 className="w-10 h-10 rounded-full object-cover ring-2 ring-[#E8734A]/30"
               />
               <div className="text-xs">
@@ -81,6 +82,7 @@ export const HomeDesign3: React.FC = () => {
               <img
                 src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80"
                 alt="Explore coastal serenity"
+                decoding="async"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
@@ -123,6 +125,8 @@ export const HomeDesign3: React.FC = () => {
               <img
                 src={amalfiArticle.image}
                 alt={amalfiArticle.title}
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
@@ -163,6 +167,8 @@ export const HomeDesign3: React.FC = () => {
               <img
                 src={coffeeArticle.image}
                 alt={coffeeArticle.title}
+                loading="lazy"
+                decoding="async"
                 className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform"
               />
               <div className="space-y-2">
@@ -186,6 +192,8 @@ export const HomeDesign3: React.FC = () => {
               <img
                 src={calmerArticle.image}
                 alt={calmerArticle.title}
+                loading="lazy"
+                decoding="async"
                 className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover shrink-0 group-hover:scale-105 transition-transform"
               />
               <div className="space-y-2">

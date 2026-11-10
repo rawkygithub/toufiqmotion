@@ -89,6 +89,7 @@ export const TravelPage: React.FC = () => {
           <img
             src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80"
             alt="Lake and Alpine Mountain Panorama"
+            decoding="async"
             className="w-full h-full object-cover scale-102 hover:scale-105 transition-transform duration-1000 ease-out"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
@@ -211,6 +212,8 @@ export const TravelPage: React.FC = () => {
             <img
               src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80"
               alt="Vintage camera and passport"
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:scale-105 transition-transform duration-700"
             />
             <div className="relative z-10 space-y-3">
@@ -251,6 +254,8 @@ export const TravelPage: React.FC = () => {
                   <img
                     src={article.image}
                     alt={article.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
                   />
                   <div className="grow min-w-0">
@@ -321,6 +326,8 @@ export const TravelPage: React.FC = () => {
               <img
                 src={dest.image}
                 alt={dest.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />

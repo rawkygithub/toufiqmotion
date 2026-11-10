@@ -17,7 +17,12 @@ export const BookmarksDrawer: React.FC = () => {
   const bookmarkedArticles = ARTICLES.filter((a) => bookmarks.includes(a.id));
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[100] overflow-hidden bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setIsBookmarksDrawerOpen(false);
+      }}
+    >
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-[#FAF8F5] border-l border-[#EBE6DE] shadow-2xl flex flex-col">
           
@@ -33,10 +38,13 @@ export const BookmarksDrawer: React.FC = () => {
               </div>
             </div>
             <button
+              type="button"
               onClick={() => setIsBookmarksDrawerOpen(false)}
-              className="p-2 rounded-full hover:bg-black/5 text-[#6B6355]"
+              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F5] border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#4A453E] shadow-xs cursor-pointer"
+              title="Close"
             >
-              <X className="w-5 h-5" />
+              <span className="text-xs font-bold uppercase tracking-wider group-hover:text-white">Close</span>
+              <X className="w-3.5 h-3.5 group-hover:text-white" />
             </button>
           </div>
 

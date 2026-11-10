@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { db } from '../db/index.js';
-import { generateToken, requireAuth, AuthRequest } from '../middleware/auth.js';
+import { generateToken, requireAuth, AuthRequest, JWT_SECRET } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -53,6 +54,24 @@ router.get('/me', requireAuth, (req: AuthRequest, res) => {
   }
 
   res.json({ user });
+});
+
+// POST /api/auth/refresh
+router.post('/refresh', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing token' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true }) as any;
+    const user = db.prepare('SELECT id, name, email, role, avatar FROM users WHERE id = ?').get(decoded.id) as any;
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    const freshToken = generateToken({ id: user.id, email: user.email, role: user.role });
+    return res.json({ token: freshToken, user });
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
 export default router;

@@ -30,6 +30,8 @@ export interface Article {
   ogImage?: string;
   seoScore?: number;
   readabilityScore?: number;
+  hasAffiliateLinks?: boolean;
+  affiliateDisclosure?: string;
 }
 
 export const ARTICLES: Article[] = [

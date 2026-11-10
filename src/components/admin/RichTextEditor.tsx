@@ -28,7 +28,9 @@ import {
   Table,
   Upload,
   Clock,
-  FileText
+  FileText,
+  ShoppingBag,
+  X
 } from 'lucide-react';
 import { api } from '../../api/client';
 
@@ -64,6 +66,24 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [showTableModal, setShowTableModal] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
+
+  // Affiliate Product Review Card Dialog
+  const [showAffiliateModal, setShowAffiliateModal] = useState(false);
+  const [availableAffLinks, setAvailableAffLinks] = useState<any[]>([]);
+  const [selectedAffLinkId, setSelectedAffLinkId] = useState('');
+  const [affForm, setAffForm] = useState({
+    title: '',
+    slug: '',
+    badge: "Editor's Choice",
+    rating: 4.9,
+    price: '$199.00',
+    merchant: 'Amazon',
+    imageUrl: '',
+    description: '',
+    pros: 'Exceptional build, High battery life, Weather-sealed',
+    cons: 'Premium price point',
+    buttonText: 'Check Price on Amazon'
+  });
 
   // Sync internal innerHTML only when value changes externally (not during active typing)
   useEffect(() => {
@@ -179,6 +199,58 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleOpenAffiliateModal = async () => {
+    try {
+      const res = await api.getAffiliateLinks();
+      setAvailableAffLinks(res.links || []);
+      if (res.links && res.links.length > 0) {
+        const first = res.links[0];
+        setSelectedAffLinkId(first.id);
+        setAffForm({
+          title: first.title,
+          slug: first.slug,
+          badge: first.badge || "Editor's Choice",
+          rating: first.rating || 4.9,
+          price: first.price || '',
+          merchant: first.merchant,
+          imageUrl: first.image_url || '',
+          description: first.description || '',
+          pros: (first.pros || []).join(', '),
+          cons: (first.cons || []).join(', '),
+          buttonText: first.button_text || `Check Price on ${first.merchant}`
+        });
+      }
+    } catch {}
+    setShowAffiliateModal(true);
+  };
+
+  const insertAffiliateCard = async () => {
+    const prosArr = affForm.pros.split(',').map((p) => p.trim()).filter(Boolean);
+    const consArr = affForm.cons.split(',').map((c) => c.trim()).filter(Boolean);
+
+    try {
+      const res = await api.generateAffiliateBoxHtml({
+        title: affForm.title,
+        slug: affForm.slug,
+        badge: affForm.badge,
+        rating: affForm.rating,
+        price: affForm.price,
+        merchant: affForm.merchant,
+        imageUrl: affForm.imageUrl,
+        description: affForm.description,
+        pros: prosArr,
+        cons: consArr,
+        buttonText: affForm.buttonText
+      });
+
+      if (res.html) {
+        document.execCommand('insertHTML', false, res.html + '<p><br/></p>');
+        handleInput();
+      }
+    } catch {}
+    setShowAffiliateModal(false);
   };
 
   // Keyboard shortcut handler
@@ -354,6 +426,17 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             </button>
           </div>
 
+          {/* Standout Eye-Catching Affiliate Box Button */}
+          <button
+            type="button"
+            onClick={handleOpenAffiliateModal}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#FFF2EB] to-[#FFE5D6] hover:from-[#E8734A] hover:to-[#D56237] text-[#E8734A] hover:text-white border border-[#FFCEBA] transition-all flex items-center gap-1.5 font-bold text-xs shadow-2xs cursor-pointer group shrink-0 mr-1"
+            title="Insert High-Converting Affiliate Product Review Box"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-[#E8734A] group-hover:text-white transition-colors" />
+            <span className="font-bold tracking-tight">🛍️ Affiliate Box</span>
+          </button>
+
           {/* Alignment */}
           <div className="hidden sm:flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
@@ -506,9 +589,24 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
       {/* Link Modal */}
       {showLinkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 border border-[#EDE7DF] shadow-xl w-full max-w-sm space-y-4">
-            <h4 className="font-serif font-bold text-lg text-[#1E1B18]">Insert Link</h4>
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowLinkModal(false);
+          }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDE7DF] shadow-2xl w-full max-w-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#F0ECE6]">
+              <h4 className="font-serif font-bold text-lg text-[#1E1B18]">Insert Link</h4>
+              <button
+                type="button"
+                onClick={() => setShowLinkModal(false)}
+                className="w-7 h-7 rounded-full bg-[#FAF8F5] text-[#8C8477] hover:bg-[#E8734A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
             <form onSubmit={handleInsertLink} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-[#4A453E] block mb-1">Link URL *</label>
@@ -553,9 +651,24 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
       {/* Image Modal */}
       {showImageModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 border border-[#EDE7DF] shadow-xl w-full max-w-md space-y-4">
-            <h4 className="font-serif font-bold text-lg text-[#1E1B18]">Insert Image into Content</h4>
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowImageModal(false);
+          }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDE7DF] shadow-2xl w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#F0ECE6]">
+              <h4 className="font-serif font-bold text-lg text-[#1E1B18]">Insert Image into Content</h4>
+              <button
+                type="button"
+                onClick={() => setShowImageModal(false)}
+                className="w-7 h-7 rounded-full bg-[#FAF8F5] text-[#8C8477] hover:bg-[#E8734A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
             <form onSubmit={handleInsertImage} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-[#4A453E] block mb-1">Image URL *</label>
@@ -615,9 +728,24 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
       {/* Table Modal */}
       {showTableModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 border border-[#EDE7DF] shadow-xl w-full max-w-sm space-y-4">
-            <h4 className="font-serif font-bold text-lg text-[#1E1B18]">Insert Table</h4>
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowTableModal(false);
+          }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDE7DF] shadow-2xl w-full max-w-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#F0ECE6]">
+              <h4 className="font-serif font-bold text-lg text-[#1E1B18]">Insert Table</h4>
+              <button
+                type="button"
+                onClick={() => setShowTableModal(false)}
+                className="w-7 h-7 rounded-full bg-[#FAF8F5] text-[#8C8477] hover:bg-[#E8734A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
             <form onSubmit={handleInsertTable} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -659,6 +787,175 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Insert Affiliate Product Review Box */}
+      {showAffiliateModal && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAffiliateModal(false);
+          }}
+        >
+          <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-[#EDE7DF] max-h-[90vh] overflow-y-auto p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F0ECE6]">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-[#1E1B18]">Insert Affiliate Product Review Box</h3>
+                <p className="text-xs text-[#8C8477]">Embed a high-converting, Google-compliant product card</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAffiliateModal(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF8F5] text-[#8C8477] hover:bg-[#E8734A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {availableAffLinks.length > 0 && (
+              <div className="p-3 rounded-2xl bg-[#FFF2EB] border border-[#FFCEBA] space-y-1">
+                <label className="block text-[11px] font-bold uppercase text-[#E8734A]">
+                  Select Pre-Configured Affiliate Link
+                </label>
+                <select
+                  value={selectedAffLinkId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedAffLinkId(id);
+                    const found = availableAffLinks.find((l) => l.id === id);
+                    if (found) {
+                      setAffForm({
+                        title: found.title,
+                        slug: found.slug,
+                        badge: found.badge || "Editor's Choice",
+                        rating: found.rating || 4.9,
+                        price: found.price || '',
+                        merchant: found.merchant,
+                        imageUrl: found.image_url || '',
+                        description: found.description || '',
+                        pros: (found.pros || []).join(', '),
+                        cons: (found.cons || []).join(', '),
+                        buttonText: found.button_text || `Check Price on ${found.merchant}`
+                      });
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#E0DCD4] text-xs font-semibold text-[#1E1B18] focus:outline-hidden"
+                >
+                  {availableAffLinks.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.title} ({l.merchant} • {l.price || 'No price'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Product Title</label>
+                <input
+                  type="text"
+                  value={affForm.title}
+                  onChange={(e) => setAffForm({ ...affForm, title: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Badge</label>
+                  <input
+                    type="text"
+                    value={affForm.badge}
+                    onChange={(e) => setAffForm({ ...affForm, badge: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Rating</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={affForm.rating}
+                    onChange={(e) => setAffForm({ ...affForm, rating: Number(e.target.value) })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Price</label>
+                  <input
+                    type="text"
+                    value={affForm.price}
+                    onChange={(e) => setAffForm({ ...affForm, price: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Merchant</label>
+                  <input
+                    type="text"
+                    value={affForm.merchant}
+                    onChange={(e) => setAffForm({ ...affForm, merchant: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Product Image URL</label>
+                <input
+                  type="text"
+                  value={affForm.imageUrl}
+                  onChange={(e) => setAffForm({ ...affForm, imageUrl: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Pros (comma separated)</label>
+                <input
+                  type="text"
+                  value={affForm.pros}
+                  onChange={(e) => setAffForm({ ...affForm, pros: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-[#8C8477] mb-1">Cons (comma separated)</label>
+                <input
+                  type="text"
+                  value={affForm.cons}
+                  onChange={(e) => setAffForm({ ...affForm, cons: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-xl border border-[#E0DCD4] text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#F0ECE6]">
+              <button
+                type="button"
+                onClick={() => setShowAffiliateModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-[#8C8477] hover:text-[#1E1B18]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={insertAffiliateCard}
+                className="px-5 py-2.5 rounded-xl bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+              >
+                Insert Card into Story
+              </button>
+            </div>
           </div>
         </div>
       )}

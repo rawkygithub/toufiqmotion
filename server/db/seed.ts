@@ -501,5 +501,501 @@ export function seedDatabase() {
     }
     console.log('📸 Seeded 7 initial media library assets with WebP and unoptimized examples.');
   }
+
+  // Seed Custom Pages for the Page Builder
+  const pagesCount = db.prepare('SELECT COUNT(*) as count FROM pages').get() as { count: number };
+  if (pagesCount.count === 0) {
+    const insertPage = db.prepare(`
+      INSERT INTO pages (
+        id, title, slug, excerpt, status, featured_image, template, blocks_json,
+        meta_title, meta_description, focus_keyword, canonical_url, no_index, seo_score, is_system, views, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `);
+
+    // Page 1: Destinations 2026 Showcase
+    const destinationsBlocks = [
+      {
+        id: 'blk-hero-1',
+        type: 'hero',
+        data: {
+          title: 'Destinations & Slow Escapes 2026',
+          subtitle: 'A curated visual index of mindful travel itineraries, secluded coastal villages, and alpine retreats around the globe.',
+          badgeText: 'Curated Editorial Issue',
+          bgImage: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 45,
+          align: 'center',
+          ctaText: 'Explore Itineraries',
+          ctaLink: '#itineraries',
+          secondaryCtaText: 'View Gallery',
+          secondaryCtaLink: '#gallery'
+        }
+      },
+      {
+        id: 'blk-split-1',
+        type: 'split_feature',
+        data: {
+          badge: 'Slow Travel Philosophy',
+          heading: 'Intentional journeys over rushed bucket lists',
+          description: 'We believe travel should be an exercise in presence rather than consumption. By staying longer in fewer places, you discover the cadence of village mornings, the aroma of neighborhood bakeries, and the warmth of conversations that never happen on a whirlwind tour.',
+          image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+          imagePosition: 'right',
+          bullets: [
+            'Locally owned boutique stays & heritage guesthouses',
+            'Sunrise photography itineraries without the tourist crowds',
+            'Farm-to-table culinary notes and slow coffee roasters',
+            'Detailed seasonal packing lists and rail travel routes'
+          ],
+          ctaText: 'Read Our Travel Philosophy',
+          ctaLink: '/about'
+        }
+      },
+      {
+        id: 'blk-cards-1',
+        type: 'cards_grid',
+        data: {
+          heading: '2026 Destination Focus Areas',
+          subtitle: 'Four distinct geographical landscapes chosen for their natural stillness and cultural depth.',
+          columns: 4,
+          cards: [
+            {
+              icon: 'Compass',
+              title: 'Cycladic Coastlines',
+              description: 'Whitewashed archipelagos, hidden swimming coves, and windswept clifftop chapels in Greece.',
+              link: '/travel'
+            },
+            {
+              icon: 'Coffee',
+              title: 'Nordic Forest Cabins',
+              description: 'Warm saunas, crackling birchwood fires, and berry picking under the endless Scandinavian twilight.',
+              link: '/travel'
+            },
+            {
+              icon: 'Home',
+              title: 'Kyoto Machiya Living',
+              description: 'Centuries-old wooden townhouses, private moss gardens, and traditional morning matcha rituals.',
+              link: '/travel'
+            },
+            {
+              icon: 'Heart',
+              title: 'Alpine Sanctuary Trails',
+              description: 'High-elevation glacial lakes, wildflower meadows, and crisp mountain air across Switzerland and Italy.',
+              link: '/travel'
+            }
+          ]
+        }
+      },
+      {
+        id: 'blk-faq-1',
+        type: 'faq_accordion',
+        data: {
+          heading: 'Planning Your 2026 Journey',
+          subtitle: 'Frequently asked travel questions regarding logistics, seasons, and packing.',
+          items: [
+            {
+              question: 'When is the best time of year to visit the Mediterranean without crowds?',
+              answer: 'We recommend the shoulder seasons: mid-May to early June, or mid-September through October. Temperatures remain warm, waters are swimmable, and villages return to their tranquil local rhythm.'
+            },
+            {
+              question: 'How do you choose hotels and accommodations featured on Toufiq Motion?',
+              answer: 'Every property featured has been independently vetted for aesthetic intentionality, high architectural standards, mindful hospitality, and respect for local surroundings.'
+            },
+            {
+              question: 'What camera gear is recommended for traveling light?',
+              answer: 'A single mirrorless body paired with a fast 35mm or 50mm prime lens offers the highest optical fidelity while remaining unobtrusive and featherweight on long walking days.'
+            }
+          ]
+        }
+      },
+      {
+        id: 'blk-cta-1',
+        type: 'cta_banner',
+        data: {
+          tag: 'Weekly Dispatches',
+          heading: 'Receive our unreleased travel notes directly in your inbox',
+          description: 'Every Sunday morning, we send one concise dispatch featuring secret routes, hotel discoveries, and contemplative photography.',
+          buttonText: 'Join 4,200+ Readers',
+          buttonLink: '#newsletter',
+          variant: 'warm-terracotta'
+        }
+      }
+    ];
+
+    insertPage.run(
+      'page-destinations',
+      'Destinations & Slow Escapes 2026',
+      'destinations-2026',
+      'A curated visual index of mindful travel itineraries, secluded coastal villages, and alpine retreats around the globe.',
+      'published',
+      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
+      'custom',
+      JSON.stringify(destinationsBlocks),
+      'Destinations & Slow Escapes 2026 — Toufiq Motion Editorial',
+      'Discover curated slow travel itineraries, coastal sanctuaries, and alpine mountain retreats for 2026 with high-res photography.',
+      'destinations 2026',
+      'https://toufiqmotion.com/destinations-2026',
+      0,
+      94,
+      0,
+      342
+    );
+
+    // Page 2: Brand Partnerships & Media Kit
+    const partnershipBlocks = [
+      {
+        id: 'blk-hero-2',
+        type: 'hero',
+        data: {
+          title: 'Brand Partnerships & Media Kit',
+          subtitle: 'Connecting intentional luxury hospitality, sustainable lifestyle brands, and design creators with an engaged global audience of cultural travelers.',
+          badgeText: 'Media Kit 2026',
+          bgImage: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 50,
+          align: 'center',
+          ctaText: 'Download Media Kit (PDF)',
+          ctaLink: '#download',
+          secondaryCtaText: 'Contact Our Team',
+          secondaryCtaLink: '/work'
+        }
+      },
+      {
+        id: 'blk-cards-2',
+        type: 'cards_grid',
+        data: {
+          heading: 'Audience Demographics & Reach',
+          subtitle: 'Our readers are discerning travelers, architects, creators, and professionals with high appreciation for fine aesthetics.',
+          columns: 3,
+          cards: [
+            {
+              icon: 'Compass',
+              title: '62,000+ Monthly Readers',
+              description: 'Global reach centered across North America (42%), Western Europe (36%), and Asia-Pacific (18%).'
+            },
+            {
+              icon: 'Heart',
+              title: '4,200+ Email Subscribers',
+              description: 'Industry-leading 54.2% average open rate with high click-through engagement on curated dispatches.'
+            },
+            {
+              icon: 'Sparkles',
+              title: 'High Editorial Trust',
+              description: '98% of our community states they have visited a destination or purchased an item based on Toufiq Motion features.'
+            }
+          ]
+        }
+      },
+      {
+        id: 'blk-split-2',
+        type: 'split_feature',
+        data: {
+          badge: 'Partnership Formats',
+          heading: 'Bespoke storytelling tailored to your brand identity',
+          description: 'We do not run generic banner advertisements. Instead, we co-create bespoke editorial stories, cinematography, and atmospheric visual campaigns that highlight your brand heritage with grace and dignity.',
+          image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+          imagePosition: 'left',
+          bullets: [
+            'Cornerstone destination features with high organic Google SERP ranking',
+            'Full commercial licensing for our 4K cinematic footage & RAW photography',
+            'Dedicated sponsored newsletter takeovers with zero clutter',
+            'Experiential press trips & seasonal launch activations'
+          ],
+          ctaText: 'Start a Conversation',
+          ctaLink: '/work'
+        }
+      },
+      {
+        id: 'blk-quote-2',
+        type: 'quote',
+        data: {
+          quote: 'Toufiq Motion captured the understated soul of our boutique property like no one else. The resulting photography and editorial guide drove an immediate surge in direct bookings from high-value international guests.',
+          author: 'Elena Vance',
+          role: 'Creative Director, Villa Kalon Capri',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
+        }
+      },
+      {
+        id: 'blk-cta-2',
+        type: 'cta_banner',
+        data: {
+          tag: 'Get in Touch',
+          heading: 'Ready to create something memorable together?',
+          description: 'Send us a brief overview of your brand or property, and our editorial director will respond within 24 hours.',
+          buttonText: 'Submit Partnership Inquiry',
+          buttonLink: '/work',
+          variant: 'dark-charcoal'
+        }
+      }
+    ];
+
+    insertPage.run(
+      'page-partnerships',
+      'Brand Partnerships & Media Kit',
+      'partnerships',
+      'Connecting intentional luxury hospitality and sustainable lifestyle brands with an engaged global audience of cultural travelers.',
+      'published',
+      'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=1200&q=80',
+      'custom',
+      JSON.stringify(partnershipBlocks),
+      'Brand Partnerships & Media Kit 2026 — Toufiq Motion',
+      'Work with Toufiq Motion on luxury hospitality storytelling, bespoke photography campaigns, and cultural destination features.',
+      'media kit partnerships',
+      'https://toufiqmotion.com/partnerships',
+      0,
+      96,
+      0,
+      188
+    );
+
+    // Page 3: Frequently Asked Questions & Editorial Policy
+    const faqBlocks = [
+      {
+        id: 'blk-hero-3',
+        type: 'hero',
+        data: {
+          title: 'Frequently Asked Questions & Standards',
+          subtitle: 'Transparency regarding our editorial standards, gear recommendations, print sales, and community guidelines.',
+          badgeText: 'Help & Knowledge Center',
+          bgImage: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 40,
+          align: 'center',
+          ctaText: 'Browse Topics',
+          ctaLink: '#faq-content'
+        }
+      },
+      {
+        id: 'blk-faq-3',
+        type: 'faq_accordion',
+        data: {
+          heading: 'Editorial & Photography Questions',
+          subtitle: 'Clear answers to common questions about our journal.',
+          items: [
+            {
+              question: 'Do you accept guest contributions or freelance pitches?',
+              answer: 'Yes! We periodically accept original essays and photo-essays exploring mindful travel, culinary craft, and slow lifestyle. Writers can submit pitches via our Work With Us contact portal.'
+            },
+            {
+              question: 'How do you disclose sponsored content or affiliate links?',
+              answer: 'Full transparency is fundamental to our ethics. Any partnered stay or sponsored feature is explicitly flagged with an editorial badge at the top of the article. We never accept payment in exchange for positive reviews.'
+            },
+            {
+              question: 'Can I purchase prints of photographs featured on the website?',
+              answer: 'Archival museum-quality giclée prints are released in limited seasonal editions. Join our newsletter to receive early collector access before public releases.'
+            },
+            {
+              question: 'What cameras, lenses, and drone do you use?',
+              answer: 'We primarily shoot on full-frame Sony mirrorless systems paired with G-Master prime lenses (35mm f/1.4 and 50mm f/1.2), along with DJI Mavic 3 Cine for aerial landscapes.'
+            }
+          ]
+        }
+      },
+      {
+        id: 'blk-cta-3',
+        type: 'cta_banner',
+        data: {
+          tag: 'Need Assistance?',
+          heading: 'Have a specific inquiry not covered here?',
+          description: 'Our team is always happy to hear from fellow travelers, readers, and creatives.',
+          buttonText: 'Contact Us Directly',
+          buttonLink: '/contact',
+          variant: 'warm-terracotta'
+        }
+      }
+    ];
+
+    insertPage.run(
+      'page-faq',
+      'Frequently Asked Questions',
+      'faq',
+      'Transparency regarding our editorial standards, gear recommendations, print sales, and community guidelines.',
+      'published',
+      'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80',
+      'custom',
+      JSON.stringify(faqBlocks),
+      'Frequently Asked Questions — Toufiq Motion',
+      'Read answers to common questions regarding Toufiq Motion editorial dispatches, photography gear, and partnership guidelines.',
+      'faq editorial standards',
+      'https://toufiqmotion.com/faq',
+      0,
+      91,
+      0,
+      126
+    );
+
+    console.log('📄 Seeded 3 complete custom pages with Page Builder structured blocks.');
+  }
+
+  // Seed Affiliate Marketing Links & FTC Settings
+  const affCount = db.prepare('SELECT COUNT(*) as count FROM affiliate_links').get() as { count: number };
+  if (affCount.count === 0) {
+    const insertAffLink = db.prepare(`
+      INSERT INTO affiliate_links (
+        id, title, slug, target_url, merchant, category, price, rating, badge,
+        image_url, description, pros_json, cons_json, button_text, secondary_url,
+        secondary_button_text, clicks_count, is_active, rel_tags
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const affiliateLinks = [
+      {
+        id: 'aff-sony-a7iv',
+        title: 'Sony Alpha 7 IV Full-Frame Mirrorless Camera',
+        slug: 'sony-a7iv',
+        target_url: 'https://www.amazon.com/dp/B09JZT6YK5?tag=toufiqmotion-20',
+        merchant: 'Amazon',
+        category: 'Camera & Photography',
+        price: '$2,498.00',
+        rating: 4.9,
+        badge: "Editor's Choice",
+        image_url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80',
+        description: 'Our primary camera body for documenting high-contrast alpine expeditions and coastal sunrises with unmatched dynamic range and 33MP clarity.',
+        pros: ['Outstanding 33MP BSI sensor with 15 stops dynamic range', 'Class-leading real-time eye autofocus for human & wildlife', 'Robust weather sealing against mountain moisture & dust', '10-bit 4:2:2 internal video recording with S-Cinetone'],
+        cons: ['Menu system has a steep learning curve for beginners', 'Slightly heavier than crop-sensor alternatives (658g)'],
+        button_text: 'Check Price on Amazon',
+        secondary_url: 'https://www.bhphotovideo.com',
+        secondary_button_text: 'View on B&H Photo',
+        clicks_count: 148
+      },
+      {
+        id: 'aff-aeropress-go',
+        title: 'AeroPress Go Portable Travel Coffee Maker',
+        slug: 'aeropress-go',
+        target_url: 'https://www.amazon.com/dp/B07YVL8SF3?tag=toufiqmotion-20',
+        merchant: 'Amazon',
+        category: 'Coffee & Kitchen',
+        price: '$49.95',
+        rating: 4.9,
+        badge: 'Best Travel Gear',
+        image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
+        description: 'Compact, durable, and brews rich, smooth espresso-style concentrate anywhere from a hotel terrace to a backcountry trail.',
+        pros: ['Self-contained mug and lid packs down ultra compact', 'Brews full-bodied, low-acidity coffee in under 90 seconds', 'Virtually indestructible BPA-free polypropylene build', 'Requires zero electricity or complicated cleanup'],
+        cons: ['Makes 1-2 cups per press maximum', 'Requires proprietary micro-filters or reusable metal disk'],
+        button_text: 'View on Amazon ($49.95)',
+        secondary_url: '',
+        secondary_button_text: '',
+        clicks_count: 215
+      },
+      {
+        id: 'aff-amalfi-monastero',
+        title: 'Monastero Santa Rosa Hotel & Spa',
+        slug: 'amalfi-monastero',
+        target_url: 'https://www.booking.com/hotel/it/monastero-santa-rosa.html?aid=2026toufiq',
+        merchant: 'Booking.com',
+        category: 'Hotels & Stays',
+        price: '$1,150 / night',
+        rating: 5.0,
+        badge: 'Luxury Sanctuary',
+        image_url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80',
+        description: "A 17th-century clifftop monastery converted into one of the Mediterranean's most exclusive boutique sanctuaries with an infinity pool suspended over the sea.",
+        pros: ['Spectacular cantilevered infinity pool overlooking Salerno Gulf', 'Michelin-starred dining on historic monastery terrace', 'Sensory botanical spa with authentic ancient aromatic treatments', 'Impeccable discreet service with only 20 private guest rooms'],
+        cons: ['Bookings fill 6-8 months in advance for peak season', 'High premium nightly rates'],
+        button_text: 'Check Availability on Booking.com',
+        secondary_url: '',
+        secondary_button_text: '',
+        clicks_count: 312
+      },
+      {
+        id: 'aff-patagonia-mlc-45',
+        title: 'Patagonia Black Hole MLC 45L Duffel',
+        slug: 'patagonia-mlc-45',
+        target_url: 'https://www.patagonia.com/product/black-hole-mlc-convertible-backpack-45l/?ref=toufiqmotion',
+        merchant: 'Patagonia',
+        category: 'Travel Bags & Packs',
+        price: '$239.00',
+        rating: 4.8,
+        badge: 'Best Carry-On',
+        image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80',
+        description: 'The gold standard for one-bag travel. Meets international carry-on requirements while offering dedicated tech compartments and stowable shoulder straps.',
+        pros: ['100% recycled weather-resistant ripstop TPU film laminate', 'Converts between backpack, shoulder bag, and duffel', 'TSA-approved lie-flat laptop and document sleeve', "Backed by Patagonia's legendary Ironclad Guarantee"],
+        cons: ['Can feel bulky when packed to maximum capacity', 'High initial price tag'],
+        button_text: 'Shop at Patagonia ($239)',
+        secondary_url: '',
+        secondary_button_text: '',
+        clicks_count: 94
+      },
+      {
+        id: 'aff-leica-q3',
+        title: 'Leica Q3 28mm f/1.7 Compact Camera',
+        slug: 'leica-q3',
+        target_url: 'https://leica-camera.com/en-US/photography/cameras/q/q3?ref=toufiqmotion',
+        merchant: 'Leica',
+        category: 'Camera & Photography',
+        price: '$5,995.00',
+        rating: 5.0,
+        badge: 'Ultimate Street Camera',
+        image_url: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=600&q=80',
+        description: 'Pure photographic perfection. 60MP full-frame sensor coupled with the legendary Summilux 28mm f/1.7 ASPH prime lens.',
+        pros: ['World-class optical micro-contrast and iconic Leica colors', 'Tilting high-resolution OLED touchscreen display', '8K video capability and wireless Qi charging grip', 'Built with aircraft-grade magnesium alloy in Germany'],
+        cons: ['Fixed focal length lens cannot be swapped', 'Extremely limited retail availability and premium investment'],
+        button_text: 'View at Leica Store',
+        secondary_url: '',
+        secondary_button_text: '',
+        clicks_count: 178
+      },
+      {
+        id: 'aff-nordic-linen-sheets',
+        title: 'Dormi Pure French Organic Washed Linen Bedding',
+        slug: 'dormi-linen-sheets',
+        target_url: 'https://amazon.com/dp/B08XYZ1234?tag=toufiqmotion-20',
+        merchant: 'Amazon',
+        category: 'Mindful Home',
+        price: '$189.00',
+        rating: 4.8,
+        badge: 'Best for Rest',
+        image_url: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=600&q=80',
+        description: 'Harvested in Normandy, pre-washed for effortless drape and cloud-like softness that improves with every wash.',
+        pros: ['Naturally thermoregulating — cool in summer, cozy in winter', 'Certified OEKO-TEX Standard 100 free of harmful chemicals', 'Durable European flax that lasts for decades', 'Breathable texture enhances deep REM sleep cycles'],
+        cons: ['Natural relaxed wrinkles require embracing an effortless look', 'Slightly rougher than silk upon first unboxing'],
+        button_text: 'Check Price on Amazon',
+        secondary_url: '',
+        secondary_button_text: '',
+        clicks_count: 82
+      }
+    ];
+
+    for (const item of affiliateLinks) {
+      insertAffLink.run(
+        item.id,
+        item.title,
+        item.slug,
+        item.target_url,
+        item.merchant,
+        item.category,
+        item.price,
+        item.rating,
+        item.badge,
+        item.image_url,
+        item.description,
+        JSON.stringify(item.pros),
+        JSON.stringify(item.cons),
+        item.button_text,
+        item.secondary_url,
+        item.secondary_button_text,
+        item.clicks_count,
+        1,
+        'nofollow sponsored noopener'
+      );
+    }
+
+    // Insert sample clicks
+    const insertAffClick = db.prepare(`
+      INSERT INTO affiliate_clicks (id, link_id, slug, merchant, referer, user_agent, ip, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertAffClick.run('clk-1', 'aff-sony-a7iv', 'sony-a7iv', 'Amazon', '/photography-gear-guide', 'Mozilla/5.0 Chrome/126', '127.0.0.1', new Date(Date.now() - 3600000 * 2).toISOString());
+    insertAffClick.run('clk-2', 'aff-aeropress-go', 'aeropress-go', 'Amazon', '/the-art-of-slow-coffee', 'Mozilla/5.0 Safari/17', '127.0.0.1', new Date(Date.now() - 3600000 * 5).toISOString());
+    insertAffClick.run('clk-3', 'aff-amalfi-monastero', 'amalfi-monastero', 'Booking.com', '/the-ultimate-amalfi-coast-travel-guide', 'Mozilla/5.0 Edge/126', '127.0.0.1', new Date(Date.now() - 3600000 * 8).toISOString());
+
+    // Insert FTC Disclosure & Homepage layout settings into site_settings if not present
+    const insertSetting = db.prepare('INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)');
+    insertSetting.run('home_variant', 'design1');
+    insertSetting.run('affiliate_ftc_disclosure', 'Affiliate Disclosure: Toufiq Motion is reader-supported. When you purchase through links on our site, we may earn an affiliate commission at no extra cost to you. We only recommend gear, retreats, and goods we have genuinely tested and believe in.');
+    insertSetting.run('affiliate_disclosure_position', 'top');
+    insertSetting.run('affiliate_auto_nofollow', 'true');
+
+    // Update existing articles to mark affiliate link presence
+    db.prepare("UPDATE articles SET has_affiliate_links = 1 WHERE slug IN ('the-ultimate-amalfi-coast-travel-guide', 'the-art-of-slow-coffee-brewing')").run();
+
+    console.log('🛍️ Seeded 6 high-converting affiliate products, cloaked links, click logs, and FTC compliance settings.');
+  }
 }
 

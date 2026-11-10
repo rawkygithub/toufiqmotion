@@ -2,11 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Article, ARTICLES } from '../data/articles';
 import { api, SiteSettings, MenuItem, FooterValueProp, LegalLink } from '../api/client';
 
-export type PageId = 'home' | 'travel' | 'lifestyle' | 'health' | 'work' | 'about' | 'contact' | 'admin';
+export type PageId = 'home' | 'travel' | 'lifestyle' | 'health' | 'work' | 'about' | 'contact' | 'admin' | (string & {});
 export type HomeDesignVariant = 'design1' | 'design2' | 'design3';
 export type AmbientLightingMode = 'golden-hour' | 'morning-dew' | 'sunset-ember' | 'candlelight' | 'clean-studio';
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  home_variant: 'design1',
   logo_type: 'text',
   logo_url: '',
   logo_height: 36,
@@ -20,7 +21,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   header_cta_text: 'Work with Us',
   header_cta_link: '/work',
   menu_items_json: [
-    { id: 'm-home', label: 'Home', type: 'page', pageId: 'home', url: '/', hasDropdown: true, enabled: true },
+    { id: 'm-home', label: 'Home', type: 'page', pageId: 'home', url: '/', hasDropdown: false, enabled: true },
     { id: 'm-travel', label: 'Travel', type: 'page', pageId: 'travel', url: '/travel', hasDropdown: false, enabled: true },
     { id: 'm-lifestyle', label: 'Lifestyle', type: 'page', pageId: 'lifestyle', url: '/lifestyle', hasDropdown: false, enabled: true },
     { id: 'm-health', label: 'Health & Wellbeing', type: 'page', pageId: 'health', url: '/health', hasDropdown: false, enabled: true },
@@ -91,16 +92,19 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePage] = useState<PageId>(() => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname.replace(/^\//, '').toLowerCase();
-      const hash = window.location.hash.replace(/^#/, '').toLowerCase();
+      const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+      const hash = window.location.hash.replace(/^#\/|^#|\/+$/g, '').toLowerCase();
       const search = window.location.search.toLowerCase();
-      if (path === 'admin' || hash === 'admin' || search.includes('admin')) return 'admin';
+      if (path === 'admin' || hash === 'admin' || search.includes('admin') || path.startsWith('admin')) return 'admin';
+      if (path.startsWith('article/') || path.startsWith('post/')) return 'article';
+      if (ARTICLES.some(a => a.slug === path || a.id === path)) return 'article';
       if (path === 'travel' || hash === 'travel') return 'travel';
       if (path === 'lifestyle' || hash === 'lifestyle') return 'lifestyle';
       if (path === 'health' || hash === 'health') return 'health';
       if (path === 'work' || hash === 'work') return 'work';
       if (path === 'about' || hash === 'about') return 'about';
       if (path === 'contact' || hash === 'contact') return 'contact';
+      if (path && path !== 'index.html') return path;
     }
     return 'home';
   });
@@ -122,7 +126,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 75;
   });
   const [isLightControlOpen, setIsLightControlOpen] = useState<boolean>(false);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+      if (path.startsWith('article/') || path.startsWith('post/')) {
+        const slug = path.split('/')[1];
+        return ARTICLES.find(a => a.slug === slug || a.id === slug) || null;
+      }
+      return ARTICLES.find(a => a.slug === path || a.id === path) || null;
+    }
+    return null;
+  });
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isBookmarksDrawerOpen, setIsBookmarksDrawerOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -136,6 +150,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...prev,
           ...res.settings
         }));
+        if (res.settings.home_variant) {
+          setHomeVariant(res.settings.home_variant as HomeDesignVariant);
+        }
       }
     } catch (err) {
       console.warn('Could not load site settings from backend:', err);
@@ -200,32 +217,67 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const openArticle = (article: Article) => {
     setSelectedArticle(article);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActivePage('article');
+    if (typeof window !== 'undefined') {
+      const slug = article.slug || article.id;
+      const newPath = `/article/${slug}`;
+      if (window.location.pathname !== newPath) {
+        window.history.pushState(null, '', newPath);
+      }
+    }
+    window.scrollTo(0, 0);
   };
 
   const closeArticle = () => {
+    if (selectedArticle?.category) {
+      const cat = selectedArticle.category.toLowerCase();
+      if (cat.includes('travel')) handlePageChange('travel');
+      else if (cat.includes('lifestyle')) handlePageChange('lifestyle');
+      else if (cat.includes('health') || cat.includes('wellbeing')) handlePageChange('health');
+      else handlePageChange('home');
+    } else {
+      handlePageChange('home');
+    }
     setSelectedArticle(null);
   };
 
   // Scroll to top on page change & update browser URL
   const handlePageChange = (page: PageId) => {
-    setSelectedArticle(null);
+    if (page !== 'article') {
+      setSelectedArticle(null);
+    }
     setActivePage(page);
     if (typeof window !== 'undefined') {
-      const newPath = page === 'home' ? '/' : `/${page}`;
+      const newPath = page === 'home' ? '/' : page === 'article' && selectedArticle ? `/article/${selectedArticle.slug || selectedArticle.id}` : `/${page}`;
       if (window.location.pathname !== newPath) {
         window.history.pushState(null, '', newPath);
       }
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname.replace(/^\//, '').toLowerCase();
-      if (['admin', 'travel', 'lifestyle', 'health', 'work', 'about', 'contact'].includes(path)) {
+      const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+      if (path === 'admin' || path.startsWith('admin')) {
+        setActivePage('admin');
+      } else if (path.startsWith('article/') || path.startsWith('post/')) {
+        const slug = path.split('/')[1];
+        const art = ARTICLES.find(a => a.slug === slug || a.id === slug);
+        if (art) setSelectedArticle(art);
+        setActivePage('article');
+      } else if (ARTICLES.some(a => a.slug === path || a.id === path)) {
+        const art = ARTICLES.find(a => a.slug === path || a.id === path);
+        if (art) setSelectedArticle(art);
+        setActivePage('article');
+      } else if (['travel', 'lifestyle', 'health', 'work', 'about', 'contact'].includes(path)) {
+        setSelectedArticle(null);
+        setActivePage(path as PageId);
+      } else if (path && path !== 'index.html') {
+        setSelectedArticle(null);
         setActivePage(path as PageId);
       } else {
+        setSelectedArticle(null);
         setActivePage('home');
       }
     };

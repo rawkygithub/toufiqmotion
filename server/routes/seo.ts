@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth, AuthRequest } from '../middleware/auth.js';
+import { verifyLiveHeadTags } from '../services/headTags.js';
 
 const router = Router();
 
@@ -478,6 +479,16 @@ router.get('/search-queries', (req, res) => {
   try {
     const queries = db.prepare('SELECT * FROM seo_search_queries ORDER BY clicks DESC').all();
     res.json({ queries });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 18. GET /api/seo/verify-head (Verify live injected <head> tags)
+router.get('/verify-head', (req, res) => {
+  try {
+    const verification = verifyLiveHeadTags();
+    res.json(verification);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

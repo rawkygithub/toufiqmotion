@@ -78,6 +78,7 @@ export const LifestylePage: React.FC = () => {
           <img
             src="https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=2000&q=80"
             alt="Warm sunlit home interior and coffee"
+            decoding="async"
             className="w-full h-full object-cover scale-102 hover:scale-105 transition-transform duration-1000 ease-out"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
@@ -159,6 +160,8 @@ export const LifestylePage: React.FC = () => {
               <img
                 src={coffeeArticle.image}
                 alt={coffeeArticle.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
               />
             </div>
@@ -172,6 +175,8 @@ export const LifestylePage: React.FC = () => {
             <img
               src={habitsArticle.image}
               alt={habitsArticle.title}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
@@ -240,6 +245,8 @@ export const LifestylePage: React.FC = () => {
               <img
                 src={topic.image}
                 alt={topic.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />

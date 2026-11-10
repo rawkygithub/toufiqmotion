@@ -253,5 +253,85 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_media_mimetype ON media(mimetype);
   `);
 
-  console.log('✅ SQLite Database schema initialized with Categories, SEO, Media Library & Site Customizer tables at:', dbPath);
+  // 14. Custom Pages & Page Builder Table (with structured blocks & Yoast SEO)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pages (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      excerpt TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'published',
+      featured_image TEXT DEFAULT '',
+      template TEXT DEFAULT 'custom',
+      blocks_json TEXT NOT NULL DEFAULT '[]',
+      meta_title TEXT DEFAULT '',
+      meta_description TEXT DEFAULT '',
+      focus_keyword TEXT DEFAULT '',
+      canonical_url TEXT DEFAULT '',
+      no_index INTEGER DEFAULT 0,
+      seo_score INTEGER DEFAULT 85,
+      is_system INTEGER DEFAULT 0,
+      views INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug);
+    CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
+  `);
+
+  // 15. Affiliate Marketing Cloaked Links & Products Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS affiliate_links (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      target_url TEXT NOT NULL,
+      merchant TEXT NOT NULL DEFAULT 'Amazon',
+      category TEXT DEFAULT 'Gear',
+      price TEXT DEFAULT '',
+      rating REAL DEFAULT 4.9,
+      badge TEXT DEFAULT 'Editor''s Choice',
+      image_url TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      pros_json TEXT DEFAULT '[]',
+      cons_json TEXT DEFAULT '[]',
+      button_text TEXT DEFAULT 'Check Price on Amazon',
+      secondary_url TEXT DEFAULT '',
+      secondary_button_text TEXT DEFAULT '',
+      clicks_count INTEGER DEFAULT 0,
+      last_clicked_at DATETIME,
+      is_active INTEGER DEFAULT 1,
+      rel_tags TEXT DEFAULT 'nofollow sponsored noopener',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_affiliate_slug ON affiliate_links(slug);
+    CREATE INDEX IF NOT EXISTS idx_affiliate_merchant ON affiliate_links(merchant);
+  `);
+
+  // 16. Affiliate Clicks Analytics Log Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS affiliate_clicks (
+      id TEXT PRIMARY KEY,
+      link_id TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      merchant TEXT,
+      referer TEXT,
+      user_agent TEXT,
+      ip TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_aff_clicks_slug ON affiliate_clicks(slug);
+    CREATE INDEX IF NOT EXISTS idx_aff_clicks_created ON affiliate_clicks(created_at);
+  `);
+
+  // Safe migration for articles table for affiliate support
+  try {
+    db.exec(`ALTER TABLE articles ADD COLUMN has_affiliate_links INTEGER DEFAULT 0;`);
+  } catch {}
+  try {
+    db.exec(`ALTER TABLE articles ADD COLUMN affiliate_disclosure_custom TEXT;`);
+  } catch {}
+
+  console.log('✅ SQLite Database schema initialized with Categories, SEO, Media Library, Pages, Site Customizer & Affiliate Engine at:', dbPath);
 }

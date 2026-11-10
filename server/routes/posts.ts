@@ -37,6 +37,8 @@ function formatArticle(row: any) {
     readabilityScore: row.readability_score ?? 90,
     viewsCount: row.views_count,
     likesCount: row.likes_count,
+    hasAffiliateLinks: Boolean(row.has_affiliate_links),
+    affiliateDisclosure: row.affiliate_disclosure_custom || '',
     published: Boolean(row.published),
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -179,7 +181,9 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
     noIndex = false,
     ogImage = '',
     seoScore = 85,
-    readabilityScore = 90
+    readabilityScore = 90,
+    hasAffiliateLinks = false,
+    affiliateDisclosure = null
   } = req.body;
 
   if (!title || !category || !subcategory || !image) {
@@ -208,8 +212,8 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
       quote, tags_json, content_json, html_content,
       focus_keyword, meta_title, meta_description, canonical_url,
       no_index, og_image, seo_score, readability_score,
-      views_count, likes_count, published
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1)
+      views_count, likes_count, published, has_affiliate_links, affiliate_disclosure_custom
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)
   `);
 
   stmt.run(
@@ -237,7 +241,9 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
     noIndex ? 1 : 0,
     ogImage || image,
     seoScore,
-    readabilityScore
+    readabilityScore,
+    hasAffiliateLinks ? 1 : 0,
+    affiliateDisclosure || null
   );
 
   const created = db.prepare('SELECT * FROM articles WHERE id = ?').get(id);
@@ -265,7 +271,9 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
     noIndex,
     ogImage,
     seoScore,
-    readabilityScore
+    readabilityScore,
+    hasAffiliateLinks,
+    affiliateDisclosure
   } = req.body;
 
   const existing = db.prepare('SELECT * FROM articles WHERE id = ?').get(id) as any;
@@ -296,6 +304,8 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
       og_image = COALESCE(?, og_image),
       seo_score = COALESCE(?, seo_score),
       readability_score = COALESCE(?, readability_score),
+      has_affiliate_links = COALESCE(?, has_affiliate_links),
+      affiliate_disclosure_custom = COALESCE(?, affiliate_disclosure_custom),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).run(
@@ -317,6 +327,8 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
     ogImage,
     seoScore,
     readabilityScore,
+    hasAffiliateLinks !== undefined ? (hasAffiliateLinks ? 1 : 0) : existing.has_affiliate_links,
+    affiliateDisclosure !== undefined ? affiliateDisclosure : existing.affiliate_disclosure_custom,
     id
   );
 

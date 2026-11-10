@@ -35,7 +35,12 @@ export const SearchModal: React.FC = () => {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[100] flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setIsSearchOpen(false);
+      }}
+    >
       <div className="w-full max-w-2xl bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE8E0] overflow-hidden flex flex-col max-h-[80vh]">
         
         {/* Search Input Bar */}

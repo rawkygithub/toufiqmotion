@@ -97,6 +97,7 @@ export const HealthPage: React.FC = () => {
           <img
             src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=2000&q=80"
             alt="Person meditating at sunrise overlooking serene lake"
+            decoding="async"
             className="w-full h-full object-cover scale-102 hover:scale-105 transition-transform duration-1000 ease-out"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
@@ -183,6 +184,8 @@ export const HealthPage: React.FC = () => {
               <img
                 src={habits10Article.image}
                 alt={habits10Article.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
               />
             </div>
@@ -196,6 +199,8 @@ export const HealthPage: React.FC = () => {
             <img
               src={calmerArticle.image}
               alt={calmerArticle.title}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
@@ -329,6 +334,8 @@ export const HealthPage: React.FC = () => {
               <img
                 src={topic.image}
                 alt={topic.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />

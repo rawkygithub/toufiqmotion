@@ -7,6 +7,8 @@ import { YoastSeoPanel, SeoData } from '../admin/YoastSeoPanel';
 import { YoastSeoCommandCenter } from '../admin/YoastSeoCommandCenter';
 import { SiteAppearanceManager } from '../admin/SiteAppearanceManager';
 import { MediaLibrary } from '../admin/MediaLibrary';
+import { PagesManager } from '../admin/PagesManager';
+import { AffiliateManager } from '../admin/AffiliateManager';
 import {
   Lock,
   LogOut,
@@ -33,7 +35,12 @@ import {
   LayoutTemplate,
   Globe,
   ChevronRight,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Layers,
+  ShoppingBag,
+  X,
+  PenTool,
+  ArrowLeft
 } from 'lucide-react';
 
 export const AdminStudio: React.FC = () => {
@@ -48,7 +55,7 @@ export const AdminStudio: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Dashboard active tab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'media' | 'appearance' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'pages' | 'categories' | 'media' | 'appearance' | 'affiliate' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
 
   // Data states
@@ -70,7 +77,8 @@ export const AdminStudio: React.FC = () => {
     image: '',
     quote: '',
     tags: 'Travel, Adventure, Photography',
-    featured: false
+    featured: false,
+    hasAffiliateLinks: false
   });
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [seoData, setSeoData] = useState<SeoData>({
@@ -101,11 +109,61 @@ export const AdminStudio: React.FC = () => {
   // Upload image state
   const [uploading, setUploading] = useState(false);
 
+  // Validate token on mount and reload dashboard data
   useEffect(() => {
     if (token) {
-      loadDashboardData();
+      api.getMe(token)
+        .then((res) => {
+          setAdminUser(res.user);
+          loadDashboardData();
+        })
+        .catch(() => {
+          // Token is expired or invalid, reset cleanly to login screen
+          localStorage.removeItem('toufiq_admin_token');
+          setToken(null);
+          setAdminUser(null);
+          setLoginError('Your session has expired. Please sign in again.');
+        });
     }
   }, [token]);
+
+  // Listen for global auth:expired and auth:renewed events from API client
+  useEffect(() => {
+    const onAuthExpired = (e: any) => {
+      localStorage.removeItem('toufiq_admin_token');
+      setToken(null);
+      setAdminUser(null);
+      setLoginError(e.detail?.message || 'Your session has expired. Please sign in again to continue.');
+    };
+    const onAuthRenewed = (e: any) => {
+      if (e.detail?.token) {
+        setToken(e.detail.token);
+      }
+    };
+    window.addEventListener('auth:expired', onAuthExpired);
+    window.addEventListener('auth:renewed', onAuthRenewed);
+    return () => {
+      window.removeEventListener('auth:expired', onAuthExpired);
+      window.removeEventListener('auth:renewed', onAuthRenewed);
+    };
+  }, []);
+
+  // Close modals on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isMediaPickerOpen) {
+          setIsMediaPickerOpen(false);
+        } else if (isArticleModalOpen) {
+          setIsArticleModalOpen(false);
+        } else if (isCategoryModalOpen) {
+          setIsCategoryModalOpen(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isArticleModalOpen, isCategoryModalOpen, isMediaPickerOpen]);
 
   const loadDashboardData = async () => {
     if (!token) return;
@@ -169,7 +227,8 @@ export const AdminStudio: React.FC = () => {
       image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
       quote: '',
       tags: 'Travel, Summer, Escape',
-      featured: false
+      featured: false,
+      hasAffiliateLinks: false
     });
     setHtmlContent('<p>Begin writing your inspiring story here. You can use headings, bold text, blockquotes, callout note boxes, bullet lists, and embedded photography...</p>');
     setSeoData({
@@ -196,7 +255,8 @@ export const AdminStudio: React.FC = () => {
       image: article.image,
       quote: article.quote || '',
       tags: article.tags.join(', '),
-      featured: Boolean(article.featured)
+      featured: Boolean(article.featured),
+      hasAffiliateLinks: Boolean(article.hasAffiliateLinks || article.htmlContent?.includes('/go/') || article.htmlContent?.includes('affiliate-product-card'))
     });
     setHtmlContent(article.htmlContent || article.content.map(p => `<p>${p}</p>`).join(''));
     setSeoData({
@@ -233,6 +293,7 @@ export const AdminStudio: React.FC = () => {
         image: articleForm.image,
         quote: articleForm.quote || undefined,
         featured: articleForm.featured,
+        hasAffiliateLinks: Boolean(articleForm.hasAffiliateLinks || htmlContent.includes('/go/') || htmlContent.includes('affiliate-product-card')),
         tags: articleForm.tags.split(',').map((t) => t.trim()).filter(Boolean),
         content: paragraphs.length > 0 ? paragraphs : [articleForm.excerpt],
         htmlContent,
@@ -375,11 +436,24 @@ export const AdminStudio: React.FC = () => {
     a.click();
   };
 
-  // If not logged in, show Login Form
+  // If not logged in, show dedicated Studio Login screen with Return to Live Blog
   if (!token) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-[#EDE7DF] shadow-xl space-y-6">
+      <div className="min-h-screen bg-[#F6F4EE] flex flex-col justify-between py-8 px-4 font-sans">
+        {/* Top Minimal Navigation */}
+        <div className="max-w-md w-full mx-auto flex items-center justify-between pb-4">
+          <button
+            onClick={() => setActivePage('home')}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#6A6356] hover:text-[#E8734A] transition-colors cursor-pointer group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <span>&larr; Back to Live Blog</span>
+          </button>
+          <span className="text-[11px] font-mono font-bold text-[#8C8477]">Toufiq Studio</span>
+        </div>
+
+        {/* Center Studio Login Card */}
+        <div className="w-full max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 border border-[#EDE7DF] shadow-xl space-y-6">
           <div className="text-center space-y-2">
             <div className="w-12 h-12 rounded-2xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center mx-auto shadow-xs">
               <Lock className="w-6 h-6" />
@@ -425,7 +499,7 @@ export const AdminStudio: React.FC = () => {
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {loginLoading ? 'Authenticating...' : <>Enter Studio <ArrowRight className="w-4 h-4" /></>}
             </button>
@@ -438,6 +512,11 @@ export const AdminStudio: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Bottom subtle copyright */}
+        <div className="text-center py-4 text-[11px] text-[#A09A8F]">
+          Toufiq Motion &bull; Secure Editorial CMS &bull; Node.js &amp; SQLite
+        </div>
       </div>
     );
   }
@@ -446,38 +525,99 @@ export const AdminStudio: React.FC = () => {
   const currentSelectedCategory = categories.find(c => c.name === articleForm.category);
 
   return (
-    <div className="pt-2 pb-16">
+    <div className="min-h-screen bg-[#F6F4EE] flex flex-col font-sans">
       
-      {/* Mobile Selector for < lg screens */}
-      <div className="lg:hidden mb-6 bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-xs flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold text-sm">
-            ✨
+      {/* 1. DEDICATED BACKEND STUDIO TOP BAR */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EAE5DF] h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs">
+        <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FFF2EB] to-[#FFE5D6] text-[#E8734A] flex items-center justify-center font-bold text-lg shadow-2xs border border-[#FFCEBA]/60">
+              ✨
+            </div>
+            <div>
+              <span className="font-serif font-bold text-base text-[#1E1B18] tracking-tight">
+                Toufiq Studio
+              </span>
+              <span className="hidden sm:inline-block text-[10px] uppercase tracking-wider font-semibold text-[#8C8477] ml-2 px-2 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EDE7DF]">
+                CMS 2026
+              </span>
+            </div>
           </div>
-          <div>
-            <div className="font-serif font-bold text-sm text-[#1E1B18]">Studio Menu</div>
-            <div className="text-[10px] text-[#8C8477]">Switch panel section</div>
-          </div>
-        </div>
-        <select
-          value={activeTab}
-          onChange={(e) => setActiveTab(e.target.value as any)}
-          className="px-3 py-2 rounded-xl border border-[#E0DCD4] bg-[#FAF8F5] text-xs font-semibold text-[#1E1B18] focus:outline-hidden focus:border-[#E8734A]"
-        >
-          <option value="articles">Articles ({articles.length})</option>
-          <option value="categories">Categories &amp; Tags ({categories.length})</option>
-          <option value="media">Media Library &amp; WebP Tool</option>
-          <option value="appearance">Header, Logo &amp; Footer (Appearance)</option>
-          <option value="seo_center">SEO Command Center (Yoast Pro)</option>
-          <option value="subscribers">Newsletter ({subscribers.length})</option>
-          <option value="inquiries">Inquiries &amp; Leads ({inquiries.length})</option>
-        </select>
-      </div>
 
-      <div className="flex flex-col lg:flex-row items-start gap-8">
+          <div className="h-4 w-px bg-[#EAE5DF] hidden sm:block" />
+
+          {/* Switch to Live Blog */}
+          <button
+            onClick={() => setActivePage('home')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F5] hover:bg-[#FFF2EB] text-[#5A5348] hover:text-[#E8734A] border border-[#EDE7DF] hover:border-[#E8734A]/40 text-xs font-semibold transition-all cursor-pointer group"
+            title="View public live blog"
+          >
+            <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            <span>View Live Blog</span>
+          </button>
+        </div>
+
+        {/* Right Admin Controls */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openNewArticleModal}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-xs hover:shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Write Story</span>
+          </button>
+
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FAF8F5] border border-[#EDE7DF] text-xs text-[#5A5348]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-medium font-mono text-[11px] text-[#2D2A26]">{loginEmail || 'admin@toufiqmotion.com'}</span>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-rose-50 text-[#8C8477] hover:text-rose-600 border border-[#E0DCD4] hover:border-rose-200 text-xs font-semibold transition-all cursor-pointer"
+            title="Sign out of Studio"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 2. MAIN STUDIO WORKSPACE */}
+      <div className="flex-1 max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        {/* Left Sidebar Navigation */}
-        <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-24 space-y-4">
+        {/* Mobile Selector for < lg screens */}
+        <div className="lg:hidden mb-6 bg-white rounded-2xl p-4 border border-[#EDE7DF] shadow-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold text-sm">
+              ✨
+            </div>
+            <div>
+              <div className="font-serif font-bold text-sm text-[#1E1B18]">Studio Menu</div>
+              <div className="text-[10px] text-[#8C8477]">Switch panel section</div>
+            </div>
+          </div>
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as any)}
+            className="px-3 py-2 rounded-xl border border-[#E0DCD4] bg-[#FAF8F5] text-xs font-semibold text-[#1E1B18] focus:outline-hidden focus:border-[#E8734A]"
+          >
+            <option value="articles">Articles ({articles.length})</option>
+            <option value="pages">Pages &amp; Builder</option>
+            <option value="categories">Categories &amp; Tags ({categories.length})</option>
+            <option value="media">Media Library &amp; WebP Tool</option>
+            <option value="appearance">Homepage Layout &amp; Identity (Appearance)</option>
+            <option value="affiliate">Affiliate Marketing Hub (/go/)</option>
+            <option value="seo_center">SEO Command Center (Yoast Pro)</option>
+            <option value="subscribers">Newsletter ({subscribers.length})</option>
+            <option value="inquiries">Inquiries &amp; Leads ({inquiries.length})</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col lg:flex-row items-start gap-8">
+          
+          {/* Left Sidebar Navigation */}
+          <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-20 space-y-4">
           
           {/* Studio Brand & Quick Action Card */}
           <div className="bg-white rounded-3xl p-5 border border-[#EDE7DF] shadow-xs space-y-4">
@@ -552,6 +692,27 @@ export const AdminStudio: React.FC = () => {
                 </button>
 
                 <button
+                  onClick={() => setActiveTab('pages')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'pages'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Layers className={`w-4 h-4 ${activeTab === 'pages' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Pages &amp; Builder</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === 'pages'
+                      ? 'bg-white text-[#C85228] border border-[#FFCEBA]'
+                      : 'bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]'
+                  }`}>
+                    Builder
+                  </span>
+                </button>
+
+                <button
                   onClick={() => setActiveTab('categories')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
                     activeTab === 'categories'
@@ -607,7 +768,7 @@ export const AdminStudio: React.FC = () => {
                 >
                   <div className="flex items-center gap-2.5">
                     <LayoutTemplate className={`w-4 h-4 ${activeTab === 'appearance' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
-                    <span>Header, Logo &amp; Footer</span>
+                    <span>Homepage Layout &amp; Identity</span>
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF2EB] text-[#E8734A] border border-[#FFCEBA]">
                     Appearance
@@ -616,12 +777,29 @@ export const AdminStudio: React.FC = () => {
               </nav>
             </div>
 
-            {/* Group 3: SEO & Growth */}
+            {/* Group 3: Monetization & Growth */}
             <div className="pt-2 border-t border-[#F5F2EB]">
               <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A39B8E]">
-                SEO &amp; Growth
+                Monetization &amp; SEO
               </div>
               <nav className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('affiliate')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'affiliate'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShoppingBag className={`w-4 h-4 ${activeTab === 'affiliate' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Affiliate Hub</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]">
+                    /go/ Links
+                  </span>
+                </button>
+
                 <button
                   onClick={() => setActiveTab('seo_center')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
@@ -735,7 +913,7 @@ export const AdminStudio: React.FC = () => {
                   {activeTab === 'articles' && 'Editorial Post Archive'}
                   {activeTab === 'categories' && 'Taxonomy Structure'}
                   {activeTab === 'media' && 'Digital Assets & Optimization'}
-                  {activeTab === 'appearance' && 'Brand & Customizer'}
+                  {activeTab === 'appearance' && 'Homepage Layout & Brand Identity'}
                   {activeTab === 'seo_center' && 'Google SERP & Optimization'}
                   {activeTab === 'subscribers' && 'Newsletter Audience'}
                   {activeTab === 'inquiries' && 'Partnership Inquiries'}
@@ -749,7 +927,7 @@ export const AdminStudio: React.FC = () => {
                 {activeTab === 'articles' && 'All Blog Articles'}
                 {activeTab === 'categories' && 'Categories & Taxonomies'}
                 {activeTab === 'media' && 'Media Library & WebP Optimizer'}
-                {activeTab === 'appearance' && 'Header, Logo & Footer Studio'}
+                {activeTab === 'appearance' && 'Homepage Layout & Identity Studio'}
                 {activeTab === 'seo_center' && 'Yoast SEO Command Center'}
                 {activeTab === 'subscribers' && 'Newsletter Subscribers'}
                 {activeTab === 'inquiries' && 'Contact Inquiries & Leads'}
@@ -758,7 +936,7 @@ export const AdminStudio: React.FC = () => {
                 {activeTab === 'articles' && 'Manage drafts, edit stories with the complete Rich Text Editor, inspect SEO scores, and publish new articles.'}
                 {activeTab === 'categories' && 'Create and organize blog categories, subcategory tags, and icons dynamically stored in SQLite.'}
                 {activeTab === 'media' && 'Manage photos, inspect SEO image alt texts, and compress images to WebP under 250 KB.'}
-                {activeTab === 'appearance' && 'Upload brand logos, customize top announcement banner, navigation menu items, and footer legal credits.'}
+                {activeTab === 'appearance' && 'Select the active homepage design (Minimal Magazine, Clean Editorial, or Modern Card), customize brand logo, announcement banner, and footer.'}
                 {activeTab === 'seo_center' && 'Real-time on-page SEO algorithms, Google SERP previews, JSON-LD schema graphs, and 301 redirects.'}
                 {activeTab === 'subscribers' && 'Export and monitor email subscribers collected from editorial banners across the blog.'}
                 {activeTab === 'inquiries' && 'Manage incoming collaboration pitches, sponsorship proposals, and reader messages.'}
@@ -1126,6 +1304,11 @@ export const AdminStudio: React.FC = () => {
         />
       )}
 
+      {/* Tab: Pages Builder & Maintenance */}
+      {activeTab === 'pages' && (
+        <PagesManager token={token} />
+      )}
+
       {/* Tab 6: Site Appearance (Logo, Header, Menu, Footer & Credits) */}
       {activeTab === 'appearance' && (
         <SiteAppearanceManager token={token} />
@@ -1136,32 +1319,60 @@ export const AdminStudio: React.FC = () => {
         <MediaLibrary token={token} />
       )}
 
+      {/* Tab: Affiliate Marketing Command Center */}
+      {activeTab === 'affiliate' && (
+        <AffiliateManager token={token} />
+      )}
+
         </div>
       </div>
+    </div>
 
       {/* --- MODAL 1: WRITE / EDIT ARTICLE WITH RICH TEXT EDITOR & YOAST SEO PREMIUM --- */}
       {isArticleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-5xl bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] max-h-[95vh] overflow-y-auto p-6 sm:p-10 space-y-8">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsArticleModalOpen(false);
+          }}
+        >
+          <div className="w-full max-w-5xl max-h-[94vh] bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden relative">
             
-            <div className="flex items-center justify-between pb-4 border-b border-[#EAE5DF]">
-              <div>
-                <h3 className="font-serif font-bold text-2xl sm:text-3xl text-[#1E1B18]">
-                  {editingArticleId ? 'Edit Article' : 'Write Complete Editorial Story'}
-                </h3>
-                <p className="text-xs text-[#8C8477] mt-0.5">
-                  Complete Rich Text Editor + Yoast SEO Premium Analysis Suite
-                </p>
+            {/* Pinned Top Bar: Article Context & Prominent Close Button */}
+            <div className="px-5 sm:px-8 py-3.5 sm:py-4 bg-white/95 backdrop-blur-md border-b border-[#EAE5DF] flex items-center justify-between shrink-0 z-20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold shrink-0">
+                  <PenTool className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#1E1B18] leading-tight">
+                    {editingArticleId ? 'Edit Article' : 'Write Complete Editorial Story'}
+                  </h3>
+                  <p className="text-xs text-[#8C8477] hidden sm:block">
+                    Complete Rich Text Editor + Yoast SEO Premium Analysis Suite
+                  </p>
+                </div>
               </div>
+
+              {/* Prominent High-Contrast Close Button */}
               <button
+                type="button"
                 onClick={() => setIsArticleModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white border border-[#E0DCD4] hover:bg-black/5 flex items-center justify-center text-[#8C8477] text-sm"
+                className="group flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#FAF8F5] border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all shadow-xs cursor-pointer"
+                title="Close editor (Esc)"
               >
-                ✕
+                <span className="text-xs font-bold uppercase tracking-wider text-[#4A453E] group-hover:text-white transition-colors">
+                  Close
+                </span>
+                <div className="w-5 h-5 rounded-full bg-white group-hover:bg-white/20 flex items-center justify-center transition-colors">
+                  <X className="w-3.5 h-3.5 text-[#6A6356] group-hover:text-white transition-colors" />
+                </div>
               </button>
             </div>
 
-            <form onSubmit={handleSaveArticle} className="space-y-8">
+            {/* Scrollable Form Body with Pinned Bottom Action Bar */}
+            <form onSubmit={handleSaveArticle} className="flex flex-col grow overflow-hidden">
+              <div className="overflow-y-auto p-5 sm:p-8 md:p-10 space-y-8 grow">
               
               {/* Basic Article Meta */}
               <div className="bg-white rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-4">
@@ -1317,17 +1528,33 @@ export const AdminStudio: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="featured-check"
-                    checked={articleForm.featured}
-                    onChange={(e) => setArticleForm({ ...articleForm, featured: e.target.checked })}
-                    className="w-4 h-4 accent-[#E8734A]"
-                  />
-                  <label htmlFor="featured-check" className="text-xs font-semibold text-[#4A453E] cursor-pointer">
-                    Highlight as Featured Story on Homepage
-                  </label>
+                <div className="flex flex-wrap items-center gap-6 pt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="featured-check"
+                      checked={articleForm.featured}
+                      onChange={(e) => setArticleForm({ ...articleForm, featured: e.target.checked })}
+                      className="w-4 h-4 accent-[#E8734A]"
+                    />
+                    <label htmlFor="featured-check" className="text-xs font-semibold text-[#4A453E] cursor-pointer">
+                      Highlight as Featured Story on Homepage
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="affiliate-check"
+                      checked={articleForm.hasAffiliateLinks}
+                      onChange={(e) => setArticleForm({ ...articleForm, hasAffiliateLinks: e.target.checked })}
+                      className="w-4 h-4 accent-[#E8734A]"
+                    />
+                    <label htmlFor="affiliate-check" className="text-xs font-semibold text-[#4A453E] cursor-pointer flex items-center gap-1.5">
+                      <span>🛍️ Contains Affiliate Links</span>
+                      <span className="text-[10px] text-[#8C8477]">(Auto-renders FTC disclosure &amp; sponsored tags)</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -1364,47 +1591,57 @@ export const AdminStudio: React.FC = () => {
                   category={articleForm.category}
                 />
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#EAE5DF]">
-                <button
-                  type="button"
-                  onClick={() => setIsArticleModalOpen(false)}
-                  className="px-6 py-2.5 rounded-full text-xs font-bold text-[#6A6357] hover:text-[#1E1B18]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSaving}
-                  className="px-8 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
-                >
-                  {formSaving ? 'Publishing...' : (editingArticleId ? 'Update Article & SEO' : 'Publish Story')}
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL 2: CREATE / EDIT CATEGORY (Requirement 1) --- */}
-      {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-[#EAE5DF]">
-              <h3 className="font-serif font-bold text-2xl text-[#1E1B18]">
-                {editingCategoryId ? 'Edit Category' : 'Create New Category'}
-              </h3>
+            {/* Pinned Bottom Action Bar */}
+            <div className="px-5 sm:px-8 py-3.5 bg-white/95 backdrop-blur-md border-t border-[#EAE5DF] flex items-center justify-between shrink-0 z-20">
               <button
-                onClick={() => setIsCategoryModalOpen(false)}
-                className="text-[#8C8477] hover:text-[#1E1B18] text-sm"
+                type="button"
+                onClick={() => setIsArticleModalOpen(false)}
+                className="px-5 py-2.5 rounded-full text-xs font-bold text-[#6A6357] hover:text-[#1E1B18] hover:bg-[#FAF8F5] border border-transparent hover:border-[#E0DCD4] transition-all cursor-pointer"
               >
-                ✕
+                Cancel & Close
+              </button>
+              <button
+                type="submit"
+                disabled={formSaving}
+                className="px-7 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {formSaving ? 'Saving...' : (editingArticleId ? 'Update Article & SEO' : 'Publish Story')}
               </button>
             </div>
 
-            <form onSubmit={handleSaveCategory} className="space-y-4">
+          </form>
+        </div>
+      </div>
+    )}
+
+      {/* --- MODAL 2: CREATE / EDIT CATEGORY (Requirement 1) --- */}
+      {isCategoryModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsCategoryModalOpen(false);
+          }}
+        >
+          <div className="w-full max-w-md bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-[#EAE5DF] flex items-center justify-between shrink-0">
+              <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#1E1B18]">
+                {editingCategoryId ? 'Edit Category' : 'Create New Category'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="group flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all cursor-pointer shadow-xs"
+                title="Close"
+              >
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#4A453E] group-hover:text-white">Close</span>
+                <X className="w-3.5 h-3.5 text-[#6A6356] group-hover:text-white" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <form onSubmit={handleSaveCategory} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-[#4A453E] block mb-1">Category Name *</label>
                 <input
@@ -1472,53 +1709,66 @@ export const AdminStudio: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-5 py-2 rounded-full text-xs font-bold text-[#6A6357]"
+                  className="px-5 py-2 rounded-full text-xs font-bold text-[#6A6357] hover:text-[#1E1B18] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={categorySaving}
-                  className="px-6 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all"
+                  className="px-6 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
                 >
                   {categorySaving ? 'Saving...' : (editingCategoryId ? 'Update Category' : 'Create Category')}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* --- MODAL 3: MEDIA LIBRARY PICKER (Select WebP optimized asset directly into article) --- */}
       {isMediaPickerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-5xl bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] max-h-[92vh] overflow-y-auto p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-[#EAE5DF]">
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsMediaPickerOpen(false);
+          }}
+        >
+          <div className="w-full max-w-5xl max-h-[92vh] bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden">
+            <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-[#EAE5DF] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold">
                   <ImageIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-serif font-bold text-2xl text-[#1E1B18]">Select from Media Library</h3>
+                  <h3 className="font-serif font-bold text-xl text-[#1E1B18]">Select from Media Library</h3>
                   <p className="text-xs text-[#8C8477]">Click any WebP image to select as cover, or upload and auto-compress new files.</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsMediaPickerOpen(false)}
-                className="w-8 h-8 rounded-full bg-white border border-[#E0DCD4] hover:bg-black/5 flex items-center justify-center text-[#8C8477] text-sm"
+                className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#4A453E] shadow-xs cursor-pointer"
+                title="Close"
               >
-                ✕
+                <span className="text-xs font-bold uppercase tracking-wider group-hover:text-white">Close</span>
+                <div className="w-5 h-5 rounded-full bg-[#FAF8F5] group-hover:bg-white/20 flex items-center justify-center">
+                  <X className="w-3.5 h-3.5 group-hover:text-white" />
+                </div>
               </button>
             </div>
 
-            <MediaLibrary
-              token={token}
-              selectionMode={true}
-              onSelectImage={(url) => {
-                setArticleForm((prev) => ({ ...prev, image: url }));
-                setIsMediaPickerOpen(false);
-              }}
-            />
+            <div className="overflow-y-auto p-6 grow">
+              <MediaLibrary
+                token={token}
+                selectionMode={true}
+                onSelectImage={(url) => {
+                  setArticleForm((prev) => ({ ...prev, image: url }));
+                  setIsMediaPickerOpen(false);
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

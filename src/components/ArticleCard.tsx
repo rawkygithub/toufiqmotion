@@ -39,6 +39,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <img
           src={article.image}
           alt={article.title}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
         />
         {/* Soft dark gradient overlay for effortless readability */}
@@ -97,6 +99,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <img
             src={article.image}
             alt={article.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           />
           <button
@@ -153,6 +157,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             alt={article.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             loading="lazy"
+            decoding="async"
           />
           <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase shadow-xs backdrop-blur-md border ${getCategoryColor(article.category)}`}>
             {article.subcategory || article.category}

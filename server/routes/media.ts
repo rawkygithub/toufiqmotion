@@ -93,9 +93,10 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/media/upload (Multi-file or single upload with optional auto-WebP optimization)
-router.post('/upload', requireAuth, upload.array('files', 20), async (req: any, res) => {
+router.post('/upload', requireAuth, upload.fields([{ name: 'files', maxCount: 20 }, { name: 'files[]', maxCount: 20 }]), async (req: any, res) => {
   try {
-    const files = req.files as Express.Multer.File[];
+    const filesObj = (req.files || {}) as Record<string, Express.Multer.File[]>;
+    const files = [...(filesObj['files'] || []), ...(filesObj['files[]'] || [])];
     if (!files || files.length === 0) {
       return res.status(400).json({ error: 'No files provided for upload' });
     }

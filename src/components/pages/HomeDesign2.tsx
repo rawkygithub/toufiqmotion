@@ -36,6 +36,7 @@ export const HomeDesign2: React.FC = () => {
           <img
             src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80"
             alt="Scenic mountain lake with traveler"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover scale-102 hover:scale-105 transition-transform duration-1000 ease-out"
           />
           {/* Subtle Ambient Lighting Gradient Overlay */}
@@ -92,6 +93,8 @@ export const HomeDesign2: React.FC = () => {
             <img
               src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80"
               alt="Travel category"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -116,6 +119,8 @@ export const HomeDesign2: React.FC = () => {
             <img
               src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80"
               alt="Lifestyle category"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -140,6 +145,8 @@ export const HomeDesign2: React.FC = () => {
             <img
               src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80"
               alt="Health & Wellbeing category"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />

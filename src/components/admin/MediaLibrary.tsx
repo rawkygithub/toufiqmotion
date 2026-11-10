@@ -110,7 +110,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       showToast(`Uploaded ${res.media.length} image${res.media.length > 1 ? 's' : ''} successfully!`);
       loadMedia();
     } catch (err: any) {
-      alert(err.message || 'Upload failed');
+      showToast(err.message || 'Upload failed');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -159,7 +159,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       }
       loadMedia();
     } catch (err: any) {
-      alert(err.message || 'Optimization failed');
+      showToast(err.message || 'Optimization failed');
     } finally {
       setIsOptimizingItem(false);
     }
@@ -175,7 +175,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       showToast(res.message);
       loadMedia();
     } catch (err: any) {
-      alert(err.message || 'Batch optimization failed');
+      showToast(err.message || 'Batch optimization failed');
     } finally {
       setBatchLoading(false);
     }
@@ -192,7 +192,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       setIsEditingMeta(false);
       showToast('Image SEO metadata updated!');
     } catch (err: any) {
-      alert(err.message || 'Failed to update metadata');
+      showToast(err.message || 'Failed to update metadata');
     } finally {
       setMetaSaving(false);
     }
@@ -209,7 +209,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       showToast('Media item deleted');
       loadMedia();
     } catch (err: any) {
-      alert(err.message || 'Delete failed');
+      showToast(err.message || 'Delete failed');
     }
   };
 
@@ -224,7 +224,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       const res = await api.optimizeImageTool(file, false);
       setToolResult(res);
     } catch (err: any) {
-      alert(err.message || 'Optimization tool failed');
+      showToast(err.message || 'Optimization tool failed');
     } finally {
       setToolLoading(false);
     }
@@ -240,7 +240,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       showToast('Optimized WebP image saved to Media Library!');
       loadMedia();
     } catch (err: any) {
-      alert(err.message || 'Save failed');
+      showToast(err.message || 'Save failed');
     } finally {
       setToolLoading(false);
     }
@@ -259,7 +259,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1E1B18] text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 text-xs animate-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-6 right-6 z-[200] bg-[#1E1B18] text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 text-xs animate-in slide-in-from-bottom-3 duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="font-medium">{toastMessage}</span>
         </div>
@@ -920,11 +920,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
       {/* MEDIA DETAILS / INSPECTOR MODAL                                           */}
       {/* ========================================================================= */}
       {selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-[#EDE7DF] max-h-[95vh] overflow-y-auto p-6 sm:p-8 space-y-6">
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedItem(null);
+          }}
+        >
+          <div className="w-full max-w-4xl max-h-[94vh] bg-white rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-[#F0ECE6]">
+            <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-[#F0ECE6] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center">
                   <ImageIcon className="w-5 h-5" />
@@ -938,12 +943,17 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               </div>
 
               <button
+                type="button"
                 onClick={() => setSelectedItem(null)}
-                className="p-2 rounded-full hover:bg-[#FAF8F5] text-[#8C8477] hover:text-[#1E1B18] transition-colors"
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F5] border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#4A453E] shadow-xs cursor-pointer"
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider group-hover:text-white">Close</span>
+                <X className="w-3.5 h-3.5 group-hover:text-white" />
               </button>
             </div>
+
+            <div className="overflow-y-auto p-6 sm:p-8 grow space-y-6">
 
             {/* Modal Grid: Preview & Metadata Editor */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -1125,6 +1135,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 
             </div>
 
+            </div>
           </div>
         </div>
       )}

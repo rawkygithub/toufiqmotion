@@ -79,6 +79,7 @@ export const HomeDesign1: React.FC = () => {
               <img
                 src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1000&q=80"
                 alt="Traveler exploring scenic mountains"
+                decoding="async"
                 className="w-full h-full object-cover scale-102 hover:scale-106 transition-transform duration-1000 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
@@ -199,6 +200,8 @@ export const HomeDesign1: React.FC = () => {
             <img
               src="https://images.unsplash.com/photo-1491557345352-5929e343eb89?auto=format&fit=crop&w=1200&q=80"
               alt="Swiss Alps weekend landscape"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             />
             <span className="absolute top-4 left-4 px-3.5 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-white/90 backdrop-blur-md text-[#D86237] border border-[#FBD8C8]">

@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+hostinger-deploy
+php-backend/api/config/config.local.php
 *.local
 
 # Editor directories and files
@@ -28,3 +30,7 @@ data/*.db-wal
 data/*.db-shm
 uploads/*
 !uploads/.gitkeep
+!uploads/blog-1794224055316-355265238.png
+!uploads/mediterranean-summer-produce-1794223975921.webp
+!uploads/photo-1570077188670-e3a8d69ac5ff-1793434718782.webp
+!uploads/santorini-oia-sunset-1793434761342.webp

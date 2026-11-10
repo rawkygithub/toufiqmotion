@@ -41,12 +41,12 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
   token,
   onNavigateToPost
 }) => {
-  // Navigation tabs (Matches User Screenshot: 6 Tabs)
+  // Navigation tabs (6 Tabs)
   const [activeTab, setActiveTab] = useState<
     'audit' | 'redirects' | 'global_serp' | 'schema' | 'robots_sitemap' | 'search_console'
   >('audit');
 
-  // Overview stats (4 KPI Cards in Screenshot)
+  // Overview stats (4 KPI Cards)
   const [overview, setOverview] = useState<{
     siteSeoHealth: number;
     grade: string;
@@ -63,14 +63,22 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     breakdown: { articles: 15, categories: 4, staticPages: 5 },
     activeRedirectsCount: 11,
     crawlErrorsCount: 8,
-    sitemapUrl: 'http://localhost:3000/sitemap.xml',
+    sitemapUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/sitemap.xml`,
     lastPingedAt: new Date().toISOString()
   });
 
-  // Notification Banner (Matches User Screenshot: Green Notification)
-  const [notification, setNotification] = useState<string | null>(
-    'Search engines notified! Dynamic sitemap: http://localhost:3000/sitemap.xml'
-  );
+  // Notification Banner
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>({
+    message: `Search engines notified! Dynamic sitemap: ${typeof window !== 'undefined' ? window.location.origin : ''}/sitemap.xml`,
+    type: 'success'
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification((curr) => (curr?.message === message ? null : curr));
+    }, 4500);
+  };
   const [isPinging, setIsPinging] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -105,52 +113,58 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
   });
 
   // Tab 3: Global SERP state
-  const [serpPreviewMode, setSerpPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [serpSettings, setSerpSettings] = useState({
-    site_title_format: '%title% — Toufiq Motion Editorial',
-    meta_description:
-      'Toufiq Motion is an editorial lifestyle, mindful wellbeing and world travel journal with luminous photography and thoughtful stories.',
+    site_title_format: '%title% — Toufiq Motion Studio',
+    meta_description: 'An editorial visual journal documenting landscape photography, travel narratives, and slow living.',
     canonical_domain: 'https://toufiqmotion.com',
-    og_image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
-    twitter_card: 'summary_large_image',
-    google_site_verification: 'google-site-verification=toufiqmotion2026seo',
-    bing_site_verification: 'bing-verification-toufiq2026'
+    og_image: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?auto=format&fit=crop&w=1200&q=80'
   });
+  const [serpPreviewMode, setSerpPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [isSavingSerp, setIsSavingSerp] = useState(false);
 
-  // Tab 4: Schema Knowledge Graph state
+  // Tab 4: Schema.org Graph state
   const [schemaSettings, setSchemaSettings] = useState({
     knowledge_type: 'Organization',
-    knowledge_name: 'Toufiq Motion',
-    knowledge_logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    knowledge_name: 'Toufiq Motion Editorial',
+    knowledge_logo: 'https://toufiqmotion.com/logo.png',
     knowledge_founder: 'Toufiq Motion',
     knowledge_email: 'hello@toufiqmotion.com',
     socials: [
       'https://instagram.com/toufiqmotion',
       'https://youtube.com/@toufiqmotion',
-      'https://twitter.com/toufiqmotion',
-      'https://pinterest.com/toufiqmotion'
+      'https://twitter.com/toufiqmotion'
     ]
   });
-  const [isCopiedJsonLd, setIsCopiedJsonLd] = useState(false);
   const [isSavingSchema, setIsSavingSchema] = useState(false);
+  const [isCopiedJsonLd, setIsCopiedJsonLd] = useState(false);
 
-  // Tab 5: Robots.txt & XML Sitemap state
+  // Tab 5: Robots.txt & Dynamic Sitemap
   const [robotsTxt, setRobotsTxt] = useState(
-    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: http://localhost:3000/sitemap.xml`
+    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${typeof window !== 'undefined' ? window.location.origin : ''}/sitemap.xml`
   );
   const [isSavingRobots, setIsSavingRobots] = useState(false);
-  const [isXmlPreviewOpen, setIsXmlPreviewOpen] = useState(false);
 
-  // Tab 6: Search Console & Indexing state
+  // Tab 6: Search Console, Analytics, Tracking & Custom <head> Tags
+  const [trackingForm, setTrackingForm] = useState({
+    google_site_verification: '',
+    bing_site_verification: '',
+    google_analytics_id: '',
+    google_tag_manager_id: '',
+    custom_head_tags: ''
+  });
+  const [isSavingTracking, setIsSavingTracking] = useState(false);
+  const [trackingSaveSuccess, setTrackingSaveSuccess] = useState(false);
+  const [headVerification, setHeadVerification] = useState<any | null>(null);
+  const [isVerifyingHead, setIsVerifyingHead] = useState(false);
+
+  // Instant Indexing
   const [indexingUrl, setIndexingUrl] = useState('');
   const [indexingEngine, setIndexingEngine] = useState('Google Indexing API');
   const [indexingAction, setIndexingAction] = useState('URL_UPDATED');
-  const [indexingLogs, setIndexingLogs] = useState<any[]>([]);
-  const [searchQueries, setSearchQueries] = useState<any[]>([]);
   const [isSubmittingIndex, setIsSubmittingIndex] = useState(false);
+  const [indexingLogs, setIndexingLogs] = useState<any[]>([]);
 
-  // Initial Load
+  // Initial load
   useEffect(() => {
     loadAllSeoData();
   }, []);
@@ -158,7 +172,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
   const loadAllSeoData = async () => {
     setLoading(true);
     try {
-      // 1. Overview
+      // 1. Fetch overview
       try {
         const ov = await api.getSeoOverview();
         setOverview(ov);
@@ -166,73 +180,88 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
         console.warn('Overview err:', err);
       }
 
-      // 2. Audit
+      // 2. Fetch audit
       try {
-        const audit = await api.getSeoAudit();
-        setAuditItems(audit.auditItems || []);
+        const auditRes = await api.getSeoAudit();
+        setAuditItems(auditRes.auditItems || []);
       } catch (err) {
         console.warn('Audit err:', err);
       }
 
-      // 3. Redirects & 404s
+      // 3. Fetch redirects & errors
       try {
-        const [redRes, errRes] = await Promise.all([api.getSeoRedirects(), api.getSeoCrawlErrors()]);
+        const [redRes, errRes] = await Promise.all([
+          api.getSeoRedirects(),
+          api.getSeoCrawlErrors()
+        ]);
         setRedirects(redRes.redirects || []);
         setCrawlErrors(errRes.errors || []);
       } catch (err) {
         console.warn('Redirects err:', err);
       }
 
-      // 4. Settings
+      // 4. Fetch settings
       try {
-        const sett = await api.getSeoSettings();
-        if (sett.settings) {
-          setSerpSettings((prev) => ({
-            ...prev,
-            site_title_format: sett.settings.site_title_format || prev.site_title_format,
-            meta_description: sett.settings.meta_description || prev.meta_description,
-            canonical_domain: sett.settings.canonical_domain || prev.canonical_domain,
-            og_image: sett.settings.og_image || prev.og_image,
-            twitter_card: sett.settings.twitter_card || prev.twitter_card,
-            google_site_verification: sett.settings.google_site_verification || prev.google_site_verification,
-            bing_site_verification: sett.settings.bing_site_verification || prev.bing_site_verification
-          }));
+        const settingsRes = await api.getSeoSettings();
+        if (settingsRes.settings) {
+          const s = settingsRes.settings;
+          setSerpSettings({
+            site_title_format: s.site_title_format || '%title% — Toufiq Motion Studio',
+            meta_description: s.meta_description || 'An editorial visual journal documenting landscape photography, travel narratives, and slow living.',
+            canonical_domain: s.canonical_domain || 'https://toufiqmotion.com',
+            og_image: s.og_image || 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?auto=format&fit=crop&w=1200&q=80'
+          });
 
-          if (sett.settings.robots_txt) {
-            setRobotsTxt(sett.settings.robots_txt);
-          }
+          if (s.robots_txt) setRobotsTxt(s.robots_txt);
 
-          let parsedSocials = schemaSettings.socials;
-          if (sett.settings.knowledge_socials_json) {
+          if (s.knowledge_name) {
+            let socials = [
+              'https://instagram.com/toufiqmotion',
+              'https://youtube.com/@toufiqmotion',
+              'https://twitter.com/toufiqmotion'
+            ];
             try {
-              parsedSocials = JSON.parse(sett.settings.knowledge_socials_json);
-            } catch {}
+              if (s.knowledge_socials_json) {
+                socials = JSON.parse(s.knowledge_socials_json);
+              }
+            } catch (e) {}
+
+            setSchemaSettings({
+              knowledge_type: s.knowledge_type || 'Organization',
+              knowledge_name: s.knowledge_name || 'Toufiq Motion Editorial',
+              knowledge_logo: s.knowledge_logo || 'https://toufiqmotion.com/logo.png',
+              knowledge_founder: s.knowledge_founder || 'Toufiq Motion',
+              knowledge_email: s.knowledge_email || 'hello@toufiqmotion.com',
+              socials
+            });
           }
 
-          setSchemaSettings((prev) => ({
-            ...prev,
-            knowledge_type: sett.settings.knowledge_type || prev.knowledge_type,
-            knowledge_name: sett.settings.knowledge_name || prev.knowledge_name,
-            knowledge_logo: sett.settings.knowledge_logo || prev.knowledge_logo,
-            knowledge_founder: sett.settings.knowledge_founder || prev.knowledge_founder,
-            knowledge_email: sett.settings.knowledge_email || prev.knowledge_email,
-            socials: parsedSocials
-          }));
+          setTrackingForm({
+            google_site_verification: s.google_site_verification || '',
+            bing_site_verification: s.bing_site_verification || '',
+            google_analytics_id: s.google_analytics_id || '',
+            google_tag_manager_id: s.google_tag_manager_id || '',
+            custom_head_tags: s.custom_head_tags || ''
+          });
         }
       } catch (err) {
         console.warn('Settings err:', err);
       }
 
-      // 5. Search Console Queries & Indexing Logs
+      // 5. Fetch indexing logs
       try {
-        const [logsRes, queriesRes] = await Promise.all([
-          api.getSeoIndexingLogs(),
-          api.getSeoSearchQueries()
-        ]);
+        const logsRes = await api.getSeoIndexingLogs();
         setIndexingLogs(logsRes.logs || []);
-        setSearchQueries(queriesRes.queries || []);
       } catch (err) {
-        console.warn('Console err:', err);
+        console.warn('Indexing logs err:', err);
+      }
+
+      // 6. Verify live head tags
+      try {
+        const verRes = await api.verifySeoHeadTags();
+        setHeadVerification(verRes);
+      } catch (err) {
+        console.warn('Verify head tags err:', err);
       }
     } finally {
       setLoading(false);
@@ -244,14 +273,14 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     setIsPinging(true);
     try {
       const res = await api.pingSearchEngines();
-      setNotification(`Search engines notified! Dynamic sitemap: ${res.sitemapUrl}`);
+      showToast(`Search engines notified! Dynamic sitemap: ${res.sitemapUrl}`, 'success');
       setOverview((prev) => ({
         ...prev,
         lastPingedAt: res.timestamp,
         sitemapUrl: res.sitemapUrl
       }));
     } catch (err: any) {
-      alert(err.message || 'Failed to ping search engines');
+      showToast(err.message || 'Failed to ping search engines', 'error');
     } finally {
       setIsPinging(false);
     }
@@ -259,14 +288,17 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
 
   // Tab 1: Re-analyze SEO
   const handleReanalyzeAll = async () => {
-    if (!token) return alert('Admin authentication required');
+    if (!token) {
+      showToast('Admin authentication required', 'error');
+      return;
+    }
     setIsReanalyzing(true);
     try {
       const res = await api.reanalyzeSeo(token);
-      alert(res.message);
+      showToast(res.message, 'success');
       loadAllSeoData();
     } catch (err: any) {
-      alert(err.message || 'Failed to re-analyze');
+      showToast(err.message || 'Failed to re-analyze', 'error');
     } finally {
       setIsReanalyzing(false);
     }
@@ -290,10 +322,11 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     setIsSavingQuickSeo(true);
     try {
       await api.updateArticleSeo(token, editingAuditItem.id, quickSeoForm);
+      showToast('Article SEO settings updated successfully!', 'success');
       setEditingAuditItem(null);
       loadAllSeoData();
     } catch (err: any) {
-      alert(err.message || 'Failed to update article SEO');
+      showToast(err.message || 'Failed to update article SEO', 'error');
     } finally {
       setIsSavingQuickSeo(false);
     }
@@ -324,7 +357,10 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
 
   const handleSaveRedirect = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return alert('Admin authentication required');
+    if (!token) {
+      showToast('Admin authentication required', 'error');
+      return;
+    }
     try {
       if (editingRedirectId) {
         await api.updateSeoRedirect(token, editingRedirectId, redirectForm);
@@ -332,9 +368,10 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
         await api.createSeoRedirect(token, redirectForm);
       }
       setIsRedirectModalOpen(false);
+      showToast('301 Redirect rule saved successfully!', 'success');
       loadAllSeoData();
     } catch (err: any) {
-      alert(err.message || 'Failed to save redirect');
+      showToast(err.message || 'Failed to save redirect', 'error');
     }
   };
 
@@ -343,9 +380,10 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     if (!confirm(`Delete 301 redirect for ${path}?`)) return;
     try {
       await api.deleteSeoRedirect(token, id);
+      showToast('Redirect rule removed', 'success');
       loadAllSeoData();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete redirect');
+      showToast(err.message || 'Failed to delete redirect', 'error');
     }
   };
 
@@ -353,9 +391,10 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     if (!token) return;
     try {
       await api.resolveSeoCrawlError(token, id);
+      showToast('Crawl error marked resolved', 'success');
       setCrawlErrors((prev) => prev.map((e) => (e.id === id ? { ...e, status: 'resolved' } : e)));
     } catch (err: any) {
-      alert(err.message || 'Failed to resolve error');
+      showToast(err.message || 'Failed to resolve error', 'error');
     }
   };
 
@@ -363,22 +402,31 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     if (!token) return;
     try {
       await api.clearSeoCrawlErrors(token);
+      showToast('Crawl error log cleared', 'success');
       loadAllSeoData();
     } catch (err: any) {
-      alert(err.message || 'Failed to clear');
+      showToast(err.message || 'Failed to clear', 'error');
     }
   };
 
   // Tab 3: Save Global SERP
   const handleSaveSerp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return alert('Admin authentication required');
+    if (!token) {
+      showToast('Admin authentication required', 'error');
+      return;
+    }
     setIsSavingSerp(true);
     try {
-      await api.saveSeoSettings(token, serpSettings);
-      alert('Global SERP & Canonical configurations saved successfully!');
+      await api.saveSeoSettings(token, {
+        site_title_format: serpSettings.site_title_format,
+        meta_description: serpSettings.meta_description,
+        canonical_domain: serpSettings.canonical_domain,
+        og_image: serpSettings.og_image
+      });
+      showToast('Global SERP & Canonical configurations saved successfully!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to save SERP settings');
+      showToast(err.message || 'Failed to save SERP settings', 'error');
     } finally {
       setIsSavingSerp(false);
     }
@@ -387,7 +435,10 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
   // Tab 4: Save Schema Knowledge Graph
   const handleSaveSchema = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return alert('Admin authentication required');
+    if (!token) {
+      showToast('Admin authentication required', 'error');
+      return;
+    }
     setIsSavingSchema(true);
     try {
       await api.saveSeoSettings(token, {
@@ -398,9 +449,9 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
         knowledge_email: schemaSettings.knowledge_email,
         knowledge_socials_json: JSON.stringify(schemaSettings.socials)
       });
-      alert('Schema.org Knowledge Graph saved successfully!');
+      showToast('Schema.org Knowledge Graph saved successfully!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to save schema');
+      showToast(err.message || 'Failed to save schema', 'error');
     } finally {
       setIsSavingSchema(false);
     }
@@ -408,23 +459,70 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
 
   // Tab 5: Save Robots.txt
   const handleSaveRobots = async () => {
-    if (!token) return alert('Admin authentication required');
+    if (!token) {
+      showToast('Admin authentication required', 'error');
+      return;
+    }
     setIsSavingRobots(true);
     try {
       await api.saveSeoSettings(token, { robots_txt: robotsTxt });
-      alert('Robots.txt deployed live to /robots.txt!');
+      showToast('Robots.txt deployed live to /robots.txt!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to save robots.txt');
+      showToast(err.message || 'Failed to save robots.txt', 'error');
     } finally {
       setIsSavingRobots(false);
+    }
+  };
+
+  // Tab 6: Save Tracking, Analytics & Custom Head Tags
+  const handleSaveTracking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) {
+      showToast('Admin authentication required', 'error');
+      return;
+    }
+    setIsSavingTracking(true);
+    setTrackingSaveSuccess(false);
+    try {
+      await api.saveSeoSettings(token, trackingForm);
+      setTrackingSaveSuccess(true);
+      setTimeout(() => setTrackingSaveSuccess(false), 3500);
+      showToast('Tracking, Analytics & Custom <head> tags saved and deployed live!', 'success');
+      try {
+        const verRes = await api.verifySeoHeadTags();
+        setHeadVerification(verRes);
+      } catch {}
+    } catch (err: any) {
+      showToast(err.message || 'Failed to save tracking settings', 'error');
+    } finally {
+      setIsSavingTracking(false);
+    }
+  };
+
+  const handleRunHeadVerification = async () => {
+    setIsVerifyingHead(true);
+    try {
+      const res = await api.verifySeoHeadTags();
+      setHeadVerification(res);
+      showToast('Live <head> verification completed! Server confirmed tag injection.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Verification check failed', 'error');
+    } finally {
+      setIsVerifyingHead(false);
     }
   };
 
   // Tab 6: Submit Instant Indexing
   const handleSubmitIndexing = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return alert('Admin authentication required');
-    if (!indexingUrl) return alert('Please enter a valid URL');
+    if (!token) {
+      showToast('Admin authentication required', 'error');
+      return;
+    }
+    if (!indexingUrl) {
+      showToast('Please enter a valid URL', 'error');
+      return;
+    }
     setIsSubmittingIndex(true);
     try {
       const res = await api.submitIndexingUrl(token, {
@@ -434,9 +532,9 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
       });
       setIndexingLogs([res.log, ...indexingLogs]);
       setIndexingUrl('');
-      alert(`URL queued for instant crawl by ${indexingEngine}!`);
+      showToast(`URL queued for instant crawl by ${indexingEngine}!`, 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to submit indexing');
+      showToast(err.message || 'Failed to submit indexing', 'error');
     } finally {
       setIsSubmittingIndex(false);
     }
@@ -445,16 +543,16 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
   // Filtered Audit Items
   const filteredAuditItems = auditItems.filter((item) => {
     const matchesSearch =
-      item.title.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      item.slug.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      item.focusKeyword.toLowerCase().includes(auditSearch.toLowerCase());
+      item.title?.toLowerCase().includes(auditSearch.toLowerCase()) ||
+      item.slug?.toLowerCase().includes(auditSearch.toLowerCase()) ||
+      item.focusKeyword?.toLowerCase().includes(auditSearch.toLowerCase());
 
     if (!matchesSearch) return false;
 
     if (auditFilter === 'good') return item.seoScore >= 80;
     if (auditFilter === 'improvements') return item.seoScore >= 50 && item.seoScore < 80;
     if (auditFilter === 'poor') return item.seoScore < 50;
-    if (auditFilter === 'noindex') return item.noIndex;
+    if (auditFilter === 'noindex') return Boolean(item.noIndex);
     return true;
   });
 
@@ -504,30 +602,38 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
   );
 
   return (
-    <div className="bg-[#070D18] text-slate-100 rounded-3xl p-6 sm:p-8 border border-[#162338] shadow-2xl space-y-6">
+    <div className="bg-[#FAF8F5] text-[#1E1B18] rounded-3xl p-5 sm:p-6 border border-[#EDE7DF] shadow-xs space-y-6">
       
-      {/* 1. TOP HEADER & QUICK ACTION PILLS (Matches User Screenshot) */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-[#16243A] pb-6">
+      {/* 1. TOP HEADER & QUICK ACTION PILLS */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-[#EDE7DF] pb-5">
         <div className="flex items-start gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
-            <Search className="w-5 h-5 text-emerald-400" />
+          <div className="w-10 h-10 rounded-2xl bg-[#EDF7F1] border border-[#C8E9D6] flex items-center justify-center shrink-0 shadow-xs">
+            <Search className="w-5 h-5 text-[#2E7D5A]" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              Yoast-Grade SEO Command Center
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#2E7D5A]">
+                SEO Engine Suite
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]">
+                Yoast-Grade
+              </span>
+            </div>
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#1E1B18] mt-0.5">
+              Yoast SEO Command Center
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-relaxed">
+            <p className="text-xs text-[#7A7468] mt-0.5 leading-relaxed">
               Real-time on-page SEO algorithms, Google SERP previews, rich JSON-LD schema graphs, 301 redirect manager, and crawl error monitoring.
             </p>
           </div>
         </div>
 
-        {/* Action Buttons in Screenshot */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <button
             onClick={handlePingSearchEngines}
             disabled={isPinging}
-            className="px-4 py-2 rounded-xl text-xs font-bold border border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 active:scale-95 transition-all flex items-center gap-1.5 shadow-sm"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#FAD8B5] bg-[#FEF6EC] text-[#C26B18] hover:bg-[#FCEAD4] active:scale-95 transition-all flex items-center gap-1.5 shadow-2xs"
             title="Send dynamic sitemap to Google & Bing indexing crawlers"
           >
             <Send className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin' : ''}`} />
@@ -538,7 +644,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
             href="/sitemap.xml"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all flex items-center gap-1.5 shadow-sm"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#C8E9D6] bg-[#EDF7F1] text-[#2E7D5A] hover:bg-[#DEEFE5] active:scale-95 transition-all flex items-center gap-1.5 shadow-2xs"
           >
             <Network className="w-3.5 h-3.5" />
             <span>View Live Sitemap.xml</span>
@@ -548,7 +654,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
             href="/robots.txt"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 rounded-xl text-xs font-bold border border-sky-500/40 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 active:scale-95 transition-all flex items-center gap-1.5 shadow-sm"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#BCE0FD] bg-[#F0F8FF] text-[#1E6091] hover:bg-[#DEEFFF] active:scale-95 transition-all flex items-center gap-1.5 shadow-2xs"
           >
             <Bot className="w-3.5 h-3.5" />
             <span>View Robots.txt</span>
@@ -556,115 +662,131 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
         </div>
       </div>
 
-      {/* 2. NOTIFICATION BANNER (Matches User Screenshot: Green Notification Banner) */}
+      {/* 2. NOTIFICATION BANNER */}
       {notification && (
-        <div className="bg-[#0A261C] border border-emerald-500/40 text-emerald-300 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-emerald-950/40 text-xs sm:text-sm animate-in fade-in">
+        <div className={`border rounded-2xl p-3.5 flex items-center justify-between shadow-2xs text-xs sm:text-sm animate-in fade-in ${
+          notification.type === 'error'
+            ? 'bg-[#FDF2F2] border-[#F8B4B4] text-[#C93B3B]'
+            : 'bg-[#EDF7F1] border-[#C8E9D6] text-[#2E7D5A]'
+        }`}>
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="font-medium">{notification}</span>
+            {notification.type === 'error' ? (
+              <AlertTriangle className="w-4 h-4 text-[#C93B3B] shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-[#2E7D5A] shrink-0" />
+            )}
+            <span className="font-semibold">{notification.message}</span>
           </div>
           <button
             onClick={() => setNotification(null)}
-            className="text-emerald-400 hover:text-white p-1 rounded-lg transition-colors"
+            className="p-1 rounded-lg opacity-70 hover:opacity-100 transition-opacity"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* 3. 4 KPI SUMMARY CARDS (Matches User Screenshot: Green, Yellow, Blue, Red borders) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 3. 4 KPI SUMMARY CARDS (Compact, Clean Light Theme) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        {/* Card 1: Green Border - Site SEO Health */}
-        <div className="bg-[#0B1522] border-2 border-emerald-500/50 rounded-2xl p-5 relative overflow-hidden shadow-lg shadow-emerald-950/20 flex flex-col justify-between">
+        {/* Card 1: Emerald - Site SEO Health */}
+        <div className="bg-white border border-[#EDE7DF] rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Site SEO Health</span>
-            <ShieldCheck className="w-7 h-7 text-emerald-500/50" />
+            <span className="text-[11px] uppercase tracking-wider text-[#7A7468] font-bold">Site SEO Health</span>
+            <div className="w-7 h-7 rounded-xl bg-[#EDF7F1] flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-[#2E7D5A]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-3">
-            <span className="text-3xl sm:text-4xl font-extrabold text-emerald-400 tracking-tight">
+          <div className="mt-2.5 flex items-baseline gap-2.5">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#2E7D5A] tracking-tight">
               {overview.siteSeoHealth}%
             </span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]">
               {overview.grade}
             </span>
           </div>
         </div>
 
-        {/* Card 2: Yellow Border - Indexed URLs in Sitemap */}
-        <div className="bg-[#0B1522] border-2 border-amber-500/50 rounded-2xl p-5 relative overflow-hidden shadow-lg shadow-amber-950/20 flex flex-col justify-between">
+        {/* Card 2: Amber - Indexed URLs in Sitemap */}
+        <div className="bg-white border border-[#EDE7DF] rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Indexed URLs in Sitemap</span>
-            <Network className="w-7 h-7 text-amber-500/50" />
+            <span className="text-[11px] uppercase tracking-wider text-[#7A7468] font-bold">Indexed URLs in Sitemap</span>
+            <div className="w-7 h-7 rounded-xl bg-[#FEF6EC] flex items-center justify-center">
+              <Network className="w-4 h-4 text-[#C26B18]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold text-amber-400 tracking-tight">
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#C26B18] tracking-tight">
               {overview.totalIndexedUrls}
             </span>
-            <span className="text-xs text-amber-300/80 font-medium">
-              ({overview.breakdown.articles} Articles, {overview.breakdown.categories} Categories)
+            <span className="text-xs text-[#7A7468] font-medium truncate">
+              ({overview.breakdown.articles} Posts, {overview.breakdown.categories} Cats)
             </span>
           </div>
         </div>
 
-        {/* Card 3: Blue/Cyan Border - Active 301 Redirects */}
-        <div className="bg-[#0B1522] border-2 border-cyan-500/50 rounded-2xl p-5 relative overflow-hidden shadow-lg shadow-cyan-950/20 flex flex-col justify-between">
+        {/* Card 3: Blue - Active 301 Redirects */}
+        <div className="bg-white border border-[#EDE7DF] rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Active 301 Redirects</span>
-            <CornerDownRight className="w-7 h-7 text-cyan-500/50" />
+            <span className="text-[11px] uppercase tracking-wider text-[#7A7468] font-bold">Active 301 Redirects</span>
+            <div className="w-7 h-7 rounded-xl bg-[#F0F8FF] flex items-center justify-center">
+              <CornerDownRight className="w-4 h-4 text-[#1E6091]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold text-cyan-400 tracking-tight">
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#1E6091] tracking-tight">
               {overview.activeRedirectsCount}
             </span>
-            <span className="text-xs text-cyan-300/80 font-medium">Link Juice Saved</span>
+            <span className="text-xs text-[#7A7468] font-medium">Link Juice Preserved</span>
           </div>
         </div>
 
-        {/* Card 4: Red/Rose Border - 404 Crawl Error Logs */}
-        <div className="bg-[#0B1522] border-2 border-rose-500/50 rounded-2xl p-5 relative overflow-hidden shadow-lg shadow-rose-950/20 flex flex-col justify-between">
+        {/* Card 4: Rose - 404 Crawl Error Logs */}
+        <div className="bg-white border border-[#EDE7DF] rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">404 Crawl Error Logs</span>
-            <AlertTriangle className="w-7 h-7 text-rose-500/50" />
+            <span className="text-[11px] uppercase tracking-wider text-[#7A7468] font-bold">404 Crawl Error Logs</span>
+            <div className="w-7 h-7 rounded-xl bg-[#FDF2F2] flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-[#C93B3B]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold text-rose-400 tracking-tight">
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#C93B3B] tracking-tight">
               {overview.crawlErrorsCount}
             </span>
-            <span className="text-xs text-rose-300/80 font-medium">Monitored</span>
+            <span className="text-xs text-[#7A7468] font-medium">Auto Monitored</span>
           </div>
         </div>
       </div>
 
-      {/* 4. THE 6 NAVIGATION TABS (Matches User Screenshot) */}
-      <div className="flex border-b border-[#1A2840] gap-2 overflow-x-auto no-scrollbar pt-2">
+      {/* 4. THE 6 NAVIGATION TABS */}
+      <div className="flex border-b border-[#EDE7DF] gap-1 sm:gap-2 overflow-x-auto no-scrollbar pt-1">
         
         {/* Tab 1 */}
         <button
           onClick={() => setActiveTab('audit')}
-          className={`px-4 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'audit'
-              ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5 rounded-t-xl'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-[#2E7D5A] text-[#2E7D5A] bg-[#EDF7F1]/60 rounded-t-xl'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
           }`}
         >
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <CheckCircle2 className="w-4 h-4 text-[#2E7D5A]" />
           <span>Site SEO Content Audit ({auditItems.length})</span>
         </button>
 
         {/* Tab 2 */}
         <button
           onClick={() => setActiveTab('redirects')}
-          className={`px-4 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'redirects'
-              ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5 rounded-t-xl'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-[#1E6091] text-[#1E6091] bg-[#F0F8FF]/60 rounded-t-xl'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
           }`}
         >
-          <CornerDownRight className="w-4 h-4 text-cyan-400" />
+          <CornerDownRight className="w-4 h-4 text-[#1E6091]" />
           <span>301 Redirects &amp; 404 Monitor</span>
           {crawlErrors.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white">
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#C93B3B] text-white">
               {crawlErrors.length}
             </span>
           )}
@@ -673,53 +795,53 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
         {/* Tab 3 */}
         <button
           onClick={() => setActiveTab('global_serp')}
-          className={`px-4 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'global_serp'
-              ? 'border-amber-500 text-amber-400 bg-amber-500/5 rounded-t-xl'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-[#C26B18] text-[#C26B18] bg-[#FEF6EC]/60 rounded-t-xl'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
           }`}
         >
-          <Globe className="w-4 h-4 text-amber-400" />
+          <Globe className="w-4 h-4 text-[#C26B18]" />
           <span>Global SERP &amp; Canonical</span>
         </button>
 
         {/* Tab 4 */}
         <button
           onClick={() => setActiveTab('schema')}
-          className={`px-4 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'schema'
-              ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5 rounded-t-xl'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-[#543884] text-[#543884] bg-[#F3F0FC]/60 rounded-t-xl'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
           }`}
         >
-          <Code2 className="w-4 h-4 text-indigo-400" />
+          <Code2 className="w-4 h-4 text-[#543884]" />
           <span>&lt;/&gt; Schema.org Knowledge Graph</span>
         </button>
 
         {/* Tab 5 */}
         <button
           onClick={() => setActiveTab('robots_sitemap')}
-          className={`px-4 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'robots_sitemap'
-              ? 'border-sky-500 text-sky-400 bg-sky-500/5 rounded-t-xl'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-[#1E6091] text-[#1E6091] bg-[#F0F8FF]/60 rounded-t-xl'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
           }`}
         >
-          <Bot className="w-4 h-4 text-sky-400" />
+          <Bot className="w-4 h-4 text-[#1E6091]" />
           <span>Robots.txt &amp; XML Sitemap</span>
         </button>
 
         {/* Tab 6 */}
         <button
           onClick={() => setActiveTab('search_console')}
-          className={`px-4 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'search_console'
-              ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5 rounded-t-xl'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-[#2E7D5A] text-[#2E7D5A] bg-[#EDF7F1]/60 rounded-t-xl'
+              : 'border-transparent text-[#6A6357] hover:text-[#1E1B18]'
           }`}
         >
-          <BarChart3 className="w-4 h-4 text-emerald-400" />
-          <span>Search Console &amp; Analytics</span>
+          <BarChart3 className="w-4 h-4 text-[#2E7D5A]" />
+          <span>Search Console &amp; Analytics Integration</span>
         </button>
       </div>
 
@@ -728,40 +850,40 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           ========================================================================= */}
       {activeTab === 'audit' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0A1322] p-4 rounded-2xl border border-[#162338]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#EDE7DF] shadow-2xs">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7A7468]" />
               <input
                 type="text"
                 placeholder="Search audit by title, slug, or focus keyphrase..."
                 value={auditSearch}
                 onChange={(e) => setAuditSearch(e.target.value)}
-                className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl pl-9 pr-4 py-2 text-xs text-[#1E1B18] placeholder-[#9E9587] focus:outline-none focus:border-[#2E7D5A] focus:bg-white transition-all"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-[#070D18] border border-[#1E2E48] rounded-xl p-1 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl p-1 text-xs">
                 <button
                   onClick={() => setAuditFilter('all')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    auditFilter === 'all' ? 'bg-[#16253C] text-white' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    auditFilter === 'all' ? 'bg-white text-[#1E1B18] shadow-2xs' : 'text-[#7A7468] hover:text-[#1E1B18]'
                   }`}
                 >
                   All ({auditItems.length})
                 </button>
                 <button
                   onClick={() => setAuditFilter('good')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    auditFilter === 'good' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    auditFilter === 'good' ? 'bg-[#EDF7F1] text-[#2E7D5A] font-bold shadow-2xs' : 'text-[#7A7468] hover:text-[#1E1B18]'
                   }`}
                 >
                   Good SEO (80+)
                 </button>
                 <button
                   onClick={() => setAuditFilter('improvements')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    auditFilter === 'improvements' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    auditFilter === 'improvements' ? 'bg-[#FEF6EC] text-[#C26B18] font-bold shadow-2xs' : 'text-[#7A7468] hover:text-[#1E1B18]'
                   }`}
                 >
                   Needs Work (50-79)
@@ -771,7 +893,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
               <button
                 onClick={handleReanalyzeAll}
                 disabled={isReanalyzing}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 flex items-center gap-1.5 transition-all shadow-sm"
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#EDF7F1] border border-[#C8E9D6] text-[#2E7D5A] hover:bg-[#DEEFE5] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isReanalyzing ? 'animate-spin' : ''}`} />
                 <span>Re-Audit All</span>
@@ -780,58 +902,62 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           </div>
 
           {/* Audit Table */}
-          <div className="bg-[#0A1322] rounded-2xl border border-[#162338] overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#EDE7DF] overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-[#070D18] text-slate-400 uppercase tracking-wider text-[11px] border-b border-[#162338]">
-                    <th className="py-3 px-5">Story &amp; URL</th>
-                    <th className="py-3 px-4">Focus Keyphrase</th>
-                    <th className="py-3 px-4">SEO Score</th>
-                    <th className="py-3 px-4">Readability</th>
-                    <th className="py-3 px-4">Snippet Status</th>
-                    <th className="py-3 px-4">Index Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                  <tr className="bg-[#F7F5F0] text-[#7A7468] uppercase tracking-wider text-[11px] border-b border-[#EDE7DF]">
+                    <th className="py-3 px-4 font-bold min-w-[220px]">Story &amp; URL</th>
+                    <th className="py-3 px-3 font-bold min-w-[140px]">Focus Keyphrase</th>
+                    <th className="py-3 px-3 font-bold min-w-[100px]">SEO Score</th>
+                    <th className="py-3 px-3 font-bold min-w-[100px]">Readability</th>
+                    <th className="py-3 px-3 font-bold min-w-[140px]">Snippet Status</th>
+                    <th className="py-3 px-3 font-bold min-w-[90px]">Index</th>
+                    <th className="py-3 px-4 font-bold text-right min-w-[110px]">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#131F33]">
+                <tbody className="divide-y divide-[#EDE7DF]">
                   {filteredAuditItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-[#0E1B2E] transition-colors">
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#1E2E48]"
-                          />
-                          <div className="max-w-xs">
-                            <h4 className="font-bold text-white line-clamp-1">{item.title}</h4>
-                            <span className="text-[11px] text-slate-400 font-mono">/{item.slug}</span>
-                            <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-[#16253C] text-slate-300">
-                              {item.category}
-                            </span>
+                    <tr key={item.id} className="hover:bg-[#FAF8F5] transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2.5">
+                          {item.image && (
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-10 h-10 rounded-xl object-cover shrink-0 border border-[#EDE7DF]"
+                            />
+                          )}
+                          <div className="max-w-[200px] sm:max-w-xs">
+                            <h4 className="font-bold text-[#1E1B18] line-clamp-1">{item.title}</h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-[#7A7468] font-mono truncate">/{item.slug}</span>
+                              <span className="px-1.5 py-0.2 rounded text-[10px] bg-[#FAF8F5] border border-[#EDE7DF] text-[#6A6357] shrink-0">
+                                {item.category}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-3">
                         {item.focusKeyword ? (
-                          <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#16263F] text-amber-300 border border-amber-500/20">
+                          <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-[#FEF6EC] text-[#C26B18] border border-[#FAD8B5] inline-block">
                             {item.focusKeyword}
                           </span>
                         ) : (
-                          <span className="text-slate-500 italic">No keyword set</span>
+                          <span className="text-[#9E9587] italic">No keyword set</span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-3">
                         <span
-                          className={`px-2.5 py-1 rounded-full font-bold text-xs inline-flex items-center gap-1 ${
+                          className={`px-2 py-0.5 rounded-full font-bold text-xs inline-flex items-center gap-1 ${
                             item.seoScore >= 80
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              ? 'bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]'
                               : item.seoScore >= 50
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                              : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              ? 'bg-[#FEF6EC] text-[#C26B18] border border-[#FAD8B5]'
+                              : 'bg-[#FDF2F2] text-[#C93B3B] border border-[#F8C8C8]'
                           }`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -839,58 +965,58 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-3">
                         <span
                           className={`px-2 py-0.5 rounded-full font-semibold text-[11px] ${
                             item.readabilityScore >= 80
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-amber-500/10 text-amber-400'
+                              ? 'bg-[#EDF7F1] text-[#2E7D5A]'
+                              : 'bg-[#FEF6EC] text-[#C26B18]'
                           }`}
                         >
                           {item.readabilityScore}% Good
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-1">
+                      <td className="py-3 px-3">
+                        <div className="space-y-0.5">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold inline-block ${
                               item.metaDescStatus === 'good'
-                                ? 'bg-emerald-500/15 text-emerald-300'
+                                ? 'bg-[#EDF7F1] text-[#2E7D5A]'
                                 : item.metaDescStatus === 'missing'
-                                ? 'bg-rose-500/15 text-rose-300'
-                                : 'bg-amber-500/15 text-amber-300'
+                                ? 'bg-[#FDF2F2] text-[#C93B3B]'
+                                : 'bg-[#FEF6EC] text-[#C26B18]'
                             }`}
                           >
-                            {item.metaDescStatus === 'good' && 'Optimal (120-160 chars)'}
-                            {item.metaDescStatus === 'short' && `${item.metaDescLength} chars (Too short)`}
-                            {item.metaDescStatus === 'long' && `${item.metaDescLength} chars (Too long)`}
-                            {item.metaDescStatus === 'missing' && 'Missing Description'}
+                            {item.metaDescStatus === 'good' && 'Optimal (120-160)'}
+                            {item.metaDescStatus === 'short' && `${item.metaDescLength} chars (Short)`}
+                            {item.metaDescStatus === 'long' && `${item.metaDescLength} chars (Long)`}
+                            {item.metaDescStatus === 'missing' && 'Missing Desc'}
                           </span>
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                          <div className="text-[10px] text-[#7A7468] flex items-center gap-1">
                             {item.keyphraseInTitle ? (
-                              <span className="text-emerald-400">✓ In title</span>
+                              <span className="text-[#2E7D5A] font-semibold">✓ In title</span>
                             ) : (
-                              <span className="text-slate-500">✗ Title miss</span>
+                              <span className="text-[#9E9587]">✗ Title miss</span>
                             )}
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-3">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.noIndex ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'
+                            item.noIndex ? 'bg-[#FDF2F2] text-[#C93B3B]' : 'bg-[#EDF7F1] text-[#2E7D5A]'
                           }`}
                         >
                           {item.indexStatus}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3 px-4 text-right">
                         <button
                           onClick={() => openQuickSeoModal(item)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#142338] hover:bg-[#1B2F4C] text-emerald-400 hover:text-emerald-300 border border-[#213554] transition-all"
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-[#FAF8F5] hover:bg-[#EDF7F1] text-[#2E7D5A] hover:text-[#1E6091] border border-[#EDE7DF] hover:border-[#C8E9D6] transition-all cursor-pointer whitespace-nowrap"
                         >
                           Quick Edit SEO
                         </button>
@@ -909,28 +1035,28 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           ========================================================================= */}
       {activeTab === 'redirects' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-[#162338] pb-3">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EDE7DF] pb-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setRedirectSubTab('redirects')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   redirectSubTab === 'redirects'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-[#F0F8FF] text-[#1E6091] border border-[#BCE0FD]'
+                    : 'text-[#6A6357] hover:text-[#1E1B18]'
                 }`}
               >
                 Active 301 Redirects ({redirects.length})
               </button>
               <button
                 onClick={() => setRedirectSubTab('crawl_errors')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   redirectSubTab === 'crawl_errors'
-                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-[#FDF2F2] text-[#C93B3B] border border-[#F8C8C8]'
+                    : 'text-[#6A6357] hover:text-[#1E1B18]'
                 }`}
               >
                 <span>404 Crawl Error Logs</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#C93B3B] text-white">
                   {crawlErrors.length}
                 </span>
               </button>
@@ -939,7 +1065,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
             {redirectSubTab === 'redirects' ? (
               <button
                 onClick={() => openNewRedirectModal()}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 flex items-center gap-1.5 transition-all shadow-md"
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#2E7D5A] text-white hover:bg-[#246649] flex items-center gap-1.5 transition-all shadow-xs cursor-pointer self-start sm:self-auto"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Create 301 Redirect</span>
@@ -947,7 +1073,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
             ) : (
               <button
                 onClick={handleClearCrawlErrors}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-slate-700 text-slate-300 hover:bg-slate-800 transition-all"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-[#DDD5CA] text-[#6A6357] hover:bg-[#FAF8F5] transition-all cursor-pointer self-start sm:self-auto"
               >
                 Clear Resolved Logs
               </button>
@@ -956,127 +1082,131 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
 
           {/* Sub-view 1: Active 301 Redirects */}
           {redirectSubTab === 'redirects' && (
-            <div className="bg-[#0A1322] rounded-2xl border border-[#162338] overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-[#070D18] text-slate-400 uppercase tracking-wider text-[11px] border-b border-[#162338]">
-                    <th className="py-3 px-5">Source URL Path</th>
-                    <th className="py-3 px-4">Target Destination URL</th>
-                    <th className="py-3 px-4">Redirect Code</th>
-                    <th className="py-3 px-4">Hits Saved</th>
-                    <th className="py-3 px-4">Notes</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#131F33]">
-                  {redirects.map((r) => (
-                    <tr key={r.id} className="hover:bg-[#0E1B2E] transition-colors">
-                      <td className="py-3.5 px-5 font-mono text-cyan-300">{r.source_path}</td>
-                      <td className="py-3.5 px-4 font-mono text-emerald-300 flex items-center gap-1.5">
-                        <CornerDownRight className="w-3 h-3 text-emerald-400" />
-                        <span>{r.target_path}</span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                          {r.redirect_code} Permanent
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-200">
-                        {r.hits_count.toLocaleString()} clicks
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px]">{r.notes || '—'}</td>
-                      <td className="py-3.5 px-4 text-right space-x-2">
-                        <a
-                          href={r.source_path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg bg-[#142338] text-cyan-400 hover:text-white transition-colors inline-block"
-                          title="Test live redirect"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                        <button
-                          onClick={() => openEditRedirectModal(r)}
-                          className="p-1.5 rounded-lg bg-[#142338] text-slate-300 hover:text-white transition-colors"
-                          title="Edit"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRedirect(r.id, r.source_path)}
-                          className="p-1.5 rounded-lg bg-[#142338] text-rose-400 hover:text-rose-300 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
+            <div className="bg-white rounded-2xl border border-[#EDE7DF] overflow-hidden shadow-2xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#F7F5F0] text-[#7A7468] uppercase tracking-wider text-[11px] border-b border-[#EDE7DF]">
+                      <th className="py-3 px-4 font-bold min-w-[150px]">Source URL Path</th>
+                      <th className="py-3 px-4 font-bold min-w-[180px]">Target Destination URL</th>
+                      <th className="py-3 px-3 font-bold min-w-[100px]">Code</th>
+                      <th className="py-3 px-3 font-bold min-w-[90px]">Hits Saved</th>
+                      <th className="py-3 px-4 font-bold min-w-[120px]">Notes</th>
+                      <th className="py-3 px-4 font-bold text-right min-w-[110px]">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#EDE7DF]">
+                    {redirects.map((r) => (
+                      <tr key={r.id} className="hover:bg-[#FAF8F5] transition-colors">
+                        <td className="py-3 px-4 font-mono text-[#1E6091] font-semibold">{r.source_path}</td>
+                        <td className="py-3 px-4 font-mono text-[#2E7D5A] font-semibold flex items-center gap-1.5">
+                          <CornerDownRight className="w-3 h-3 text-[#2E7D5A] shrink-0" />
+                          <span className="truncate max-w-xs">{r.target_path}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#F0F8FF] text-[#1E6091] border border-[#BCE0FD]">
+                            {r.redirect_code} Permanent
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-bold text-[#1E1B18]">
+                          {r.hits_count.toLocaleString()} clicks
+                        </td>
+                        <td className="py-3 px-4 text-[#7A7468] text-[11px] truncate max-w-xs">{r.notes || '—'}</td>
+                        <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                          <a
+                            href={r.source_path}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-[#FAF8F5] text-[#1E6091] hover:bg-[#F0F8FF] transition-colors inline-block border border-[#EDE7DF]"
+                            title="Test live redirect"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                          <button
+                            onClick={() => openEditRedirectModal(r)}
+                            className="p-1.5 rounded-lg bg-[#FAF8F5] text-[#6A6357] hover:text-[#1E1B18] hover:bg-[#EDE7DF] transition-colors border border-[#EDE7DF] cursor-pointer"
+                            title="Edit"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRedirect(r.id, r.source_path)}
+                            className="p-1.5 rounded-lg bg-[#FAF8F5] text-[#C93B3B] hover:bg-[#FDF2F2] transition-colors border border-[#EDE7DF] cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {/* Sub-view 2: 404 Crawl Error Logs */}
           {redirectSubTab === 'crawl_errors' && (
             <div className="space-y-3">
-              <div className="bg-[#1F141A] border border-rose-500/30 rounded-2xl p-4 text-xs text-rose-300 flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+              <div className="bg-[#FDF2F2] border border-[#F8C8C8] rounded-2xl p-4 text-xs text-[#C93B3B] flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-[#C93B3B] shrink-0" />
                 <span>
-                  The 404 Crawl Monitor tracks every broken link or dead URL accessed by Googlebot, Bingbot, or external backlinks. Click <strong>"Fix with 301 Redirect"</strong> to immediately preserve SEO link juice.
+                  The 404 Crawl Monitor tracks broken links accessed by Googlebot, Bingbot, or external backlinks. Click <strong>"Fix with 301 Redirect"</strong> to immediately preserve SEO authority.
                 </span>
               </div>
 
-              <div className="bg-[#0A1322] rounded-2xl border border-[#162338] overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-[#070D18] text-slate-400 uppercase tracking-wider text-[11px] border-b border-[#162338]">
-                      <th className="py-3 px-5">Dead / Missing URL Path</th>
-                      <th className="py-3 px-4">Hits Count</th>
-                      <th className="py-3 px-4">Detected Referer &amp; Crawler</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#131F33]">
-                    {crawlErrors.map((err) => (
-                      <tr key={err.id} className="hover:bg-[#0E1B2E] transition-colors">
-                        <td className="py-3.5 px-5 font-mono text-rose-300">{err.path}</td>
-                        <td className="py-3.5 px-4 font-bold text-white">{err.hits_count} misses</td>
-                        <td className="py-3.5 px-4 text-slate-400 text-[11px] max-w-xs truncate">
-                          {err.user_agent || err.referer || 'Search Crawler'}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              err.status === 'resolved'
-                                ? 'bg-emerald-500/20 text-emerald-300'
-                                : 'bg-rose-500/20 text-rose-300'
-                            }`}
-                          >
-                            {err.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-right space-x-2">
-                          <button
-                            onClick={() => openNewRedirectModal(err.path)}
-                            className="px-3 py-1 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-all"
-                          >
-                            Fix with 301 Redirect
-                          </button>
-                          {err.status !== 'resolved' && (
-                            <button
-                              onClick={() => handleResolveCrawlError(err.id)}
-                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#142338] text-slate-300 hover:text-white"
-                            >
-                              Resolve
-                            </button>
-                          )}
-                        </td>
+              <div className="bg-white rounded-2xl border border-[#EDE7DF] overflow-hidden shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-[#F7F5F0] text-[#7A7468] uppercase tracking-wider text-[11px] border-b border-[#EDE7DF]">
+                        <th className="py-3 px-4 font-bold min-w-[150px]">Dead URL Path</th>
+                        <th className="py-3 px-3 font-bold min-w-[90px]">Hits Count</th>
+                        <th className="py-3 px-4 font-bold min-w-[160px]">Detected Crawler / Referer</th>
+                        <th className="py-3 px-3 font-bold min-w-[90px]">Status</th>
+                        <th className="py-3 px-4 font-bold text-right min-w-[150px]">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-[#EDE7DF]">
+                      {crawlErrors.map((err) => (
+                        <tr key={err.id} className="hover:bg-[#FAF8F5] transition-colors">
+                          <td className="py-3 px-4 font-mono text-[#C93B3B] font-semibold">{err.path}</td>
+                          <td className="py-3 px-3 font-bold text-[#1E1B18]">{err.hits_count} misses</td>
+                          <td className="py-3 px-4 text-[#7A7468] text-[11px] max-w-xs truncate">
+                            {err.user_agent || err.referer || 'Search Crawler'}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                err.status === 'resolved'
+                                  ? 'bg-[#EDF7F1] text-[#2E7D5A]'
+                                  : 'bg-[#FDF2F2] text-[#C93B3B]'
+                              }`}
+                            >
+                              {err.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+                            <button
+                              onClick={() => openNewRedirectModal(err.path)}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6] hover:bg-[#DEEFE5] transition-all cursor-pointer"
+                            >
+                              Fix with 301
+                            </button>
+                            {err.status !== 'resolved' && (
+                              <button
+                                onClick={() => handleResolveCrawlError(err.id)}
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#FAF8F5] text-[#6A6357] hover:text-[#1E1B18] border border-[#EDE7DF] cursor-pointer"
+                              >
+                                Resolve
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1087,37 +1217,37 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           TAB 3: GLOBAL SERP & CANONICAL
           ========================================================================= */}
       {activeTab === 'global_serp' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Settings Form */}
           <form onSubmit={handleSaveSerp} className="lg:col-span-7 space-y-4">
-            <div className="bg-[#0A1322] rounded-2xl p-6 border border-[#162338] space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] space-y-4 shadow-2xs">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#C26B18] flex items-center gap-2">
                 <Globe className="w-4 h-4" /> Global Site Metadata &amp; Search Identity
               </h3>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1E1B18]">
                   Site Title Format Template
                 </label>
                 <input
                   type="text"
                   value={serpSettings.site_title_format}
                   onChange={(e) => setSerpSettings({ ...serpSettings, site_title_format: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-[#7A7468]">
                   Variables available: <code>%title%</code>, <code>%sitename%</code>, <code>%category%</code>
                 </span>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex justify-between items-center text-xs">
-                  <label className="font-semibold text-slate-300">Global Default Meta Description</label>
+                  <label className="font-bold text-[#1E1B18]">Global Default Meta Description</label>
                   <span
                     className={`text-[11px] font-bold ${
                       serpSettings.meta_description.length >= 120 && serpSettings.meta_description.length <= 160
-                        ? 'text-emerald-400'
-                        : 'text-amber-400'
+                        ? 'text-[#2E7D5A]'
+                        : 'text-[#C26B18]'
                     }`}
                   >
                     {serpSettings.meta_description.length} / 160 chars
@@ -1127,55 +1257,34 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                   rows={3}
                   value={serpSettings.meta_description}
                   onChange={(e) => setSerpSettings({ ...serpSettings, meta_description: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl p-3 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Primary Canonical Domain</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1E1B18]">Primary Canonical Domain</label>
                 <input
                   type="text"
                   value={serpSettings.canonical_domain}
                   onChange={(e) => setSerpSettings({ ...serpSettings, canonical_domain: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Default Social Share Image (Open Graph)</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1E1B18]">Default Social Share Image (Open Graph)</label>
                 <input
                   type="text"
                   value={serpSettings.og_image}
                   onChange={(e) => setSerpSettings({ ...serpSettings, og_image: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Google Site Verification Tag</label>
-                  <input
-                    type="text"
-                    value={serpSettings.google_site_verification}
-                    onChange={(e) => setSerpSettings({ ...serpSettings, google_site_verification: e.target.value })}
-                    className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Bing Webmaster Verification Tag</label>
-                  <input
-                    type="text"
-                    value={serpSettings.bing_site_verification}
-                    onChange={(e) => setSerpSettings({ ...serpSettings, bing_site_verification: e.target.value })}
-                    className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isSavingSerp}
-                className="w-full py-3 rounded-xl bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs uppercase tracking-wider transition-all shadow-md"
+                className="w-full py-2.5 rounded-xl bg-[#2E7D5A] text-white hover:bg-[#246649] font-bold text-xs uppercase tracking-wider transition-all shadow-xs cursor-pointer"
               >
                 {isSavingSerp ? 'Saving...' : 'Save Global SERP Settings'}
               </button>
@@ -1184,24 +1293,24 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
 
           {/* Live Google SERP Snippet Preview */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-[#0A1322] rounded-2xl p-6 border border-[#162338] space-y-4">
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] space-y-4 shadow-2xs">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#7A7468]">
                   Live Google SERP Preview
                 </h4>
-                <div className="flex items-center bg-[#070D18] rounded-lg p-1 border border-[#1E2E48] text-xs">
+                <div className="flex items-center bg-[#FAF8F5] rounded-lg p-0.5 border border-[#DDD5CA] text-xs">
                   <button
                     onClick={() => setSerpPreviewMode('desktop')}
-                    className={`px-2.5 py-1 rounded flex items-center gap-1 font-semibold ${
-                      serpPreviewMode === 'desktop' ? 'bg-[#16253C] text-white' : 'text-slate-400'
+                    className={`px-2 py-1 rounded flex items-center gap-1 font-semibold cursor-pointer ${
+                      serpPreviewMode === 'desktop' ? 'bg-white text-[#1E1B18] shadow-2xs' : 'text-[#7A7468]'
                     }`}
                   >
                     <Monitor className="w-3 h-3" /> Desktop
                   </button>
                   <button
                     onClick={() => setSerpPreviewMode('mobile')}
-                    className={`px-2.5 py-1 rounded flex items-center gap-1 font-semibold ${
-                      serpPreviewMode === 'mobile' ? 'bg-[#16253C] text-white' : 'text-slate-400'
+                    className={`px-2 py-1 rounded flex items-center gap-1 font-semibold cursor-pointer ${
+                      serpPreviewMode === 'mobile' ? 'bg-white text-[#1E1B18] shadow-2xs' : 'text-[#7A7468]'
                     }`}
                   >
                     <Smartphone className="w-3 h-3" /> Mobile
@@ -1210,9 +1319,9 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
               </div>
 
               {/* SERP Card */}
-              <div className="bg-white rounded-2xl p-5 text-slate-900 shadow-xl space-y-2">
+              <div className="bg-[#FAF8F5] rounded-xl p-4 text-slate-900 border border-[#DDD5CA] space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-amber-600 text-white font-bold text-[10px] flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-[#E8734A] text-white font-bold text-[10px] flex items-center justify-center">
                     TM
                   </div>
                   <div className="leading-tight">
@@ -1221,7 +1330,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                   </div>
                 </div>
 
-                <h3 className="text-lg font-medium text-[#1a0dab] hover:underline cursor-pointer leading-snug">
+                <h3 className="text-base font-medium text-[#1a0dab] hover:underline cursor-pointer leading-snug">
                   {serpSettings.site_title_format.replace('%title%', 'Stories of Movement & Light')}
                 </h3>
 
@@ -1231,16 +1340,16 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
               </div>
 
               {/* Open Graph Card */}
-              <div className="space-y-2 pt-2">
-                <span className="text-xs font-semibold text-slate-400 block">Social Share (Open Graph) Preview</span>
-                <div className="bg-[#070D18] border border-[#1E2E48] rounded-xl overflow-hidden shadow-md">
-                  <img src={serpSettings.og_image} alt="OG" className="w-full h-36 object-cover" />
+              <div className="space-y-1.5 pt-1">
+                <span className="text-xs font-bold text-[#7A7468] block">Social Share (Open Graph) Preview</span>
+                <div className="bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl overflow-hidden shadow-2xs">
+                  <img src={serpSettings.og_image} alt="OG" className="w-full h-32 object-cover" />
                   <div className="p-3">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block">TOUFIQMOTION.COM</span>
-                    <h5 className="text-xs font-bold text-white line-clamp-1 mt-0.5">
+                    <span className="text-[10px] text-[#7A7468] uppercase tracking-wider block font-semibold">TOUFIQMOTION.COM</span>
+                    <h5 className="text-xs font-bold text-[#1E1B18] line-clamp-1 mt-0.5">
                       {serpSettings.site_title_format.replace('%title%', 'Stories of Movement & Light')}
                     </h5>
-                    <p className="text-[11px] text-slate-400 line-clamp-1 mt-1">{serpSettings.meta_description}</p>
+                    <p className="text-[11px] text-[#7A7468] line-clamp-1 mt-0.5">{serpSettings.meta_description}</p>
                   </div>
                 </div>
               </div>
@@ -1253,57 +1362,57 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           TAB 4: SCHEMA.ORG KNOWLEDGE GRAPH
           ========================================================================= */}
       {activeTab === 'schema' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <form onSubmit={handleSaveSchema} className="lg:col-span-6 space-y-4">
-            <div className="bg-[#0A1322] rounded-2xl p-6 border border-[#162338] space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] space-y-4 shadow-2xs">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#543884] flex items-center gap-2">
                 <Code2 className="w-4 h-4" /> Entity &amp; Knowledge Graph Configuration
               </h3>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Schema Entity Type</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1E1B18]">Schema Entity Type</label>
                 <select
                   value={schemaSettings.knowledge_type}
                   onChange={(e) => setSchemaSettings({ ...schemaSettings, knowledge_type: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#543884] focus:bg-white"
                 >
                   <option value="Organization">Organization (Publishing Media House)</option>
                   <option value="Person">Person (Independent Visual Journalist)</option>
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Entity Legal Brand Name</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1E1B18]">Entity Legal Brand Name</label>
                 <input
                   type="text"
                   value={schemaSettings.knowledge_name}
                   onChange={(e) => setSchemaSettings({ ...schemaSettings, knowledge_name: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#543884] focus:bg-white"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Official Brand Logo URL</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1E1B18]">Official Brand Logo URL</label>
                 <input
                   type="text"
                   value={schemaSettings.knowledge_logo}
                   onChange={(e) => setSchemaSettings({ ...schemaSettings, knowledge_logo: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#543884] focus:bg-white"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Founder &amp; Chief Editor</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1E1B18]">Founder &amp; Chief Editor</label>
                 <input
                   type="text"
                   value={schemaSettings.knowledge_founder}
                   onChange={(e) => setSchemaSettings({ ...schemaSettings, knowledge_founder: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#543884] focus:bg-white"
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300 block">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#1E1B18] block">
                   Connected Social Profiles (SameAs Graph)
                 </label>
                 {schemaSettings.socials.map((social, idx) => (
@@ -1316,7 +1425,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                         next[idx] = e.target.value;
                         setSchemaSettings({ ...schemaSettings, socials: next });
                       }}
-                      className="flex-1 bg-[#070D18] border border-[#1E2E48] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="flex-1 bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3 py-1.5 text-xs text-[#1E1B18] focus:outline-none focus:border-[#543884] focus:bg-white"
                     />
                     <button
                       type="button"
@@ -1324,7 +1433,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                         const next = schemaSettings.socials.filter((_, i) => i !== idx);
                         setSchemaSettings({ ...schemaSettings, socials: next });
                       }}
-                      className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                      className="p-2 rounded-xl bg-[#FDF2F2] text-[#C93B3B] hover:bg-[#FCE3E3] cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1338,7 +1447,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                       socials: [...schemaSettings.socials, 'https://linkedin.com/in/toufiqmotion']
                     })
                   }
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                  className="text-xs text-[#543884] hover:text-[#432c6b] font-semibold flex items-center gap-1 cursor-pointer pt-0.5"
                 >
                   <Plus className="w-3 h-3" /> Add Social Profile
                 </button>
@@ -1347,7 +1456,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
               <button
                 type="submit"
                 disabled={isSavingSchema}
-                className="w-full py-3 rounded-xl bg-indigo-500 text-white hover:bg-indigo-400 font-bold text-xs uppercase tracking-wider transition-all shadow-md"
+                className="w-full py-2.5 rounded-xl bg-[#543884] text-white hover:bg-[#432c6b] font-bold text-xs uppercase tracking-wider transition-all shadow-xs cursor-pointer"
               >
                 {isSavingSchema ? 'Saving...' : 'Deploy Knowledge Graph'}
               </button>
@@ -1356,9 +1465,9 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
 
           {/* JSON-LD Live Viewer */}
           <div className="lg:col-span-6 space-y-4">
-            <div className="bg-[#0A1322] rounded-2xl p-6 border border-[#162338] space-y-4">
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] space-y-3 shadow-2xs">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#7A7468]">
                   Live JSON-LD Graph Payload
                 </h4>
                 <div className="flex items-center gap-2">
@@ -1368,16 +1477,16 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                       setIsCopiedJsonLd(true);
                       setTimeout(() => setIsCopiedJsonLd(false), 2000);
                     }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#16253C] text-indigo-300 hover:text-white flex items-center gap-1"
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-[#FAF8F5] border border-[#DDD5CA] text-[#543884] hover:bg-[#F3F0FC] flex items-center gap-1 cursor-pointer"
                   >
-                    {isCopiedJsonLd ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {isCopiedJsonLd ? <Check className="w-3.5 h-3.5 text-[#2E7D5A]" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{isCopiedJsonLd ? 'Copied!' : 'Copy Code'}</span>
                   </button>
                   <a
                     href="https://search.google.com/test/rich-results"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/25 flex items-center gap-1"
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-[#F3F0FC] text-[#543884] border border-[#D9D0F5] hover:bg-[#E8E1F8] flex items-center gap-1"
                   >
                     <span>Test on Google</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -1385,7 +1494,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                 </div>
               </div>
 
-              <div className="bg-[#050912] rounded-xl p-4 border border-[#162338] font-mono text-[11px] text-indigo-200 overflow-x-auto max-h-[460px] leading-relaxed">
+              <div className="bg-[#FAF8F5] rounded-xl p-3.5 border border-[#DDD5CA] font-mono text-[11px] text-[#2E4A3B] overflow-x-auto max-h-[460px] leading-relaxed">
                 <pre>{generatedJsonLd}</pre>
               </div>
             </div>
@@ -1397,19 +1506,19 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           TAB 5: ROBOTS.TXT & XML SITEMAP
           ========================================================================= */}
       {activeTab === 'robots_sitemap' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Robots.txt Editor */}
           <div className="lg:col-span-6 space-y-4">
-            <div className="bg-[#0A1322] rounded-2xl p-6 border border-[#162338] space-y-4">
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] space-y-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#1E6091] flex items-center gap-2">
                   <Bot className="w-4 h-4" /> Live Robots.txt Deployment
                 </h3>
                 <a
                   href="/robots.txt"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-sky-400 hover:underline flex items-center gap-1"
+                  className="text-xs text-[#1E6091] hover:underline flex items-center gap-1 font-semibold"
                 >
                   <span>Open live</span>
                   <ExternalLink className="w-3 h-3" />
@@ -1417,38 +1526,38 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400">Presets:</span>
+                <span className="text-[11px] text-[#7A7468]">Presets:</span>
                 <button
                   type="button"
                   onClick={() =>
                     setRobotsTxt(
-                      `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: http://localhost:3000/sitemap.xml`
+                      `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${typeof window !== 'undefined' ? window.location.origin : ''}/sitemap.xml`
                     )
                   }
-                  className="px-2.5 py-1 rounded bg-[#16253C] hover:bg-[#1E3250] text-slate-300 text-[10px] font-semibold"
+                  className="px-2 py-1 rounded bg-[#FAF8F5] hover:bg-[#EDE7DF] border border-[#DDD5CA] text-[#6A6357] text-[10px] font-semibold cursor-pointer"
                 >
                   Standard Production
                 </button>
                 <button
                   type="button"
                   onClick={() => setRobotsTxt(`User-agent: *\nDisallow: /`)}
-                  className="px-2.5 py-1 rounded bg-[#16253C] hover:bg-[#1E3250] text-slate-300 text-[10px] font-semibold"
+                  className="px-2 py-1 rounded bg-[#FAF8F5] hover:bg-[#EDE7DF] border border-[#DDD5CA] text-[#6A6357] text-[10px] font-semibold cursor-pointer"
                 >
                   Staging / No-Index
                 </button>
               </div>
 
               <textarea
-                rows={10}
+                rows={9}
                 value={robotsTxt}
                 onChange={(e) => setRobotsTxt(e.target.value)}
-                className="w-full bg-[#050912] border border-[#162338] rounded-xl p-4 font-mono text-xs text-sky-200 focus:outline-none focus:border-sky-500 leading-relaxed"
+                className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl p-3.5 font-mono text-xs text-[#1E1B18] focus:outline-none focus:border-[#1E6091] focus:bg-white leading-relaxed"
               />
 
               <button
                 onClick={handleSaveRobots}
                 disabled={isSavingRobots}
-                className="w-full py-3 rounded-xl bg-sky-500 text-slate-950 hover:bg-sky-400 font-bold text-xs uppercase tracking-wider transition-all shadow-md"
+                className="w-full py-2.5 rounded-xl bg-[#1E6091] text-white hover:bg-[#164b73] font-bold text-xs uppercase tracking-wider transition-all shadow-xs cursor-pointer"
               >
                 {isSavingRobots ? 'Deploying...' : 'Save & Deploy robots.txt'}
               </button>
@@ -1457,50 +1566,50 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
 
           {/* XML Sitemap Inspector */}
           <div className="lg:col-span-6 space-y-4">
-            <div className="bg-[#0A1322] rounded-2xl p-6 border border-[#162338] space-y-4">
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] space-y-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#2E7D5A] flex items-center gap-2">
                   <Network className="w-4 h-4" /> Dynamic XML Sitemap Protocol
                 </h3>
                 <a
                   href="/sitemap.xml"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-bold"
+                  className="text-xs text-[#2E7D5A] hover:underline flex items-center gap-1 font-bold"
                 >
                   <span>View live /sitemap.xml</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
 
-              <div className="bg-[#0B1B18] border border-emerald-500/30 rounded-xl p-4 text-xs text-emerald-300 space-y-2">
+              <div className="bg-[#EDF7F1] border border-[#C8E9D6] rounded-xl p-3.5 text-xs text-[#2E7D5A] space-y-1.5">
                 <div className="flex items-center justify-between font-bold">
                   <span>Engine Status: Live &amp; Real-Time</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">XML 0.9 Protocol</span>
+                  <span className="px-2 py-0.5 rounded bg-white text-[#2E7D5A] border border-[#C8E9D6] text-[10px]">XML 0.9 Protocol</span>
                 </div>
-                <p className="text-[11px] text-emerald-200/80 leading-relaxed">
+                <p className="text-[11px] text-[#246649] leading-relaxed">
                   The sitemap is computed dynamically on request from SQLite, automatically including all published stories, categories, and core landing pages without caching delays.
                 </p>
               </div>
 
-              <div className="space-y-2.5">
-                <h5 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Included Slices</h5>
+              <div className="space-y-2">
+                <h5 className="text-[11px] font-bold text-[#7A7468] uppercase tracking-wider">Included Slices</h5>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-[#070D18] p-3 rounded-xl border border-[#162338] flex items-center justify-between">
-                    <span className="text-slate-400">Articles / Posts:</span>
-                    <span className="font-bold text-white">{overview.breakdown.articles} (Priority 0.90)</span>
+                  <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] flex items-center justify-between">
+                    <span className="text-[#7A7468]">Articles / Posts:</span>
+                    <span className="font-bold text-[#1E1B18]">{overview.breakdown.articles} (0.90)</span>
                   </div>
-                  <div className="bg-[#070D18] p-3 rounded-xl border border-[#162338] flex items-center justify-between">
-                    <span className="text-slate-400">Categories:</span>
-                    <span className="font-bold text-white">{overview.breakdown.categories} (Priority 0.85)</span>
+                  <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] flex items-center justify-between">
+                    <span className="text-[#7A7468]">Categories:</span>
+                    <span className="font-bold text-[#1E1B18]">{overview.breakdown.categories} (0.85)</span>
                   </div>
-                  <div className="bg-[#070D18] p-3 rounded-xl border border-[#162338] flex items-center justify-between">
-                    <span className="text-slate-400">Static Pages:</span>
-                    <span className="font-bold text-white">{overview.breakdown.staticPages} (Priority 1.0)</span>
+                  <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] flex items-center justify-between">
+                    <span className="text-[#7A7468]">Static Pages:</span>
+                    <span className="font-bold text-[#1E1B18]">{overview.breakdown.staticPages} (1.0)</span>
                   </div>
-                  <div className="bg-[#070D18] p-3 rounded-xl border border-[#162338] flex items-center justify-between">
-                    <span className="text-slate-400">Total URLs:</span>
-                    <span className="font-bold text-emerald-400">{overview.totalIndexedUrls} URLs</span>
+                  <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] flex items-center justify-between">
+                    <span className="text-[#7A7468]">Total URLs:</span>
+                    <span className="font-bold text-[#2E7D5A]">{overview.totalIndexedUrls} URLs</span>
                   </div>
                 </div>
               </div>
@@ -1508,7 +1617,7 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
               <button
                 onClick={handlePingSearchEngines}
                 disabled={isPinging}
-                className="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl bg-[#2E7D5A] text-white hover:bg-[#246649] font-bold text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Submit Sitemap to Google &amp; Bing</span>
@@ -1519,55 +1628,367 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
       )}
 
       {/* =========================================================================
-          TAB 6: SEARCH CONSOLE & ANALYTICS
+          TAB 6: SEARCH CONSOLE, ANALYTICS & CUSTOM HEAD TAGS
           ========================================================================= */}
       {activeTab === 'search_console' && (
-        <div className="space-y-6">
-          {/* Performance Overview Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#0A1322] border border-[#162338] rounded-2xl p-4 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Clicks</span>
-              <div className="text-2xl font-bold text-emerald-400">12,480</div>
-              <span className="text-[11px] text-emerald-300 font-semibold">+18.4% last 28 days</span>
+        <div className="space-y-5">
+          {/* Real Live Verification Status Banner */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#EDE7DF] shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#EDE7DF] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#EDF7F1] flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4 text-[#2E7D5A]" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-sm sm:text-base text-[#1E1B18]">
+                    Live Tracking &amp; Head Tag Verification Engine
+                  </h3>
+                  <p className="text-[11px] text-[#7A7468]">
+                    All tags are dynamically rendered on the server into the HTML &lt;head&gt; for crawlers and in the client DOM.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleRunHeadVerification}
+                disabled={isVerifyingHead}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6] hover:bg-[#DEEFE5] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer shrink-0"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingHead ? 'animate-spin' : ''}`} />
+                <span>{isVerifyingHead ? 'Verifying Live...' : 'Verify Live in <head>'}</span>
+              </button>
             </div>
-            <div className="bg-[#0A1322] border border-[#162338] rounded-2xl p-4 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Impressions</span>
-              <div className="text-2xl font-bold text-amber-400">184,200</div>
-              <span className="text-[11px] text-amber-300 font-semibold">+24.1% last 28 days</span>
-            </div>
-            <div className="bg-[#0A1322] border border-[#162338] rounded-2xl p-4 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Average CTR</span>
-              <div className="text-2xl font-bold text-cyan-400">6.78%</div>
-              <span className="text-[11px] text-cyan-300 font-semibold">High Engagement</span>
-            </div>
-            <div className="bg-[#0A1322] border border-[#162338] rounded-2xl p-4 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Average Position</span>
-              <div className="text-2xl font-bold text-indigo-400">3.8</div>
-              <span className="text-[11px] text-indigo-300 font-semibold">Top 5 on Google</span>
+
+            {/* Live Status Indicators (Real, not fake) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
+              <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#7A7468] block">Search Console</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${trackingForm.google_site_verification ? 'bg-[#2E7D5A]' : 'bg-[#DDD5CA]'}`} />
+                  <span className={`text-xs font-bold ${trackingForm.google_site_verification ? 'text-[#2E7D5A]' : 'text-[#7A7468]'}`}>
+                    {trackingForm.google_site_verification ? 'Configured' : 'Not Set'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#7A7468] block">Bing Webmaster</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${trackingForm.bing_site_verification ? 'bg-[#1E6091]' : 'bg-[#DDD5CA]'}`} />
+                  <span className={`text-xs font-bold ${trackingForm.bing_site_verification ? 'text-[#1E6091]' : 'text-[#7A7468]'}`}>
+                    {trackingForm.bing_site_verification ? 'Configured' : 'Not Set'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#7A7468] block">Google Analytics (GA4)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${trackingForm.google_analytics_id ? 'bg-[#2E7D5A]' : 'bg-[#DDD5CA]'}`} />
+                  <span className={`text-xs font-bold ${trackingForm.google_analytics_id ? 'text-[#2E7D5A]' : 'text-[#7A7468]'}`}>
+                    {trackingForm.google_analytics_id ? 'Active (GA4)' : 'Not Set'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#7A7468] block">Tag Manager (GTM)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${trackingForm.google_tag_manager_id ? 'bg-[#1E6091]' : 'bg-[#DDD5CA]'}`} />
+                  <span className={`text-xs font-bold ${trackingForm.google_tag_manager_id ? 'text-[#1E6091]' : 'text-[#7A7468]'}`}>
+                    {trackingForm.google_tag_manager_id ? 'Active (GTM)' : 'Not Set'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EDE7DF] space-y-1 col-span-2 sm:col-span-1">
+                <span className="text-[10px] uppercase font-bold text-[#7A7468] block">Custom &lt;head&gt; Code</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${trackingForm.custom_head_tags ? 'bg-[#C26B18]' : 'bg-[#DDD5CA]'}`} />
+                  <span className={`text-xs font-bold ${trackingForm.custom_head_tags ? 'text-[#C26B18]' : 'text-[#7A7468]'}`}>
+                    {trackingForm.custom_head_tags ? `${trackingForm.custom_head_tags.length} chars` : 'Empty'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Instant Indexing API Ping Tool */}
-          <div className="bg-[#0A1322] rounded-2xl p-6 border border-[#162338] space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                <Send className="w-4 h-4" /> Google Instant Indexing API Ping
-              </h3>
-              <span className="text-xs text-slate-400">IndexNow &amp; Google Cloud Indexing</span>
+          {/* Form: Search Console, Analytics & Custom Head Tags */}
+          <form onSubmit={handleSaveTracking} className="space-y-4">
+            
+            {/* Card 1: Search Engine Verification Codes */}
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#2E7D5A] flex items-center gap-2">
+                  <Search className="w-4 h-4" /> 1. Search Engine Console Verification Codes
+                </h3>
+                <span className="text-[11px] text-[#7A7468]">Google Search Console &amp; Bing Webmaster</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Google Site Verification */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#1E1B18] flex items-center gap-1.5">
+                      <span>Google Search Console Verification</span>
+                      {trackingForm.google_site_verification && (
+                        <span className="text-[10px] text-[#2E7D5A] font-bold">✓ Active</span>
+                      )}
+                    </label>
+                    <a
+                      href="https://search.google.com/search-console"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-[#2E7D5A] hover:underline flex items-center gap-1"
+                    >
+                      <span>Open GSC</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder='google-site-verification=... or <meta name="google-site-verification" content="..." />'
+                    value={trackingForm.google_site_verification}
+                    onChange={(e) => setTrackingForm({ ...trackingForm, google_site_verification: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] font-mono focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
+                  />
+                  <p className="text-[11px] text-[#7A7468]">
+                    In Search Console, choose <strong>URL Prefix</strong> &rarr; <strong>HTML Tag</strong>, then paste the tag or code above.
+                  </p>
+                </div>
+
+                {/* Bing Webmaster Verification */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#1E1B18] flex items-center gap-1.5">
+                      <span>Bing Webmaster Tools Verification</span>
+                      {trackingForm.bing_site_verification && (
+                        <span className="text-[10px] text-[#1E6091] font-bold">✓ Active</span>
+                      )}
+                    </label>
+                    <a
+                      href="https://www.bing.com/webmasters"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-[#1E6091] hover:underline flex items-center gap-1"
+                    >
+                      <span>Open Bing</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder='e.g. 3F68A48B25C6719E or <meta name="msvalidate.01" content="..." />'
+                    value={trackingForm.bing_site_verification}
+                    onChange={(e) => setTrackingForm({ ...trackingForm, bing_site_verification: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] font-mono focus:outline-none focus:border-[#1E6091] focus:bg-white"
+                  />
+                  <p className="text-[11px] text-[#7A7468]">
+                    In Bing Webmaster Tools, choose <strong>HTML Meta Tag</strong>, then paste the code or tag.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmitIndexing} className="flex flex-col sm:flex-row gap-3">
+            {/* Card 2: Google Analytics & Google Tag Manager */}
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#1E6091] flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" /> 2. Google Analytics 4 (GA4) &amp; Google Tag Manager (GTM)
+                </h3>
+                <span className="text-[11px] text-[#7A7468]">Real-time visitor tracking</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* GA4 Measurement ID */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#1E1B18]">
+                      Google Analytics 4 Measurement ID
+                    </label>
+                    <a
+                      href="https://analytics.google.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-[#1E6091] hover:underline flex items-center gap-1"
+                    >
+                      <span>Open GA4</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="G-XXXXXXXXXX"
+                    value={trackingForm.google_analytics_id}
+                    onChange={(e) => setTrackingForm({ ...trackingForm, google_analytics_id: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] font-mono focus:outline-none focus:border-[#1E6091] focus:bg-white"
+                  />
+                  <p className="text-[11px] text-[#7A7468]">
+                    Found in Google Analytics Admin &rarr; Data Streams &rarr; Measurement ID. Automatically outputs the official <code>gtag.js</code> script.
+                  </p>
+                </div>
+
+                {/* Google Tag Manager Container ID */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#1E1B18]">
+                      Google Tag Manager Container ID
+                    </label>
+                    <a
+                      href="https://tagmanager.google.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-[#1E6091] hover:underline flex items-center gap-1"
+                    >
+                      <span>Open GTM</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="GTM-XXXXXXX"
+                    value={trackingForm.google_tag_manager_id}
+                    onChange={(e) => setTrackingForm({ ...trackingForm, google_tag_manager_id: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] font-mono focus:outline-none focus:border-[#1E6091] focus:bg-white"
+                  />
+                  <p className="text-[11px] text-[#7A7468]">
+                    Optional: If using GTM instead of standalone GA4, enter your Container ID to load all your marketing tags.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Custom Tag Submit in Head Option */}
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#C26B18] flex items-center gap-2">
+                    <Code2 className="w-4 h-4" /> 3. Custom &lt;head&gt; Code &amp; Script Injection
+                  </h3>
+                  <p className="text-[11px] text-[#7A7468] mt-0.5">
+                    Inject arbitrary custom meta tags, tracking pixels (Meta Pixel, Pinterest, TikTok), Google AdSense, or verification scripts directly into the HTML &lt;head&gt;.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const template = `<!-- Meta Pixel Code -->\n<script>\n!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?\nn.callMethod.apply(n,arguments):n.queue.push(arguments)};\nif(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';\nn.queue=[];t=b.createElement(e);t.async=!0;\nt.src=v;s=b.getElementsByTagName(e)[0];\ns.parentNode.insertBefore(t,s)}(window, document,'script',\n'https://connect.facebook.net/en_US/fbevents.js');\nfbq('init', 'YOUR_PIXEL_ID');\nfbq('track', 'PageView');\n</script>`;
+                      setTrackingForm((prev) => ({
+                        ...prev,
+                        custom_head_tags: prev.custom_head_tags ? `${prev.custom_head_tags}\n\n${template}` : template
+                      }));
+                    }}
+                    className="px-2 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#EDE7DF] border border-[#DDD5CA] text-[10px] font-bold text-[#6A6357] cursor-pointer"
+                  >
+                    + Meta Pixel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const template = `<!-- Pinterest Tag -->\n<script>\n!function(e){if(!window.pintrk){window.pintrk = function () {\nwindow.pintrk.queue.push(Array.prototype.slice.call(arguments))};var\n  n=window.pintrk;n.queue=[],n.version="3.0";var\n  t=document.createElement("script");t.async=!0,t.src=e;var\n  r=document.getElementsByTagName("script")[0];\n  r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");\npintrk('load', 'YOUR_TAG_ID');\npintrk('page');\n</script>`;
+                      setTrackingForm((prev) => ({
+                        ...prev,
+                        custom_head_tags: prev.custom_head_tags ? `${prev.custom_head_tags}\n\n${template}` : template
+                      }));
+                    }}
+                    className="px-2 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#EDE7DF] border border-[#DDD5CA] text-[10px] font-bold text-[#6A6357] cursor-pointer"
+                  >
+                    + Pinterest Tag
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const template = `<meta name="author" content="Toufiq Motion" />\n<meta name="robots" content="index, follow, max-image-preview:large" />`;
+                      setTrackingForm((prev) => ({
+                        ...prev,
+                        custom_head_tags: prev.custom_head_tags ? `${prev.custom_head_tags}\n\n${template}` : template
+                      }));
+                    }}
+                    className="px-2 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#EDE7DF] border border-[#DDD5CA] text-[10px] font-bold text-[#6A6357] cursor-pointer"
+                  >
+                    + Custom Meta
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-[#1E1B18]">HTML / JavaScript Code to Inject</span>
+                  <span className="text-[11px] text-[#7A7468]">
+                    {trackingForm.custom_head_tags.length} characters
+                  </span>
+                </div>
+                <textarea
+                  rows={8}
+                  placeholder={`<!-- Paste your custom tracking scripts or meta tags here -->\n<script>\n  console.log("Toufiq Studio custom tag active");\n</script>`}
+                  value={trackingForm.custom_head_tags}
+                  onChange={(e) => setTrackingForm({ ...trackingForm, custom_head_tags: e.target.value })}
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl p-3 font-mono text-xs text-[#1E1B18] focus:outline-none focus:border-[#C26B18] focus:bg-white leading-relaxed"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-[#EDE7DF]">
+                <div className="text-[11px] text-[#7A7468]">
+                  Changes are persisted to SQLite and immediately injected into the live HTML output.
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSavingTracking}
+                  className="px-6 py-2.5 rounded-xl bg-[#2E7D5A] text-white hover:bg-[#246649] font-bold text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isSavingTracking ? 'Saving...' : 'Save & Deploy to <head>'}</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Card 4: Live Injected Head Preview & Server Verification */}
+          {headVerification && (
+            <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] shadow-2xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#543884] flex items-center gap-2">
+                  <Code2 className="w-4 h-4" /> Live Injected &lt;head&gt; HTML Inspector
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EDF7F1] text-[#2E7D5A] border border-[#C8E9D6]">
+                  Verified Live
+                </span>
+              </div>
+
+              <div className="bg-[#FAF8F5] rounded-xl p-3.5 border border-[#DDD5CA] font-mono text-[11px] text-[#2E4A3B] overflow-x-auto max-h-56 leading-relaxed">
+                <pre>{headVerification.injectedPreview || '<!-- No custom head tags currently configured -->'}</pre>
+              </div>
+            </div>
+          )}
+
+          {/* Card 5: Real Instant URL Indexing Submission Tool (IndexNow & Google API) */}
+          <div className="bg-white rounded-2xl p-5 border border-[#EDE7DF] space-y-3.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#2E7D5A] flex items-center gap-2">
+                <Send className="w-4 h-4" /> Instant Search Engine Indexing (Google API &amp; Bing IndexNow)
+              </h3>
+              <span className="text-xs text-[#7A7468]">Real-time Crawl Queue</span>
+            </div>
+
+            <p className="text-xs text-[#7A7468]">
+              Instantly notify Google and Bing crawlers about new or updated articles to achieve fastest indexing without waiting for passive crawl cycles.
+            </p>
+
+            <form onSubmit={handleSubmitIndexing} className="flex flex-col sm:flex-row gap-2.5">
               <input
                 type="url"
                 placeholder="https://toufiqmotion.com/travel/amalfi-coast-guide"
                 value={indexingUrl}
                 onChange={(e) => setIndexingUrl(e.target.value)}
-                className="flex-1 bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="flex-1 bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] placeholder-[#9E9587] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
               />
               <select
                 value={indexingEngine}
                 onChange={(e) => setIndexingEngine(e.target.value)}
-                className="bg-[#070D18] border border-[#1E2E48] rounded-xl px-3 py-2 text-xs text-white"
+                className="bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3 py-2 text-xs text-[#1E1B18]"
               >
                 <option value="Google Indexing API">Google Indexing API</option>
                 <option value="Bing IndexNow">Bing IndexNow</option>
@@ -1575,62 +1996,25 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
               <button
                 type="submit"
                 disabled={isSubmittingIndex}
-                className="px-6 py-2.5 rounded-xl bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold text-xs uppercase tracking-wider transition-all"
+                className="px-5 py-2 rounded-xl bg-[#2E7D5A] text-white hover:bg-[#246649] font-bold text-xs uppercase tracking-wider transition-all shadow-xs cursor-pointer"
               >
-                {isSubmittingIndex ? 'Submitting...' : 'Submit URL'}
+                {isSubmittingIndex ? 'Submitting...' : 'Queue Index Crawl'}
               </button>
             </form>
 
             {indexingLogs.length > 0 && (
-              <div className="bg-[#070D18] rounded-xl p-3 border border-[#162338] max-h-40 overflow-y-auto space-y-2">
+              <div className="bg-[#FAF8F5] rounded-xl p-3 border border-[#EDE7DF] max-h-36 overflow-y-auto space-y-1.5">
                 {indexingLogs.map((log) => (
                   <div key={log.id} className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-slate-300 truncate max-w-sm">{log.url}</span>
+                    <span className="text-[#1E1B18] truncate max-w-sm">{log.url}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-emerald-400">200 OK</span>
-                      <span className="text-slate-500 text-[10px]">{log.created_at?.split('T')[0]}</span>
+                      <span className="text-[#2E7D5A] font-bold">200 Queued</span>
+                      <span className="text-[#7A7468] text-[10px]">{log.created_at?.split('T')[0]}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Top Search Queries Table */}
-          <div className="bg-[#0A1322] rounded-2xl border border-[#162338] overflow-hidden">
-            <div className="p-4 border-b border-[#162338] flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Top Performing Google Search Queries (Last 28 Days)
-              </h4>
-              <span className="text-xs text-slate-400">Search Console Verified</span>
-            </div>
-
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-[#070D18] text-slate-400 uppercase tracking-wider text-[11px] border-b border-[#162338]">
-                  <th className="py-3 px-5">Search Query</th>
-                  <th className="py-3 px-4">Clicks</th>
-                  <th className="py-3 px-4">Impressions</th>
-                  <th className="py-3 px-4">CTR</th>
-                  <th className="py-3 px-4">Position</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#131F33]">
-                {searchQueries.map((q) => (
-                  <tr key={q.id} className="hover:bg-[#0E1B2E] transition-colors">
-                    <td className="py-3.5 px-5 font-semibold text-white">{q.query}</td>
-                    <td className="py-3.5 px-4 font-bold text-emerald-400">{q.clicks.toLocaleString()}</td>
-                    <td className="py-3.5 px-4 text-slate-300">{q.impressions.toLocaleString()}</td>
-                    <td className="py-3.5 px-4 text-cyan-400 font-semibold">{q.ctr}%</td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        #{q.position}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
@@ -1639,85 +2023,100 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           MODAL: QUICK EDIT SEO
           ========================================================================= */}
       {editingAuditItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-[#0B1524] border border-[#1E2E48] text-slate-100 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-[#1A2840] pb-4">
-              <h3 className="font-bold text-lg text-white">Quick Edit SEO &bull; {editingAuditItem.title}</h3>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingAuditItem(null);
+          }}
+        >
+          <div className="bg-white border border-[#EDE7DF] text-[#1E1B18] rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EDE7DF] pb-3">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.15em] text-[#2E7D5A] block">
+                  Quick SEO Metadata Editor
+                </span>
+                <h3 className="font-serif font-bold text-base text-[#1E1B18] line-clamp-1 mt-0.5">
+                  {editingAuditItem.title}
+                </h3>
+              </div>
               <button
+                type="button"
                 onClick={() => setEditingAuditItem(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F5] border border-[#EDE7DF] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#6A6357] hover:text-white shadow-xs cursor-pointer"
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider">Close</span>
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveQuickSeo} className="space-y-4">
+            <form onSubmit={handleSaveQuickSeo} className="space-y-3.5">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Focus Keyphrase</label>
+                <label className="text-xs font-bold text-[#1E1B18]">Focus Keyphrase</label>
                 <input
                   type="text"
                   value={quickSeoForm.focusKeyword}
                   onChange={(e) => setQuickSeoForm({ ...quickSeoForm, focusKeyword: e.target.value })}
                   placeholder="e.g. amalfi coast guide"
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">SEO Meta Title</label>
+                <label className="text-xs font-bold text-[#1E1B18]">SEO Meta Title</label>
                 <input
                   type="text"
                   value={quickSeoForm.metaTitle}
                   onChange={(e) => setQuickSeoForm({ ...quickSeoForm, metaTitle: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Meta Description</label>
+                <label className="text-xs font-bold text-[#1E1B18]">Meta Description</label>
                 <textarea
                   rows={3}
                   value={quickSeoForm.metaDescription}
                   onChange={(e) => setQuickSeoForm({ ...quickSeoForm, metaDescription: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl p-3 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Canonical URL</label>
+                <label className="text-xs font-bold text-[#1E1B18]">Canonical URL</label>
                 <input
                   type="text"
                   value={quickSeoForm.canonicalUrl}
                   onChange={(e) => setQuickSeoForm({ ...quickSeoForm, canonicalUrl: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#2E7D5A] focus:bg-white"
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="noIndexToggle"
                   checked={quickSeoForm.noIndex}
                   onChange={(e) => setQuickSeoForm({ ...quickSeoForm, noIndex: e.target.checked })}
-                  className="rounded border-[#1E2E48] text-rose-500 focus:ring-0"
+                  className="rounded border-[#DDD5CA] text-[#C93B3B] focus:ring-0"
                 />
-                <label htmlFor="noIndexToggle" className="text-xs text-slate-300">
+                <label htmlFor="noIndexToggle" className="text-xs text-[#7A7468]">
                   Instruct search crawlers not to index this story (noindex)
                 </label>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#1A2840]">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#EDE7DF]">
                 <button
                   type="button"
                   onClick={() => setEditingAuditItem(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700 text-slate-300 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-[#DDD5CA] text-[#6A6357] hover:bg-[#FAF8F5] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingQuickSeo}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#2E7D5A] text-white hover:bg-[#246649] transition-all shadow-xs cursor-pointer"
                 >
                   {isSavingQuickSeo ? 'Saving...' : 'Update SEO Metadata'}
                 </button>
@@ -1731,52 +2130,65 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
           MODAL: CREATE / EDIT 301 REDIRECT
           ========================================================================= */}
       {isRedirectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-[#0B1524] border border-[#1E2E48] text-slate-100 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-[#1A2840] pb-4">
-              <h3 className="font-bold text-lg text-white">
-                {editingRedirectId ? 'Edit Redirect' : 'Add 301/302 Redirect Rule'}
-              </h3>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsRedirectModalOpen(false);
+          }}
+        >
+          <div className="bg-white border border-[#EDE7DF] text-[#1E1B18] rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EDE7DF] pb-3">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.15em] text-[#1E6091] block">
+                  Link Equity Manager
+                </span>
+                <h3 className="font-serif font-bold text-base text-[#1E1B18] mt-0.5">
+                  {editingRedirectId ? 'Edit Redirect Rule' : 'Add 301/302 Redirect Rule'}
+                </h3>
+              </div>
               <button
+                type="button"
                 onClick={() => setIsRedirectModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F5] border border-[#EDE7DF] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#6A6357] hover:text-white shadow-xs cursor-pointer"
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider">Close</span>
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveRedirect} className="space-y-4">
+            <form onSubmit={handleSaveRedirect} className="space-y-3.5">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Source Request Path</label>
+                <label className="text-xs font-bold text-[#1E1B18]">Source Request Path</label>
                 <input
                   type="text"
                   required
                   placeholder="/old-travel-guide"
                   value={redirectForm.sourcePath}
                   onChange={(e) => setRedirectForm({ ...redirectForm, sourcePath: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#1E6091] focus:bg-white font-mono"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Target Destination URL</label>
+                <label className="text-xs font-bold text-[#1E1B18]">Target Destination URL</label>
                 <input
                   type="text"
                   required
                   placeholder="/travel or https://..."
                   value={redirectForm.targetPath}
                   onChange={(e) => setRedirectForm({ ...redirectForm, targetPath: e.target.value })}
-                  className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3.5 py-2 text-xs text-[#1E1B18] focus:outline-none focus:border-[#1E6091] focus:bg-white font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Redirect Code</label>
+                  <label className="text-xs font-bold text-[#1E1B18]">Redirect Code</label>
                   <select
                     value={redirectForm.redirectCode}
                     onChange={(e) => setRedirectForm({ ...redirectForm, redirectCode: parseInt(e.target.value, 10) })}
-                    className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3 py-2 text-xs text-[#1E1B18]"
                   >
                     <option value={301}>301 Permanent (SEO Recommended)</option>
                     <option value={302}>302 Temporary</option>
@@ -1784,28 +2196,28 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Notes / Reason</label>
+                  <label className="text-xs font-bold text-[#1E1B18]">Notes / Reason</label>
                   <input
                     type="text"
-                    placeholder="e.g. Legacy WordPress URL"
+                    placeholder="e.g. Legacy URL"
                     value={redirectForm.notes}
                     onChange={(e) => setRedirectForm({ ...redirectForm, notes: e.target.value })}
-                    className="w-full bg-[#070D18] border border-[#1E2E48] rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-[#FAF8F5] border border-[#DDD5CA] rounded-xl px-3 py-2 text-xs text-[#1E1B18]"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#1A2840]">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#EDE7DF]">
                 <button
                   type="button"
                   onClick={() => setIsRedirectModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700 text-slate-300 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-[#DDD5CA] text-[#6A6357] hover:bg-[#FAF8F5] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1E6091] text-white hover:bg-[#164b73] transition-all shadow-xs cursor-pointer"
                 >
                   Save Redirect Rule
                 </button>
@@ -1817,4 +2229,3 @@ export const YoastSeoCommandCenter: React.FC<YoastSeoCommandCenterProps> = ({
     </div>
   );
 };
-
