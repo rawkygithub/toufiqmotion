@@ -63,6 +63,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -p "$PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
           rsync -avz --delete \
+            --exclude='.git' \
             --filter='P uploads/*' \
             --filter='P api/config/config.local.php' \
             -e "ssh -p $PORT" \
