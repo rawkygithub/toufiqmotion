@@ -49,8 +49,8 @@ export const AdminStudio: React.FC = () => {
   const [adminUser, setAdminUser] = useState<any>(null);
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('admin@toufiqmotion.com');
-  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
@@ -479,7 +479,7 @@ export const AdminStudio: React.FC = () => {
                 required
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="admin@toufiqmotion.com"
+                placeholder="Enter admin email"
                 className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
               />
             </div>
@@ -504,18 +504,11 @@ export const AdminStudio: React.FC = () => {
               {loginLoading ? 'Authenticating...' : <>Enter Studio <ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
-
-          <div className="pt-2 text-center border-t border-[#F0ECE6]">
-            <p className="text-[11px] text-[#8C8477]">
-              Default Demo Credentials: <br />
-              <span className="font-mono text-[#E8734A]">admin@toufiqmotion.com</span> &bull; <span className="font-mono text-[#E8734A]">admin123</span>
-            </p>
-          </div>
         </div>
 
         {/* Bottom subtle copyright */}
         <div className="text-center py-4 text-[11px] text-[#A09A8F]">
-          Toufiq Motion &bull; Secure Editorial CMS &bull; Node.js &amp; SQLite
+          Toufiq Motion &bull; Secure Editorial CMS
         </div>
       </div>
     );
@@ -569,7 +562,7 @@ export const AdminStudio: React.FC = () => {
 
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FAF8F5] border border-[#EDE7DF] text-xs text-[#5A5348]">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-medium font-mono text-[11px] text-[#2D2A26]">{loginEmail || 'admin@toufiqmotion.com'}</span>
+            <span className="font-medium font-mono text-[11px] text-[#2D2A26]">{adminUser?.email || loginEmail || 'Administrator'}</span>
           </div>
 
           <button
@@ -891,8 +884,8 @@ export const AdminStudio: React.FC = () => {
                 TM
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-[#1E1B18] leading-tight truncate">Toufiq Motion</div>
-                <div className="text-[10px] text-[#8C8477] truncate">admin@toufiqmotion.com</div>
+                <div className="text-xs font-bold text-[#1E1B18] leading-tight truncate">{adminUser?.name || 'Toufiq Motion'}</div>
+                <div className="text-[10px] text-[#8C8477] truncate">{adminUser?.email || loginEmail || 'Administrator'}</div>
               </div>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]">
