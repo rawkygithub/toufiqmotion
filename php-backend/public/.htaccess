@@ -3,8 +3,10 @@ Options -Indexes
 DirectoryIndex index.php
 
 <IfModule LiteSpeed>
-  CacheEngine Off
   CacheLookup off
+  RewriteEngine On
+  RewriteCond %{REQUEST_URI} !^/(assets|uploads)/
+  RewriteRule .* - [E=Cache-Control:no-cache]
 </IfModule>
 
 <IfModule mod_rewrite.c>
@@ -55,6 +57,9 @@ DirectoryIndex index.php
   </If>
   <If "%{REQUEST_URI} =~ m#^/uploads/#">
     Header set Cache-Control "public, max-age=2592000"
+  </If>
+  <If "%{REQUEST_URI} !~ m#^/(assets|uploads)/#">
+    Header set X-LiteSpeed-Cache-Control "no-cache"
   </If>
 </IfModule>
 
