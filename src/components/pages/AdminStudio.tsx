@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 
 export const AdminStudio: React.FC = () => {
-  const { setActivePage } = useTheme();
+  const { setActivePage, refreshArticles } = useTheme();
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('toufiq_admin_token'));
   const [adminUser, setAdminUser] = useState<any>(null);
 
@@ -315,6 +315,7 @@ export const AdminStudio: React.FC = () => {
 
       setIsArticleModalOpen(false);
       await loadDashboardData();
+      refreshArticles?.();
     } catch (err: any) {
       alert(err.message || 'Failed to save article');
     } finally {
@@ -329,6 +330,7 @@ export const AdminStudio: React.FC = () => {
       await api.deletePost(token, id);
       setArticles((prev) => prev.filter((a) => a.id !== id));
       loadDashboardData();
+      refreshArticles?.();
     } catch (err: any) {
       alert(err.message || 'Failed to delete');
     }
@@ -1023,7 +1025,17 @@ export const AdminStudio: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F2ECE4]">
-                {articles.map((article) => (
+                {articles.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-[#8C8477]">
+                      <div className="space-y-1">
+                        <p className="font-serif text-sm font-semibold text-[#1E1B18]">No articles published yet</p>
+                        <p className="text-xs text-[#8C8477]">Click "+ WRITE STORY" to publish your first post.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  articles.map((article) => (
                   <tr key={article.id} className="hover:bg-[#FAF8F5] transition-colors">
                     <td className="py-3.5 px-5">
                       <div className="flex items-center gap-3">
@@ -1084,7 +1096,7 @@ export const AdminStudio: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

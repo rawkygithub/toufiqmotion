@@ -1,27 +1,22 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ARTICLES, POPULAR_DESTINATIONS, TOPICS } from '../../data/articles';
+import { POPULAR_DESTINATIONS, TOPICS } from '../../data/articles';
 import { api } from '../../api/client';
 import { ArticleCard } from '../ArticleCard';
 import {
   Compass,
-  MapPin,
-  Camera,
   ArrowRight,
-  Clock,
   Sparkles,
   Plane,
   Palmtree,
   Car,
   Mountain,
   Building,
-  CheckCircle2,
-  Search,
-  Filter
+  Search
 } from 'lucide-react';
 
 export const TravelPage: React.FC = () => {
-  const { openArticle, isBookmarked, toggleBookmark } = useTheme();
+  const { openArticle, articles } = useTheme();
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [filterQuery, setFilterQuery] = useState<string>('');
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -38,9 +33,17 @@ export const TravelPage: React.FC = () => {
     { name: 'City Guides', icon: Building },
   ];
 
-  const travelArticles = ARTICLES.filter((a) => a.category === 'Travel');
-  const featuredArticle = travelArticles.find((a) => a.featured) || travelArticles[0];
+  const travelArticles = articles.filter((a) => a.category?.toLowerCase().includes('travel'));
+  const featuredArticle = travelArticles.find((a) => a.featured) || travelArticles[0] || null;
   const trendingArticles = travelArticles.filter((a) => a.trendingRank).sort((a, b) => (a.trendingRank || 0) - (b.trendingRank || 0));
+
+  // Count topics dynamically based on real articles
+  const topicCounts: Record<string, number> = {};
+  travelArticles.forEach((a) => {
+    if (a.subcategory) {
+      topicCounts[a.subcategory] = (topicCounts[a.subcategory] || 0) + 1;
+    }
+  });
 
   // Filter latest articles by selected subcategory & search
   const filteredLatest = travelArticles.filter((a) => {
@@ -112,7 +115,7 @@ export const TravelPage: React.FC = () => {
               <button
                 key={sub.name}
                 onClick={() => setSelectedSubcategory(sub.name)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   active
                     ? 'bg-[#E8734A] text-white shadow-xs'
                     : 'bg-[#FAF8F5] text-[#554E42] hover:bg-[#F2ECE4] border border-[#E5E0D8]'
@@ -126,21 +129,23 @@ export const TravelPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Main Content Grid (2 Columns: Articles on Left + Sidebar on Right) (Page 2) */}
+      {/* 3. Main Content Grid (2 Columns: Articles on Left + Sidebar on Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
         
         {/* Left Column (8 cols): Featured Story + Latest Travel Articles */}
         <div className="lg:col-span-8 space-y-12">
           
-          {/* Featured Travel Story Card */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-2xl font-bold text-[#1E1B18]">
-                Featured Travel Stories
-              </h2>
-            </div>
-            <ArticleCard article={featuredArticle} variant="hero-overlay" />
-          </section>
+          {/* Featured Travel Story Card (rendered only when an article exists) */}
+          {featuredArticle && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-2xl font-bold text-[#1E1B18]">
+                  Featured Travel Stories
+                </h2>
+              </div>
+              <ArticleCard article={featuredArticle} variant="hero-overlay" />
+            </section>
+          )}
 
           {/* Latest Travel Articles Grid */}
           <section className="space-y-6">
@@ -158,11 +163,22 @@ export const TravelPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {filteredLatest.map((article) => (
-                <ArticleCard key={article.id} article={article} />
-              ))}
-            </div>
+            {filteredLatest.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {filteredLatest.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-14 px-4 bg-white/70 backdrop-blur-xs rounded-3xl border border-[#EDE8E0] space-y-2">
+                <p className="font-serif text-lg font-bold text-[#1E1B18]">No travel articles found</p>
+                <p className="text-xs text-[#8C8477]">
+                  {travelArticles.length === 0
+                    ? 'No travel guides have been published yet. Check back soon!'
+                    : `No stories found matching "${selectedSubcategory}".`}
+                </p>
+              </div>
+            )}
           </section>
 
         </div>
@@ -184,30 +200,35 @@ export const TravelPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Popular Topics List (Page 2) */}
+          {/* Popular Topics List */}
           <div className="bg-white rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-4">
             <h4 className="font-serif font-bold text-lg text-[#1E1B18] pb-2 border-b border-[#F0ECE6]">
               Popular Topics
             </h4>
             <div className="space-y-2">
-              {TOPICS.travel.map((topic) => (
-                <button
-                  key={topic.name}
-                  onClick={() => setSelectedSubcategory('All')}
-                  className="w-full flex items-center justify-between py-2 px-3 rounded-xl hover:bg-[#FAF8F5] text-left transition-colors group"
-                >
-                  <span className="text-xs font-medium text-[#4A453E] group-hover:text-[#E8734A] transition-colors">
-                    {topic.name}
-                  </span>
-                  <span className="text-[11px] text-[#9E978C] font-mono group-hover:text-[#E8734A]">
-                    {topic.count}
-                  </span>
-                </button>
-              ))}
+              {TOPICS.travel.map((topic) => {
+                const count = topicCounts[topic.name] || 0;
+                return (
+                  <button
+                    key={topic.name}
+                    onClick={() => setSelectedSubcategory(topic.name)}
+                    className="w-full flex items-center justify-between py-2 px-3 rounded-xl hover:bg-[#FAF8F5] text-left transition-colors group cursor-pointer"
+                  >
+                    <span className="text-xs font-medium text-[#4A453E] group-hover:text-[#E8734A] transition-colors">
+                      {topic.name}
+                    </span>
+                    {count > 0 && (
+                      <span className="text-[11px] text-[#9E978C] font-mono group-hover:text-[#E8734A]">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Travel Resources Promo Card (Page 2) */}
+          {/* Travel Resources Promo Card */}
           <div className="group relative rounded-3xl overflow-hidden p-6 bg-gradient-to-br from-[#2D2A26] to-[#1E1B18] text-white shadow-lg space-y-4">
             <img
               src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80"
@@ -227,51 +248,55 @@ export const TravelPage: React.FC = () => {
                 Useful tools, packing guides, gear recommendations and booking apps to help plan your next dream voyage.
               </p>
               <button
-                onClick={() => alert('Opening Toufiq Motion Travel Toolkit & Packing Templates (Free Download)')}
-                className="w-full py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5"
+                onClick={() => {
+                  alert('Toufiq Motion Travel Toolkit & Packing Templates will be available shortly.');
+                }}
+                className="w-full py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 Explore Resources <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Trending Travel Articles (Numbered 01 to 04 from Page 2) */}
-          <div className="bg-white rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-4">
-            <h4 className="font-serif font-bold text-lg text-[#1E1B18] pb-2 border-b border-[#F0ECE6]">
-              Trending Travel Articles
-            </h4>
+          {/* Trending Travel Articles (rendered only when trending articles exist) */}
+          {trendingArticles.length > 0 && (
+            <div className="bg-white rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-4">
+              <h4 className="font-serif font-bold text-lg text-[#1E1B18] pb-2 border-b border-[#F0ECE6]">
+                Trending Travel Articles
+              </h4>
 
-            <div className="space-y-4">
-              {trendingArticles.map((article, index) => (
-                <div
-                  key={article.id}
-                  onClick={() => openArticle(article)}
-                  className="group flex gap-3.5 cursor-pointer pb-3 border-b border-[#F5F2EB] last:border-b-0 last:pb-0"
-                >
-                  <span className="font-serif font-bold text-2xl text-[#E8734A]/40 group-hover:text-[#E8734A] transition-colors shrink-0 w-8">
-                    0{index + 1}
-                  </span>
-                  <img
-                    src={article.image}
-                    alt={article.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
-                  />
-                  <div className="grow min-w-0">
-                    <h5 className="font-serif font-bold text-xs sm:text-sm text-[#1E1B18] group-hover:text-[#E8734A] transition-colors line-clamp-2 leading-snug">
-                      {article.title}
-                    </h5>
-                    <span className="text-[11px] text-[#8C8477] mt-1 block">
-                      {article.readTime}
+              <div className="space-y-4">
+                {trendingArticles.map((article, index) => (
+                  <div
+                    key={article.id}
+                    onClick={() => openArticle(article)}
+                    className="group flex gap-3.5 cursor-pointer pb-3 border-b border-[#F5F2EB] last:border-b-0 last:pb-0"
+                  >
+                    <span className="font-serif font-bold text-2xl text-[#E8734A]/40 group-hover:text-[#E8734A] transition-colors shrink-0 w-8">
+                      0{index + 1}
                     </span>
+                    <img
+                      src={article.image}
+                      alt={article.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
+                    />
+                    <div className="grow min-w-0">
+                      <h5 className="font-serif font-bold text-xs sm:text-sm text-[#1E1B18] group-hover:text-[#E8734A] transition-colors line-clamp-2 leading-snug">
+                        {article.title}
+                      </h5>
+                      <span className="text-[11px] text-[#8C8477] mt-1 block">
+                        {article.readTime}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Sidebar Newsletter Box (Page 2) */}
+          {/* Sidebar Newsletter Box */}
           <div className="bg-gradient-to-br from-[#FFFDFC] to-[#FAF6EE] rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-3">
             <div className="w-9 h-9 rounded-full bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold text-sm">
               ✨
@@ -293,7 +318,7 @@ export const TravelPage: React.FC = () => {
               />
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all"
+                className="w-full py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
               >
                 {newsletterSubscribed ? 'Subscribed!' : 'Sign Up Free'}
               </button>
@@ -303,7 +328,7 @@ export const TravelPage: React.FC = () => {
         </aside>
       </div>
 
-      {/* 4. Popular Destinations Row (Page 2: Paris, Santorini, Bali, New York, Swiss Alps, Tokyo) */}
+      {/* 4. Popular Destinations Row */}
       <section className="space-y-6 pt-4">
         <div className="flex items-end justify-between border-b border-[#EAE5DF] pb-3">
           <div>
@@ -336,7 +361,7 @@ export const TravelPage: React.FC = () => {
                   {dest.name}
                 </h5>
                 <span className="text-[10px] text-white/80 block uppercase tracking-wider mt-0.5">
-                  {dest.country} &bull; {dest.count}
+                  {dest.country}
                 </span>
               </div>
             </div>
@@ -347,4 +372,3 @@ export const TravelPage: React.FC = () => {
     </div>
   );
 };
-

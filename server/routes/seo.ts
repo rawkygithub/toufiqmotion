@@ -48,17 +48,18 @@ router.get('/overview', (req, res) => {
     const articles = db.prepare('SELECT seo_score FROM articles WHERE published = 1').all() as { seo_score: number }[];
     const avgScore = articles.length > 0
       ? Math.round(articles.reduce((acc, a) => acc + (a.seo_score || 85), 0) / articles.length)
-      : 88;
+      : 0;
 
-    let grade = 'Grade A+';
-    if (avgScore < 60) grade = 'Grade C';
-    else if (avgScore < 75) grade = 'Grade B';
-    else if (avgScore < 90) grade = 'Grade A';
+    let grade = avgScore === 0 ? 'N/A' : 'Grade A+';
+    if (avgScore > 0 && avgScore < 60) grade = 'Grade C';
+    else if (avgScore > 0 && avgScore < 75) grade = 'Grade B';
+    else if (avgScore > 0 && avgScore < 90) grade = 'Grade A';
 
     // Total URLs in sitemap
     const articleCount = (db.prepare('SELECT COUNT(*) as c FROM articles WHERE published = 1').get() as { c: number }).c;
     const categoryCount = (db.prepare('SELECT COUNT(*) as c FROM categories').get() as { c: number }).c;
-    const staticPages = 5; // Home, Travel, Lifestyle, Health, Work with Us, About
+    const pagesRow = db.prepare("SELECT COUNT(*) as c FROM pages WHERE status = 'published'").get() as { c: number } | undefined;
+    const staticPages = pagesRow?.c ?? 0;
     const totalIndexedUrls = articleCount + categoryCount + staticPages;
 
     // Active 301 redirects

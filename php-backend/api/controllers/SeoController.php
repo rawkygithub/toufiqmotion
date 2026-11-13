@@ -8,7 +8,7 @@ class SeoController
         $pdo = Database::getConnection();
         $scores = $pdo->query('SELECT `seo_score` FROM `articles` WHERE `published` = 1')->fetchAll();
 
-        $avgScore = 88;
+        $avgScore = 0;
         if (count($scores) > 0) {
             $sum = 0;
             foreach ($scores as $s) {
@@ -17,14 +17,11 @@ class SeoController
             $avgScore = (int)round($sum / count($scores));
         }
 
-        $grade = 'Grade A+';
-        if ($avgScore < 60) $grade = 'Grade C';
-        elseif ($avgScore < 75) $grade = 'Grade B';
-        elseif ($avgScore < 90) $grade = 'Grade A';
+        $grade = $avgScore === 0 ? 'N/A' : ($avgScore < 60 ? 'Grade C' : ($avgScore < 75 ? 'Grade B' : ($avgScore < 90 ? 'Grade A' : 'Grade A+')));
 
         $articleCount  = (int)$pdo->query('SELECT COUNT(*) as c FROM `articles` WHERE `published` = 1')->fetch()['c'];
         $categoryCount = (int)$pdo->query('SELECT COUNT(*) as c FROM `categories`')->fetch()['c'];
-        $staticPages   = 5;
+        $staticPages   = (int)($pdo->query("SELECT COUNT(*) as c FROM `pages` WHERE `status` = 'published'")->fetch()['c'] ?? 0);
         $totalIndexedUrls = $articleCount + $categoryCount + $staticPages;
 
         $redirectsCount   = (int)$pdo->query('SELECT COUNT(*) as c FROM `seo_redirects`')->fetch()['c'];

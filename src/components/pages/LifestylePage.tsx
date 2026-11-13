@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ARTICLES, TOPICS } from '../../data/articles';
+import { TOPICS } from '../../data/articles';
 import { api } from '../../api/client';
 import { ArticleCard } from '../ArticleCard';
 import {
@@ -8,17 +8,14 @@ import {
   Home as HomeIcon,
   Sparkles,
   ArrowRight,
-  Clock,
   Briefcase,
   Layers,
   ShoppingBag,
-  Heart,
-  Send,
   Check
 } from 'lucide-react';
 
 export const LifestylePage: React.FC = () => {
-  const { openArticle } = useTheme();
+  const { openArticle, articles } = useTheme();
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -32,9 +29,9 @@ export const LifestylePage: React.FC = () => {
     { name: 'Style & Essentials', icon: ShoppingBag },
   ];
 
-  const lifestyleArticles = ARTICLES.filter((a) => a.category === 'Lifestyle');
-  const coffeeArticle = ARTICLES.find((a) => a.id === 'best-coffee-shops-2024') || lifestyleArticles[0];
-  const habitsArticle = ARTICLES.find((a) => a.id === 'simple-habits-fulfilling-life') || lifestyleArticles[1];
+  const lifestyleArticles = articles.filter((a) => a.category?.toLowerCase().includes('lifestyle'));
+  const coffeeArticle = lifestyleArticles[0] || null;
+  const habitsArticle = lifestyleArticles[1] || null;
 
   const filteredArticles = lifestyleArticles.filter((a) => {
     return selectedSubcategory === 'All' || a.subcategory === selectedSubcategory;
@@ -91,7 +88,7 @@ export const LifestylePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. Subcategory Icon Filter Bar (Page 3) */}
+      {/* 2. Subcategory Icon Filter Bar */}
       <section className="bg-white/80 backdrop-blur-md border border-[#EDE7DF] rounded-2xl p-2.5 sm:p-3 shadow-xs">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {subcategories.map((sub) => {
@@ -101,7 +98,7 @@ export const LifestylePage: React.FC = () => {
               <button
                 key={sub.name}
                 onClick={() => setSelectedSubcategory(sub.name)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   active
                     ? 'bg-[#E8734A] text-white shadow-xs'
                     : 'bg-[#FAF8F5] text-[#554E42] hover:bg-[#F2ECE4] border border-[#E5E0D8]'
@@ -115,91 +112,93 @@ export const LifestylePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Featured Lifestyle Story (Split 2-Card Layout from Page 3) */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between border-b border-[#EAE5DF] pb-3">
-          <h2 className="font-serif text-2xl font-bold text-[#1E1B18]">
-            Featured Lifestyle Story
-          </h2>
-          <button
-            onClick={() => setSelectedSubcategory('All')}
-            className="text-xs font-bold text-[#E8734A] hover:underline uppercase tracking-wider flex items-center gap-1"
-          >
-            View All <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Main Card (8 cols): The Best Coffee Shops to Try in 2024 */}
-          <div
-            onClick={() => openArticle(coffeeArticle)}
-            className="lg:col-span-8 group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col sm:flex-row"
-          >
-            <div className="sm:w-1/2 p-6 sm:p-10 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#A06235] bg-[#FDF5EE] px-3 py-1 rounded-full border border-[#F3E3D3]">
-                  Food &amp; Coffee
-                </span>
-                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18] group-hover:text-[#E8734A] transition-colors leading-snug mt-4 mb-3">
-                  {coffeeArticle.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-[#665F55] leading-relaxed font-light">
-                  {coffeeArticle.excerpt}
-                </p>
-              </div>
-
-              <div className="pt-6">
-                <button className="px-6 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center gap-1.5">
-                  Read the Guide <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="sm:w-1/2 h-64 sm:h-auto overflow-hidden relative">
-              <img
-                src={coffeeArticle.image}
-                alt={coffeeArticle.title}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
-              />
-            </div>
+      {/* 3. Featured Lifestyle Story (rendered only when article exists) */}
+      {coffeeArticle && (
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-[#EAE5DF] pb-3">
+            <h2 className="font-serif text-2xl font-bold text-[#1E1B18]">
+              Featured Lifestyle Story
+            </h2>
+            <button
+              onClick={() => setSelectedSubcategory('All')}
+              className="text-xs font-bold text-[#E8734A] hover:underline uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+            >
+              View All <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* Right Card (4 cols): Simple Habits for a More Fulfilling Life */}
-          <div
-            onClick={() => openArticle(habitsArticle)}
-            className="lg:col-span-4 group relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer min-h-[350px] flex flex-col justify-end p-6 sm:p-8"
-          >
-            <img
-              src={habitsArticle.image}
-              alt={habitsArticle.title}
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-            <div className="relative z-10 text-white space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-[#FFCEBA]">
-                Mindful Living
-              </span>
-              <h3 className="font-serif text-xl sm:text-2xl font-bold leading-snug group-hover:text-[#FFB599] transition-colors">
-                {habitsArticle.title}
-              </h3>
-              <p className="text-white/80 text-xs line-clamp-2">
-                {habitsArticle.excerpt}
-              </p>
-              <div className="pt-2 flex items-center text-xs font-semibold text-[#FFCEBA] gap-1">
-                Read More <ArrowRight className="w-3.5 h-3.5" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Main Card */}
+            <div
+              onClick={() => openArticle(coffeeArticle)}
+              className={habitsArticle ? "lg:col-span-8 group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col sm:flex-row" : "lg:col-span-12 group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col sm:flex-row"}
+            >
+              <div className="sm:w-1/2 p-6 sm:p-10 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#A06235] bg-[#FDF5EE] px-3 py-1 rounded-full border border-[#F3E3D3]">
+                    {coffeeArticle.category} &bull; {coffeeArticle.subcategory || 'Featured'}
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18] group-hover:text-[#E8734A] transition-colors leading-snug mt-4 mb-3">
+                    {coffeeArticle.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#665F55] leading-relaxed font-light line-clamp-3">
+                    {coffeeArticle.excerpt}
+                  </p>
+                </div>
+
+                <div className="pt-6">
+                  <span className="px-6 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all inline-flex items-center gap-1.5">
+                    Read the Story <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="sm:w-1/2 h-64 sm:h-auto overflow-hidden relative">
+                <img
+                  src={coffeeArticle.image}
+                  alt={coffeeArticle.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
+                />
               </div>
             </div>
+
+            {/* Right Card (rendered only when 2nd article exists) */}
+            {habitsArticle && (
+              <div
+                onClick={() => openArticle(habitsArticle)}
+                className="lg:col-span-4 group relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer min-h-[350px] flex flex-col justify-end p-6 sm:p-8"
+              >
+                <img
+                  src={habitsArticle.image}
+                  alt={habitsArticle.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                <div className="relative z-10 text-white space-y-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#FFCEBA]">
+                    {habitsArticle.subcategory || 'Mindful Living'}
+                  </span>
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold leading-snug group-hover:text-[#FFB599] transition-colors">
+                    {habitsArticle.title}
+                  </h3>
+                  <p className="text-white/80 text-xs line-clamp-2">
+                    {habitsArticle.excerpt}
+                  </p>
+                  <div className="pt-2 flex items-center text-xs font-semibold text-[#FFCEBA] gap-1">
+                    Read More <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+        </section>
+      )}
 
-        </div>
-      </section>
-
-      {/* 4. Latest Lifestyle Articles Grid (Page 3) */}
+      {/* 4. Latest Lifestyle Articles Grid */}
       <section className="space-y-6">
         <div className="flex items-end justify-between border-b border-[#EAE5DF] pb-3">
           <div>
@@ -215,14 +214,25 @@ export const LifestylePage: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {filteredArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        {filteredArticles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {filteredArticles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-14 px-4 bg-white/70 backdrop-blur-xs rounded-3xl border border-[#EDE8E0] space-y-2">
+            <p className="font-serif text-lg font-bold text-[#1E1B18]">No lifestyle articles found</p>
+            <p className="text-xs text-[#8C8477]">
+              {lifestyleArticles.length === 0
+                ? 'No lifestyle stories have been published yet. Check back soon!'
+                : `No stories found matching "${selectedSubcategory}".`}
+            </p>
+          </div>
+        )}
       </section>
 
-      {/* 5. Explore Lifestyle Topics (5 Cards from Page 3: Food & Coffee, Home & Living, Productivity, Experiences, Style & Essentials) */}
+      {/* 5. Explore Lifestyle Topics */}
       <section className="space-y-6">
         <div className="flex items-end justify-between border-b border-[#EAE5DF] pb-3">
           <div>
@@ -254,16 +264,13 @@ export const LifestylePage: React.FC = () => {
                 <h5 className="font-serif font-bold text-base leading-tight group-hover:text-[#FFCEBA] transition-colors">
                   {topic.name}
                 </h5>
-                <span className="text-[11px] text-white/80 block mt-1 font-mono">
-                  {topic.count}
-                </span>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 6. Newsletter Box (Page 3: "Get Fresh Ideas in Your Inbox") */}
+      {/* 6. Newsletter Box */}
       <section className="bg-gradient-to-r from-[#FFFDFC] via-[#FAF6EE] to-[#FFF2EB] border border-[#EDE7DF] rounded-3xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="max-w-xl space-y-3">
           <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#E8734A] block font-sans">
@@ -288,7 +295,7 @@ export const LifestylePage: React.FC = () => {
           />
           <button
             type="submit"
-            className="px-7 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all shrink-0 flex items-center justify-center gap-1.5"
+            className="px-7 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
           >
             {subscribed ? <><Check className="w-4 h-4" /> Subscribed!</> : 'Subscribe'}
           </button>
@@ -298,4 +305,3 @@ export const LifestylePage: React.FC = () => {
     </div>
   );
 };
-

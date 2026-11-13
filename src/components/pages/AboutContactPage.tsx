@@ -23,7 +23,7 @@ interface AboutContactProps {
 }
 
 export const AboutContactPage: React.FC<AboutContactProps> = ({ initialView = 'about' }) => {
-  const { setActivePage } = useTheme();
+  const { setActivePage, articles } = useTheme();
   const [view, setView] = useState<'about' | 'contact'>(initialView);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -195,13 +195,17 @@ export const AboutContactPage: React.FC<AboutContactProps> = ({ initialView = 'a
                   </div>
                   <div className="h-8 w-px bg-[#EAE5DF]" />
                   <div>
-                    <span className="font-serif text-2xl font-bold text-[#1E1B18]">150+</span>
-                    <p className="text-xs text-[#8C8477]">Curated Articles</p>
+                    <span className="font-serif text-2xl font-bold text-[#1E1B18]">
+                      {articles.length > 0 ? `${articles.length}+` : '100%'}
+                    </span>
+                    <p className="text-xs text-[#8C8477]">
+                      {articles.length > 0 ? 'Curated Stories' : 'Authentic Stories'}
+                    </p>
                   </div>
                   <div className="h-8 w-px bg-[#EAE5DF]" />
                   <div>
-                    <span className="font-serif text-2xl font-bold text-[#1E1B18]">100K+</span>
-                    <p className="text-xs text-[#8C8477]">Global Readers</p>
+                    <span className="font-serif text-2xl font-bold text-[#1E1B18]">Global</span>
+                    <p className="text-xs text-[#8C8477]">Mindful Readership</p>
                   </div>
                 </div>
               </div>

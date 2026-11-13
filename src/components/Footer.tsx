@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { ARTICLES } from '../data/articles';
 import {
   Compass,
   Coffee,
@@ -17,7 +16,7 @@ import { InstagramIcon, YoutubeIcon, PinterestIcon, FacebookIcon } from './Socia
 import { api } from '../api/client';
 
 export const Footer: React.FC = () => {
-  const { setActivePage, openArticle, siteSettings } = useTheme();
+  const { setActivePage, openArticle, siteSettings, articles } = useTheme();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -40,7 +39,11 @@ export const Footer: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const santoriniArticle = ARTICLES.find((a) => a.id === 'santorini-things-to-do') || ARTICLES[0];
+  const featuredDestinationArticle =
+    articles.find((a) => a.category?.toLowerCase().includes('travel') && a.featured) ||
+    articles.find((a) => a.category?.toLowerCase().includes('travel')) ||
+    articles[0] ||
+    null;
 
   const defaultValues = [
     { icon: 'Compass', title: 'Inspiring Destinations', desc: 'Guides, tips and ideas' },
@@ -313,27 +316,49 @@ export const Footer: React.FC = () => {
 
           {/* Column 5: Featured Destination Card (2 cols) */}
           <div className="lg:col-span-2">
-            <h4 className="font-serif font-bold text-base text-[#1E1B18] mb-4">Featured Destination</h4>
-            <div
-              onClick={() => openArticle(santoriniArticle)}
-              className="group bg-white rounded-2xl overflow-hidden border border-[#EDE7DF] hover:border-[#E8734A]/50 shadow-2xs hover:shadow-md cursor-pointer transition-all"
-            >
-              <div className="aspect-[4/3] overflow-hidden relative">
-                <img
-                  src={santoriniArticle.image}
-                  alt={santoriniArticle.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+            <h4 className="font-serif font-bold text-base text-[#1E1B18] mb-4">
+              {featuredDestinationArticle ? 'Featured Destination' : 'Editorial Vision'}
+            </h4>
+            {featuredDestinationArticle ? (
+              <div
+                onClick={() => openArticle(featuredDestinationArticle)}
+                className="group bg-white rounded-2xl overflow-hidden border border-[#EDE7DF] hover:border-[#E8734A]/50 shadow-2xs hover:shadow-md cursor-pointer transition-all"
+              >
+                <div className="aspect-[4/3] overflow-hidden relative">
+                  <img
+                    src={featuredDestinationArticle.image}
+                    alt={featuredDestinationArticle.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <div className="p-3">
+                  <h5 className="font-serif font-bold text-xs text-[#1E1B18] group-hover:text-[#E8734A] transition-colors truncate">
+                    {featuredDestinationArticle.title}
+                  </h5>
+                  <span className="text-[11px] text-[#E8734A] font-semibold flex items-center gap-1 mt-1 group-hover:translate-x-1 transition-transform">
+                    Read Story <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
               </div>
-              <div className="p-3">
-                <h5 className="font-serif font-bold text-xs text-[#1E1B18] group-hover:text-[#E8734A] transition-colors truncate">
-                  Santorini Travel Guide
+            ) : (
+              <div
+                onClick={() => setActivePage('about')}
+                className="group bg-white rounded-2xl overflow-hidden border border-[#EDE7DF] hover:border-[#E8734A]/50 shadow-2xs hover:shadow-md cursor-pointer transition-all p-4 space-y-2"
+              >
+                <span className="text-[10px] uppercase font-bold tracking-wider text-[#E8734A] block">
+                  Toufiq Motion
+                </span>
+                <h5 className="font-serif font-bold text-xs text-[#1E1B18] group-hover:text-[#E8734A] transition-colors leading-snug">
+                  Curated with inside light &amp; intention
                 </h5>
-                <span className="text-[11px] text-[#E8734A] font-semibold flex items-center gap-1 mt-1 group-hover:translate-x-1 transition-transform">
-                  Read the Guide <ArrowRight className="w-3 h-3" />
+                <p className="text-[11px] text-[#8C8477] line-clamp-2">
+                  Documenting mindful travel, slow living, and conscious wellbeing.
+                </p>
+                <span className="text-[11px] text-[#E8734A] font-semibold flex items-center gap-1 pt-1 group-hover:translate-x-1 transition-transform">
+                  Learn More <ArrowRight className="w-3 h-3" />
                 </span>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

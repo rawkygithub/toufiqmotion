@@ -1,30 +1,13 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ARTICLES } from '../../data/articles';
 import { ArticleCard } from '../ArticleCard';
-import { ArrowRight, Sparkles, Compass, Coffee, Heart, Clock } from 'lucide-react';
+import { ArrowRight, Sparkles, Compass, Coffee, Heart } from 'lucide-react';
 
 export const HomeDesign2: React.FC = () => {
-  const { setActivePage, openArticle } = useTheme();
+  const { setActivePage, openArticle, articles } = useTheme();
 
-  const florenceArticle = ARTICLES.find((a) => a.id === 'florence-guide') || ARTICLES[3];
-  const townArticle = ARTICLES.find((a) => a.id === 'weekend-getaway-budget') || ARTICLES[4];
-  const mealsArticle = ARTICLES.find((a) => a.id === 'healthy-meals-busy-days') || ARTICLES[9];
-  const amalfiArticle = ARTICLES.find((a) => a.id === 'amalfi-coast-guide') || ARTICLES[0];
-
-  const latestArticles = [
-    florenceArticle,
-    {
-      ...townArticle,
-      title: '10 Beautiful Towns Perfect for a Weekend Getaway',
-      excerpt: 'Cobblestone streets, artisanal bakeries and charming historic plazas waiting to be explored at your own unhurried pace.'
-    },
-    {
-      ...mealsArticle,
-      title: 'Fresh and Healthy Meals for a More Energized You',
-      excerpt: 'Nutritious, vibrant plant-forward recipes that fuel your day without demanding hours at the kitchen counter.'
-    }
-  ];
+  const featuredArticle = articles.find((a) => a.featured) || articles[0] || null;
+  const latestArticles = articles.slice(0, 6);
 
   return (
     <div className="space-y-16 sm:space-y-24">
@@ -60,8 +43,14 @@ export const HomeDesign2: React.FC = () => {
 
             <div className="pt-2">
               <button
-                onClick={() => openArticle(amalfiArticle)}
-                className="px-8 py-3.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-lg hover:shadow-xl hover:scale-102 active:scale-98 transition-all flex items-center gap-2"
+                onClick={() => {
+                  if (featuredArticle) {
+                    openArticle(featuredArticle);
+                  } else {
+                    setActivePage('travel');
+                  }
+                }}
+                className="px-8 py-3.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-lg hover:shadow-xl hover:scale-102 active:scale-98 transition-all flex items-center gap-2 cursor-pointer"
               >
                 Discover Stories <ArrowRight className="w-4 h-4" />
               </button>
@@ -70,7 +59,7 @@ export const HomeDesign2: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. "Explore by Category" 3 Visual Cards (Page 1, Design 2) */}
+      {/* 2. "Explore by Category" 3 Visual Cards */}
       <section className="space-y-8">
         <div className="flex items-end justify-between border-b border-[#EAE5DF] pb-4">
           <div>
@@ -101,7 +90,7 @@ export const HomeDesign2: React.FC = () => {
             <div className="absolute bottom-6 left-6 right-6 text-white flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-[#FFCEBA] font-semibold uppercase tracking-wider mb-1">
-                  <Compass className="w-3.5 h-3.5" /> 48 Guides
+                  <Compass className="w-3.5 h-3.5" /> Destinations
                 </div>
                 <h3 className="font-serif text-2xl font-bold">Travel</h3>
               </div>
@@ -127,7 +116,7 @@ export const HomeDesign2: React.FC = () => {
             <div className="absolute bottom-6 left-6 right-6 text-white flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-[#FFCEBA] font-semibold uppercase tracking-wider mb-1">
-                  <Coffee className="w-3.5 h-3.5" /> 36 Articles
+                  <Coffee className="w-3.5 h-3.5" /> Slow Living
                 </div>
                 <h3 className="font-serif text-2xl font-bold">Lifestyle</h3>
               </div>
@@ -153,7 +142,7 @@ export const HomeDesign2: React.FC = () => {
             <div className="absolute bottom-6 left-6 right-6 text-white flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-[#FFCEBA] font-semibold uppercase tracking-wider mb-1">
-                  <Heart className="w-3.5 h-3.5" /> 29 Articles
+                  <Heart className="w-3.5 h-3.5" /> Vitality &amp; Mindfulness
                 </div>
                 <h3 className="font-serif text-2xl font-bold">Health &amp; Wellbeing</h3>
               </div>
@@ -166,7 +155,7 @@ export const HomeDesign2: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. "Latest Articles" 3-Column Grid (Page 1, Design 2) */}
+      {/* 3. "Latest Articles" Grid */}
       <section className="space-y-8">
         <div className="flex items-end justify-between border-b border-[#EAE5DF] pb-4">
           <div>
@@ -179,20 +168,26 @@ export const HomeDesign2: React.FC = () => {
           </div>
           <button
             onClick={() => setActivePage('travel')}
-            className="text-xs font-bold text-[#E8734A] hover:underline flex items-center gap-1 uppercase tracking-wider"
+            className="text-xs font-bold text-[#E8734A] hover:underline flex items-center gap-1 uppercase tracking-wider cursor-pointer"
           >
             Browse Archive <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {latestArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        {articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {latestArticles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 px-4 bg-white/70 backdrop-blur-xs rounded-3xl border border-[#EDE8E0] space-y-2">
+            <p className="font-serif text-lg font-bold text-[#1E1B18]">No published articles yet</p>
+            <p className="text-xs text-[#8C8477]">Check back soon as we curate our newest editorial dispatches.</p>
+          </div>
+        )}
       </section>
 
     </div>
   );
 };
-

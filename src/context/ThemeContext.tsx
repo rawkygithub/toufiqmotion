@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Article, ARTICLES } from '../data/articles';
+import { Article } from '../data/articles';
 import { api, SiteSettings, MenuItem, FooterValueProp, LegalLink } from '../api/client';
 
 export type PageId = 'home' | 'travel' | 'lifestyle' | 'health' | 'work' | 'about' | 'contact' | 'admin' | (string & {});
@@ -70,6 +70,9 @@ interface ThemeContextType {
   setLightIntensity: (val: number) => void;
   isLightControlOpen: boolean;
   setIsLightControlOpen: (open: boolean) => void;
+  articles: Article[];
+  articlesLoaded: boolean;
+  refreshArticles: () => Promise<void>;
   selectedArticle: Article | null;
   openArticle: (article: Article) => void;
   closeArticle: () => void;
@@ -97,7 +100,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const search = window.location.search.toLowerCase();
       if (path === 'admin' || hash === 'admin' || search.includes('admin') || path.startsWith('admin')) return 'admin';
       if (path.startsWith('article/') || path.startsWith('post/')) return 'article';
-      if (ARTICLES.some(a => a.slug === path || a.id === path)) return 'article';
       if (path === 'travel' || hash === 'travel') return 'travel';
       if (path === 'lifestyle' || hash === 'lifestyle') return 'lifestyle';
       if (path === 'health' || hash === 'health') return 'health';
@@ -126,21 +128,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 75;
   });
   const [isLightControlOpen, setIsLightControlOpen] = useState<boolean>(false);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
-      if (path.startsWith('article/') || path.startsWith('post/')) {
-        const slug = path.split('/')[1];
-        return ARTICLES.find(a => a.slug === slug || a.id === slug) || null;
-      }
-      return ARTICLES.find(a => a.slug === path || a.id === path) || null;
-    }
-    return null;
-  });
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [articlesLoaded, setArticlesLoaded] = useState<boolean>(false);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isBookmarksDrawerOpen, setIsBookmarksDrawerOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
+
+  const refreshArticles = async () => {
+    try {
+      const res = await api.getArticles({ limit: 100 });
+      setArticles(res.articles || []);
+    } catch (err) {
+      console.warn('Could not load articles from backend:', err);
+      setArticles([]);
+    } finally {
+      setArticlesLoaded(true);
+    }
+  };
 
   const refreshSiteSettings = async () => {
     try {
@@ -161,6 +167,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     refreshSiteSettings();
+    refreshArticles();
   }, []);
 
   useEffect(() => {
@@ -175,9 +182,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('noyon_blog_bookmarks');
-      return saved ? JSON.parse(saved) : ['amalfi-coast-guide', 'best-coffee-shops-2024'];
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return ['amalfi-coast-guide'];
+      return [];
     }
   });
 
@@ -262,13 +269,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (path === 'admin' || path.startsWith('admin')) {
         setActivePage('admin');
       } else if (path.startsWith('article/') || path.startsWith('post/')) {
-        const slug = path.split('/')[1];
-        const art = ARTICLES.find(a => a.slug === slug || a.id === slug);
-        if (art) setSelectedArticle(art);
-        setActivePage('article');
-      } else if (ARTICLES.some(a => a.slug === path || a.id === path)) {
-        const art = ARTICLES.find(a => a.slug === path || a.id === path);
-        if (art) setSelectedArticle(art);
         setActivePage('article');
       } else if (['travel', 'lifestyle', 'health', 'work', 'about', 'contact'].includes(path)) {
         setSelectedArticle(null);
@@ -298,6 +298,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setLightIntensity,
         isLightControlOpen,
         setIsLightControlOpen,
+        articles,
+        articlesLoaded,
+        refreshArticles,
         selectedArticle,
         openArticle,
         closeArticle,

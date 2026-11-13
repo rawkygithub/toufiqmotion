@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ARTICLES } from '../../data/articles';
 import { ArticleCard } from '../ArticleCard';
 import {
   Compass,
@@ -9,29 +8,15 @@ import {
   Home as HomeIcon,
   Sparkles,
   ArrowRight,
-  Clock,
-  CheckCircle2,
-  Bookmark
+  Clock
 } from 'lucide-react';
 
 export const HomeDesign1: React.FC = () => {
-  const { setActivePage, openArticle, isBookmarked, toggleBookmark } = useTheme();
+  const { setActivePage, openArticle, articles } = useTheme();
 
-  // Pick articles matching Design 1
-  const lakeArticle = ARTICLES.find((a) => a.id === 'swiss-alps-weekend') || ARTICLES[1];
-  const coffeeArticle = ARTICLES.find((a) => a.id === 'best-coffee-shops-2024') || ARTICLES[4];
-  const habitsArticle = ARTICLES.find((a) => a.id === 'ten-simple-habits-healthier-life') || ARTICLES[7];
-  const alpsArticle = ARTICLES.find((a) => a.id === 'swiss-alps-weekend') || ARTICLES[1];
-
-  const popularReads = [
-    {
-      ...lakeArticle,
-      title: '10 Beautiful Lake Destinations You Need to Visit',
-      excerpt: 'From pristine alpine reflections in Switzerland to secluded glacial shores, find your quiet waterside haven.'
-    },
-    coffeeArticle,
-    habitsArticle,
-  ];
+  const featuredArticle = articles.find((a) => a.featured) || articles[0] || null;
+  const popularReads = articles.slice(0, 3);
+  const headlineArticle = articles.length > 3 ? articles[3] : featuredArticle;
 
   return (
     <div className="space-y-16 sm:space-y-24">
@@ -60,16 +45,18 @@ export const HomeDesign1: React.FC = () => {
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <button
                 onClick={() => setActivePage('travel')}
-                className="px-8 py-3.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                className="px-8 py-3.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer"
               >
                 Explore Stories <ArrowRight className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => openArticle(coffeeArticle)}
-                className="px-8 py-3.5 rounded-full bg-white hover:bg-[#FAF8F5] text-[#2D2A26] border border-[#DED7CE] hover:border-[#E8734A] text-xs font-bold uppercase tracking-wider shadow-2xs hover:-translate-y-0.5 transition-all"
-              >
-                Start Reading
-              </button>
+              {featuredArticle && (
+                <button
+                  onClick={() => openArticle(featuredArticle)}
+                  className="px-8 py-3.5 rounded-full bg-white hover:bg-[#FAF8F5] text-[#2D2A26] border border-[#DED7CE] hover:border-[#E8734A] text-xs font-bold uppercase tracking-wider shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer"
+                >
+                  Start Reading
+                </button>
+              )}
             </div>
           </div>
 
@@ -104,7 +91,7 @@ export const HomeDesign1: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. "Popular Reads" 3-Card Grid (Page 1) */}
+      {/* 2. "Popular Reads" Grid */}
       <section className="space-y-8">
         <div className="flex items-end justify-between border-b border-[#EAE5DF] pb-4">
           <div>
@@ -117,26 +104,33 @@ export const HomeDesign1: React.FC = () => {
           </div>
           <button
             onClick={() => setActivePage('travel')}
-            className="text-xs font-bold text-[#E8734A] hover:underline flex items-center gap-1 uppercase tracking-wider"
+            className="text-xs font-bold text-[#E8734A] hover:underline flex items-center gap-1 uppercase tracking-wider cursor-pointer"
           >
             View All <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {popularReads.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        {articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {popularReads.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 px-4 bg-white/70 backdrop-blur-xs rounded-3xl border border-[#EDE8E0] space-y-2">
+            <p className="font-serif text-lg font-bold text-[#1E1B18]">No published articles yet</p>
+            <p className="text-xs text-[#8C8477]">Check back soon as we curate our newest editorial dispatches.</p>
+          </div>
+        )}
       </section>
 
-      {/* 3. Category Feature Bar (Page 1, Design 1) */}
+      {/* 3. Category Feature Bar */}
       <section className="bg-white/80 backdrop-blur-xs border border-[#EDE8E0] rounded-3xl p-6 sm:p-8 shadow-xs">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           
           <button
             onClick={() => setActivePage('travel')}
-            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all"
+            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all cursor-pointer"
           >
             <div className="w-12 h-12 rounded-full bg-[#FFF2EB] text-[#E8734A] group-hover:scale-110 flex items-center justify-center mb-3 transition-transform shadow-2xs">
               <Compass className="w-6 h-6" />
@@ -144,25 +138,25 @@ export const HomeDesign1: React.FC = () => {
             <h4 className="font-serif font-bold text-sm sm:text-base text-[#1E1B18] group-hover:text-[#E8734A] transition-colors">
               Inspiring Destinations
             </h4>
-            <p className="text-[11px] text-[#8C8477] mt-1">Guides, itineraries & tips</p>
+            <p className="text-[11px] text-[#8C8477] mt-1">Guides, itineraries &amp; tips</p>
           </button>
 
           <button
             onClick={() => setActivePage('lifestyle')}
-            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all"
+            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all cursor-pointer"
           >
             <div className="w-12 h-12 rounded-full bg-[#FFF2EB] text-[#E8734A] group-hover:scale-110 flex items-center justify-center mb-3 transition-transform shadow-2xs">
               <Coffee className="w-6 h-6" />
             </div>
             <h4 className="font-serif font-bold text-sm sm:text-base text-[#1E1B18] group-hover:text-[#E8734A] transition-colors">
-              Local Food & Coffee
+              Local Food &amp; Coffee
             </h4>
-            <p className="text-[11px] text-[#8C8477] mt-1">Artisan cafes & dining</p>
+            <p className="text-[11px] text-[#8C8477] mt-1">Artisan cafes &amp; dining</p>
           </button>
 
           <button
             onClick={() => setActivePage('lifestyle')}
-            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all"
+            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all cursor-pointer"
           >
             <div className="w-12 h-12 rounded-full bg-[#FFF2EB] text-[#E8734A] group-hover:scale-110 flex items-center justify-center mb-3 transition-transform shadow-2xs">
               <HomeIcon className="w-6 h-6" />
@@ -175,82 +169,83 @@ export const HomeDesign1: React.FC = () => {
 
           <button
             onClick={() => setActivePage('health')}
-            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all"
+            className="group flex flex-col items-center p-3 rounded-2xl hover:bg-[#FFF3EC] transition-all cursor-pointer"
           >
             <div className="w-12 h-12 rounded-full bg-[#FFF2EB] text-[#E8734A] group-hover:scale-110 flex items-center justify-center mb-3 transition-transform shadow-2xs">
               <Heart className="w-6 h-6" />
             </div>
             <h4 className="font-serif font-bold text-sm sm:text-base text-[#1E1B18] group-hover:text-[#E8734A] transition-colors">
-              Health & Wellbeing
+              Health &amp; Wellbeing
             </h4>
-            <p className="text-[11px] text-[#8C8477] mt-1">Mindful habits & vitality</p>
+            <p className="text-[11px] text-[#8C8477] mt-1">Mindful habits &amp; vitality</p>
           </button>
 
         </div>
       </section>
 
-      {/* 4. Large Editorial Card: "A Perfect Weekend in the Swiss Alps" (Page 1) */}
-      <section>
-        <div
-          onClick={() => openArticle(alpsArticle)}
-          className="group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer grid grid-cols-1 lg:grid-cols-12"
-        >
-          {/* Left Large Photo */}
-          <div className="lg:col-span-7 h-72 sm:h-96 lg:h-auto overflow-hidden relative">
-            <img
-              src="https://images.unsplash.com/photo-1491557345352-5929e343eb89?auto=format&fit=crop&w=1200&q=80"
-              alt="Swiss Alps weekend landscape"
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-            />
-            <span className="absolute top-4 left-4 px-3.5 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-white/90 backdrop-blur-md text-[#D86237] border border-[#FBD8C8]">
-              Featured Story
-            </span>
-          </div>
-
-          {/* Right Editorial Info */}
-          <div className="lg:col-span-5 p-6 sm:p-10 lg:p-12 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-xs text-[#8C8477]">
-                <span>{alpsArticle.date}</span>
-                <span>&bull;</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" /> {alpsArticle.readTime}
-                </span>
-              </div>
-
-              <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E1B18] group-hover:text-[#E8734A] transition-colors leading-tight">
-                A Perfect Weekend in the Swiss Alps
-              </h3>
-
-              <p className="text-[#686256] text-sm sm:text-base leading-relaxed font-light">
-                Escape to dramatic snow-dusted peaks, crystal-clear alpine lakes and cozy chalets for a restorative weekend surrounded by pristine European wilderness.
-              </p>
-            </div>
-
-            <div className="pt-8 border-t border-[#F2ECE4] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <img
-                  src={alpsArticle.author.avatar}
-                  alt={alpsArticle.author.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div>
-                  <h5 className="font-bold text-xs text-[#1E1B18]">{alpsArticle.author.name}</h5>
-                  <p className="text-[11px] text-[#8C8477]">Switzerland &bull; Alpine Guide</p>
-                </div>
-              </div>
-
-              <span className="text-xs font-bold uppercase tracking-wider text-[#E8734A] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Read Story <ArrowRight className="w-3.5 h-3.5" />
+      {/* 4. Large Editorial Card */}
+      {headlineArticle && (
+        <section>
+          <div
+            onClick={() => openArticle(headlineArticle)}
+            className="group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer grid grid-cols-1 lg:grid-cols-12"
+          >
+            {/* Left Large Photo */}
+            <div className="lg:col-span-7 h-72 sm:h-96 lg:h-auto overflow-hidden relative">
+              <img
+                src={headlineArticle.image}
+                alt={headlineArticle.title}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+              <span className="absolute top-4 left-4 px-3.5 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-white/90 backdrop-blur-md text-[#D86237] border border-[#FBD8C8]">
+                Featured Story
               </span>
             </div>
+
+            {/* Right Editorial Info */}
+            <div className="lg:col-span-5 p-6 sm:p-10 lg:p-12 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-xs text-[#8C8477]">
+                  <span>{headlineArticle.date}</span>
+                  <span>&bull;</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> {headlineArticle.readTime}
+                  </span>
+                </div>
+
+                <h3 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E1B18] group-hover:text-[#E8734A] transition-colors leading-tight">
+                  {headlineArticle.title}
+                </h3>
+
+                <p className="text-[#686256] text-sm sm:text-base leading-relaxed font-light line-clamp-3">
+                  {headlineArticle.excerpt}
+                </p>
+              </div>
+
+              <div className="pt-8 border-t border-[#F2ECE4] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={headlineArticle.author.avatar}
+                    alt={headlineArticle.author.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <h5 className="font-bold text-xs text-[#1E1B18]">{headlineArticle.author.name}</h5>
+                    <p className="text-[11px] text-[#8C8477]">{headlineArticle.author.role}</p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-bold uppercase tracking-wider text-[#E8734A] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  Read Story <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
     </div>
   );
 };
-

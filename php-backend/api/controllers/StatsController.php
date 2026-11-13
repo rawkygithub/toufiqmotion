@@ -45,9 +45,9 @@ class StatsController
 
         Response::json([
             'totalArticles'    => $articlesCount,
-            'totalViews'       => ((int)($viewsSum['total_views'] ?? 0)) + 52400,
-            'totalLikes'       => ((int)($viewsSum['total_likes'] ?? 0)) + 1280,
-            'totalSubscribers' => $subscribersCount + 4200,
+            'totalViews'       => (int)($viewsSum['total_views'] ?? 0),
+            'totalLikes'       => (int)($viewsSum['total_likes'] ?? 0),
+            'totalSubscribers' => $subscribersCount,
             'totalInquiries'   => $inquiriesCount,
             'newInquiries'     => $newInquiries,
             'categories'       => $categories,

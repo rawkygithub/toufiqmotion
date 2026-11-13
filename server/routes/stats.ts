@@ -28,9 +28,9 @@ router.get('/', (req, res) => {
 
   res.json({
     totalArticles: articlesCount.count,
-    totalViews: (viewsSum.total_views || 0) + 52400, // include cumulative blog readership (50K+ per designer spec)
-    totalLikes: (viewsSum.total_likes || 0) + 1280,
-    totalSubscribers: subscribersCount.count + 4200,
+    totalViews: viewsSum.total_views || 0,
+    totalLikes: viewsSum.total_likes || 0,
+    totalSubscribers: subscribersCount.count,
     totalInquiries: inquiriesCount.count,
     newInquiries: newInquiries.count,
     categories,

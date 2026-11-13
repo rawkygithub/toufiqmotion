@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ARTICLES, Article } from '../../data/articles';
+import { Article } from '../../data/articles';
 import { api } from '../../api/client';
 import { AffiliateDisclosure } from '../AffiliateDisclosure';
 import {
@@ -28,35 +28,27 @@ export const ArticlePage: React.FC = () => {
     isBookmarked,
     toggleBookmark,
     ambientLight,
-    setAmbientLight
+    setAmbientLight,
+    articles
   } = useTheme();
 
   const [currentArticle, setCurrentArticle] = useState<Article | null>(selectedArticle);
-  const [likes, setLikes] = useState<number>(142);
+  const [likes, setLikes] = useState<number>(0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
-  const [views, setViews] = useState<number>(1240);
+  const [views, setViews] = useState<number>(0);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [commentText, setCommentText] = useState<string>('');
   const [commentAuthor, setCommentAuthor] = useState<string>('');
   const [commentSubmitting, setCommentSubmitting] = useState<boolean>(false);
-  const [comments, setComments] = useState<Array<{ name: string; date: string; text: string }>>([
-    {
-      name: 'Sophia Laurent',
-      date: 'Yesterday at 3:45 PM',
-      text: 'This guide was exactly what I needed for my upcoming trip! The photography and practical tips are top tier.'
-    },
-    {
-      name: 'Marcus Vance',
-      date: '2 days ago',
-      text: 'The recommendation for early morning walks and quiet cafes made all the difference in my itinerary. Thank you!'
-    }
-  ]);
+  const [comments, setComments] = useState<Array<{ name: string; date: string; text: string }>>([]);
   const [readingProgress, setReadingProgress] = useState<number>(0);
+  const [isNotFound, setIsNotFound] = useState<boolean>(false);
 
   // Synchronize article from context or fallback to URL slug
   useEffect(() => {
     if (selectedArticle) {
       setCurrentArticle(selectedArticle);
+      setIsNotFound(false);
       return;
     }
 
@@ -66,22 +58,19 @@ export const ArticlePage: React.FC = () => {
       const slugCandidate = pathParts[pathParts.length - 1];
 
       if (slugCandidate && slugCandidate !== 'article' && slugCandidate !== 'post') {
-        // Try local static list first
-        const found = ARTICLES.find(
-          (a) => a.slug === slugCandidate || a.id === slugCandidate
-        );
-        if (found) {
-          setCurrentArticle(found);
-        }
-
         // Fetch authoritative latest version from backend API
         api.getArticleBySlug(slugCandidate)
           .then((res) => {
             if (res.article) {
               setCurrentArticle(res.article);
+              setIsNotFound(false);
+            } else {
+              setIsNotFound(true);
             }
           })
-          .catch(() => {});
+          .catch(() => {
+            setIsNotFound(true);
+          });
       }
     }
   }, [selectedArticle]);
@@ -115,8 +104,8 @@ export const ArticlePage: React.FC = () => {
     if (!currentArticle) return;
 
     // Set initial counts
-    setLikes(currentArticle.likesCount || 142);
-    setViews(currentArticle.viewsCount || 1240);
+    setLikes(currentArticle.likesCount ?? 0);
+    setViews(currentArticle.viewsCount ?? 0);
 
     // Dynamic document title & meta tags for SEO
     const prevTitle = document.title;
@@ -190,6 +179,23 @@ export const ArticlePage: React.FC = () => {
     };
   }, [currentArticle]);
 
+  if (isNotFound) {
+    return (
+      <div className="min-h-[55vh] flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <h2 className="font-serif text-3xl font-bold text-[#1E1B18]">Story Not Found</h2>
+        <p className="text-sm text-[#8C8477] max-w-md mx-auto font-light leading-relaxed">
+          This editorial dispatch is not available or has been unpublished.
+        </p>
+        <button
+          onClick={() => setActivePage('home')}
+          className="mt-3 px-7 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+        >
+          Return to Journal
+        </button>
+      </div>
+    );
+  }
+
   if (!currentArticle) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -204,10 +210,10 @@ export const ArticlePage: React.FC = () => {
   const bookmarked = isBookmarked(currentArticle.id);
 
   // Related articles (matching category or shared tags)
-  const relatedArticles = ARTICLES.filter(
+  const relatedArticles = articles.filter(
     (a) =>
       a.id !== currentArticle.id &&
-      (a.category === currentArticle.category || a.tags.some((t) => currentArticle.tags.includes(t)))
+      (a.category === currentArticle.category || a.tags?.some((t) => currentArticle.tags?.includes(t)))
   ).slice(0, 3);
 
   const handleShare = () => {
@@ -562,15 +568,21 @@ export const ArticlePage: React.FC = () => {
 
             {/* Comments List */}
             <div className="space-y-4">
-              {comments.map((comment, i) => (
-                <div key={i} className="p-5 bg-[#FAF8F5] rounded-2xl border border-[#EDE8E0] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-[#1E1B18]">{comment.name}</span>
-                    <span className="text-[11px] text-[#8C8477]">{comment.date}</span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-[#554E42] leading-relaxed">{comment.text}</p>
+              {comments.length === 0 ? (
+                <div className="text-center py-8 text-[#8C8477] text-xs font-light">
+                  No reflections shared yet. Be the first to leave a thought!
                 </div>
-              ))}
+              ) : (
+                comments.map((comment, i) => (
+                  <div key={i} className="p-5 bg-[#FAF8F5] rounded-2xl border border-[#EDE8E0] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-[#1E1B18]">{comment.name}</span>
+                      <span className="text-[11px] text-[#8C8477]">{comment.date}</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-[#554E42] leading-relaxed">{comment.text}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

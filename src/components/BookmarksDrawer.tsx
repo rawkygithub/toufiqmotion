@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { ARTICLES } from '../data/articles';
 import { X, Bookmark, Trash2, ArrowRight, BookOpen } from 'lucide-react';
 
 export const BookmarksDrawer: React.FC = () => {
@@ -9,12 +8,13 @@ export const BookmarksDrawer: React.FC = () => {
     setIsBookmarksDrawerOpen,
     bookmarks,
     toggleBookmark,
-    openArticle
+    openArticle,
+    articles
   } = useTheme();
 
   if (!isBookmarksDrawerOpen) return null;
 
-  const bookmarkedArticles = ARTICLES.filter((a) => bookmarks.includes(a.id));
+  const bookmarkedArticles = articles.filter((a) => bookmarks.includes(a.id));
 
   return (
     <div
@@ -62,64 +62,64 @@ export const BookmarksDrawer: React.FC = () => {
               bookmarkedArticles.map((article) => (
                 <div
                   key={article.id}
-                  className="p-4 bg-white rounded-2xl border border-[#EDE8E0] hover:border-[#E8734A]/50 shadow-2xs transition-all flex gap-3.5 group"
+                  className="group bg-white rounded-2xl p-4 border border-[#EDE7DF] hover:border-[#E8734A]/50 hover:shadow-md transition-all flex gap-3.5 items-center justify-between"
                 >
-                  <img
-                    src={article.image}
-                    alt={article.title}
-                    className="w-20 h-20 rounded-xl object-cover shrink-0 cursor-pointer"
+                  <div
                     onClick={() => {
                       openArticle(article);
                       setIsBookmarksDrawerOpen(false);
                     }}
-                  />
-                  <div className="grow min-w-0 flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-[#E8734A] tracking-wider">
-                        {article.subcategory || article.category}
+                    className="flex gap-3.5 items-center grow cursor-pointer min-w-0"
+                  >
+                    <img
+                      src={article.image}
+                      alt={article.title}
+                      className="w-14 h-14 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
+                    />
+                    <div className="grow min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#E8734A] block mb-0.5">
+                        {article.category}
                       </span>
-                      <h5
-                        onClick={() => {
-                          openArticle(article);
-                          setIsBookmarksDrawerOpen(false);
-                        }}
-                        className="font-serif font-bold text-sm text-[#1E1B18] group-hover:text-[#E8734A] transition-colors line-clamp-2 cursor-pointer mt-0.5"
-                      >
+                      <h4 className="font-serif font-bold text-sm text-[#1E1B18] group-hover:text-[#E8734A] transition-colors truncate">
                         {article.title}
-                      </h5>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-[#F5F2EB] text-xs">
-                      <span className="text-[11px] text-[#8C8477]">{article.readTime}</span>
-                      <button
-                        onClick={() => toggleBookmark(article.id)}
-                        className="text-[#9E978C] hover:text-rose-500 transition-colors p-1"
-                        title="Remove bookmark"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </h4>
+                      <span className="text-[11px] text-[#8C8477] mt-0.5 block">
+                        {article.readTime}
+                      </span>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => toggleBookmark(article.id)}
+                    className="p-2 text-[#9E978C] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0 cursor-pointer"
+                    title="Remove from reading list"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))
             )}
           </div>
 
           {/* Drawer Footer */}
-          <div className="p-6 bg-white border-t border-[#EAE5DF]">
-            <p className="text-xs text-[#8C8477] text-center mb-3">
-              Saved offline in your browser session &bull; Syncs instantly
-            </p>
-            <button
-              onClick={() => setIsBookmarksDrawerOpen(false)}
-              className="w-full py-2.5 rounded-full bg-[#FAF8F5] border border-[#E5E0D8] text-xs font-bold text-[#4A453E] hover:border-[#E8734A] hover:text-[#E8734A] transition-all"
-            >
-              Continue Browsing
-            </button>
-          </div>
+          {bookmarkedArticles.length > 0 && (
+            <div className="p-4 bg-white border-t border-[#EAE5DF]">
+              <button
+                onClick={() => {
+                  if (bookmarkedArticles.length > 0) {
+                    openArticle(bookmarkedArticles[0]);
+                    setIsBookmarksDrawerOpen(false);
+                  }
+                }}
+                className="w-full py-3 rounded-full bg-[#E8734A] hover:bg-[#D4633A] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                Read First Saved Story <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
   );
 };
-

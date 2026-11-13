@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { ARTICLES, Article } from '../data/articles';
+import { Article } from '../data/articles';
 import { Search, X, Clock, ArrowRight, Compass } from 'lucide-react';
 
 export const SearchModal: React.FC = () => {
-  const { isSearchOpen, setIsSearchOpen, openArticle } = useTheme();
+  const { isSearchOpen, setIsSearchOpen, openArticle, articles } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -20,16 +20,17 @@ export const SearchModal: React.FC = () => {
 
   if (!isSearchOpen) return null;
 
-  const popularTags = ['Amalfi Coast', 'Coffee', 'Habits', 'Italy', 'Breakfast', 'Japan', 'Sleep', 'Sanctuary'];
+  // Extract dynamic tags from existing articles
+  const availableTags = Array.from(new Set(articles.flatMap((a) => a.tags || []))).slice(0, 8);
 
-  const filteredArticles = ARTICLES.filter((article) => {
+  const filteredArticles = articles.filter((article) => {
     const matchesSearch =
       article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.tags.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
+      (article.tags || []).some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesTag = selectedTag ? article.tags.includes(selectedTag) || article.title.includes(selectedTag) : true;
+    const matchesTag = selectedTag ? (article.tags || []).includes(selectedTag) || article.title.includes(selectedTag) : true;
 
     return matchesSearch && matchesTag;
   });
@@ -55,43 +56,53 @@ export const SearchModal: React.FC = () => {
             className="w-full text-base sm:text-lg bg-transparent text-[#1E1B18] placeholder-[#9E978C] focus:outline-hidden font-sans"
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="text-[#9E978C] hover:text-[#1E1B18] p-1">
+            <button onClick={() => setSearchTerm('')} className="text-[#9E978C] hover:text-[#1E1B18] p-1 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           )}
           <button
             onClick={() => setIsSearchOpen(false)}
-            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#F2EDE6] text-[#6B6355] hover:bg-[#EAE4DC]"
+            className="px-3 py-1 rounded-full bg-[#FAF8F5] border border-[#DDD7CD] text-xs font-bold text-[#554E42] hover:bg-[#E8734A] hover:text-white transition-all cursor-pointer"
           >
             ESC
           </button>
         </div>
 
-        {/* Quick Tag Pills */}
-        <div className="px-5 py-3 border-b border-[#EAE5DF] bg-[#FAF8F5]/80 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <span className="text-[11px] font-bold uppercase text-[#8C8477] shrink-0">Popular:</span>
-          {popularTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-              className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 transition-all ${
-                selectedTag === tag
-                  ? 'bg-[#E8734A] text-white shadow-2xs'
-                  : 'bg-white border border-[#E2DDD5] text-[#554E42] hover:border-[#E8734A]'
-              }`}
-            >
-              #{tag}
-            </button>
-          ))}
-        </div>
+        {/* Quick Tag Pills (rendered only when articles have tags) */}
+        {availableTags.length > 0 && (
+          <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#EAE5DF] flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <span className="text-[11px] font-bold text-[#8C8477] uppercase tracking-wider shrink-0 mr-1">
+              Filter:
+            </span>
+            {availableTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                  selectedTag === tag
+                    ? 'bg-[#E8734A] text-white shadow-xs'
+                    : 'bg-white border border-[#E2DDD5] text-[#554E42] hover:border-[#E8734A]'
+                }`}
+              >
+                #{tag}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Search Results List */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-3 grow">
-          {filteredArticles.length === 0 ? (
+          {articles.length === 0 ? (
+            <div className="text-center py-12">
+              <Compass className="w-10 h-10 text-[#C8C2B8] mx-auto mb-3 stroke-[1.5]" />
+              <p className="text-base font-serif text-[#4A453E] font-medium">No published stories yet</p>
+              <p className="text-xs text-[#8C8477] mt-1">Articles published in the studio will be instantly searchable here.</p>
+            </div>
+          ) : filteredArticles.length === 0 ? (
             <div className="text-center py-12">
               <Compass className="w-10 h-10 text-[#C8C2B8] mx-auto mb-3 stroke-[1.5]" />
               <p className="text-base font-serif text-[#4A453E] font-medium">No stories found matching "{searchTerm}"</p>
-              <p className="text-xs text-[#8C8477] mt-1">Try searching for "Amalfi", "Coffee", "Japan" or "Habits"</p>
+              <p className="text-xs text-[#8C8477] mt-1">Try another search term or clear the filter</p>
             </div>
           ) : (
             filteredArticles.map((article) => (
@@ -139,4 +150,3 @@ export const SearchModal: React.FC = () => {
     </div>
   );
 };
-

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ARTICLES, TOPICS, QUICK_WELLBEING_TIPS } from '../../data/articles';
+import { TOPICS, QUICK_WELLBEING_TIPS } from '../../data/articles';
 import { api } from '../../api/client';
 import { ArticleCard } from '../ArticleCard';
 import {
@@ -10,18 +10,15 @@ import {
   Compass,
   Sparkles,
   ArrowRight,
-  Clock,
   Search,
   Activity,
   Apple,
   Moon,
-  Smile,
-  CheckCircle2,
-  Check
+  Smile
 } from 'lucide-react';
 
 export const HealthPage: React.FC = () => {
-  const { openArticle } = useTheme();
+  const { openArticle, articles } = useTheme();
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [email, setEmail] = useState('');
@@ -37,9 +34,11 @@ export const HealthPage: React.FC = () => {
     { name: 'Mindful Travel', icon: Compass },
   ];
 
-  const healthArticles = ARTICLES.filter((a) => a.category === 'Health & Wellbeing');
-  const habits10Article = ARTICLES.find((a) => a.id === 'ten-simple-habits-healthier-life') || healthArticles[0];
-  const calmerArticle = ARTICLES.find((a) => a.id === 'calmer-mind-brighter-tomorrow') || healthArticles[1];
+  const healthArticles = articles.filter((a) =>
+    a.category?.toLowerCase().includes('health') || a.category?.toLowerCase().includes('wellbeing')
+  );
+  const habits10Article = healthArticles[0] || null;
+  const calmerArticle = healthArticles[1] || null;
 
   const filteredArticles = healthArticles.filter((a) => {
     const matchesSub = selectedSubcategory === 'All' || a.subcategory === selectedSubcategory;
@@ -110,7 +109,7 @@ export const HealthPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. Subcategory Icon Filter Bar (Page 4) */}
+      {/* 2. Subcategory Icon Filter Bar */}
       <section className="bg-white/80 backdrop-blur-md border border-[#EDE7DF] rounded-2xl p-2.5 sm:p-3 shadow-xs">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {subcategories.map((sub) => {
@@ -120,7 +119,7 @@ export const HealthPage: React.FC = () => {
               <button
                 key={sub.name}
                 onClick={() => setSelectedSubcategory(sub.name)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   active
                     ? 'bg-[#2E7D5A] text-white shadow-xs'
                     : 'bg-[#FAF8F5] text-[#554E42] hover:bg-[#F2ECE4] border border-[#E5E0D8]'
@@ -134,96 +133,98 @@ export const HealthPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Featured Health & Wellbeing Story (Split 2 Cards + Search Filter from Page 4) */}
-      <section className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EAE5DF] pb-3">
-          <h2 className="font-serif text-2xl font-bold text-[#1E1B18]">
-            Featured Health &amp; Wellbeing Story
-          </h2>
+      {/* 3. Featured Health & Wellbeing Story (rendered only when article exists) */}
+      {habits10Article && (
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EAE5DF] pb-3">
+            <h2 className="font-serif text-2xl font-bold text-[#1E1B18]">
+              Featured Health &amp; Wellbeing Story
+            </h2>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-[#8C8477] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Search health & wellbeing..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-white rounded-full border border-[#E0DCD4] focus:outline-hidden focus:border-[#2E7D5A]"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Main Card (8 cols): 10 Simple Habits for a Happier, Healthier Life */}
-          <div
-            onClick={() => openArticle(habits10Article)}
-            className="lg:col-span-8 group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col sm:flex-row"
-          >
-            <div className="sm:w-1/2 p-6 sm:p-10 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#2E7D5A] bg-[#EDF7F1] px-3 py-1 rounded-full border border-[#C8E9D6]">
-                  Healthy Living
-                </span>
-                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18] group-hover:text-[#E8734A] transition-colors leading-snug mt-4 mb-3">
-                  {habits10Article.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-[#665F55] leading-relaxed font-light">
-                  {habits10Article.excerpt}
-                </p>
-              </div>
-
-              <div className="pt-6">
-                <button className="px-6 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center gap-1.5">
-                  Read the Article <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="sm:w-1/2 h-64 sm:h-auto overflow-hidden relative">
-              <img
-                src={habits10Article.image}
-                alt={habits10Article.title}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-[#8C8477] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                placeholder="Search health &amp; wellbeing..."
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-white rounded-full border border-[#E0DCD4] focus:outline-hidden focus:border-[#2E7D5A]"
               />
             </div>
           </div>
 
-          {/* Right Card (4 cols): A Calmer Mind, a Brighter Tomorrow */}
-          <div
-            onClick={() => openArticle(calmerArticle)}
-            className="lg:col-span-4 group relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer min-h-[350px] flex flex-col justify-end p-6 sm:p-8"
-          >
-            <img
-              src={calmerArticle.image}
-              alt={calmerArticle.title}
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-            <div className="relative z-10 text-white space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-[#FFCEBA]">
-                Mindful Living
-              </span>
-              <h3 className="font-serif text-xl sm:text-2xl font-bold leading-snug group-hover:text-[#FFB599] transition-colors">
-                {calmerArticle.title}
-              </h3>
-              <p className="text-white/80 text-xs line-clamp-2">
-                {calmerArticle.excerpt}
-              </p>
-              <div className="pt-2 flex items-center text-xs font-semibold text-[#FFCEBA] gap-1">
-                Explore Wellbeing <ArrowRight className="w-3.5 h-3.5" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Main Card */}
+            <div
+              onClick={() => openArticle(habits10Article)}
+              className={calmerArticle ? "lg:col-span-8 group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col sm:flex-row" : "lg:col-span-12 group bg-white rounded-3xl border border-[#EDE7DF] overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col sm:flex-row"}
+            >
+              <div className="sm:w-1/2 p-6 sm:p-10 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#2E7D5A] bg-[#EDF7F1] px-3 py-1 rounded-full border border-[#C8E9D6]">
+                    {habits10Article.subcategory || 'Healthy Living'}
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#1E1B18] group-hover:text-[#E8734A] transition-colors leading-snug mt-4 mb-3">
+                    {habits10Article.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#665F55] leading-relaxed font-light line-clamp-3">
+                    {habits10Article.excerpt}
+                  </p>
+                </div>
+
+                <div className="pt-6">
+                  <span className="px-6 py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all inline-flex items-center gap-1.5">
+                    Read the Article <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="sm:w-1/2 h-64 sm:h-auto overflow-hidden relative">
+                <img
+                  src={habits10Article.image}
+                  alt={habits10Article.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
+                />
               </div>
             </div>
+
+            {/* Right Card (rendered only when 2nd article exists) */}
+            {calmerArticle && (
+              <div
+                onClick={() => openArticle(calmerArticle)}
+                className="lg:col-span-4 group relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 cursor-pointer min-h-[350px] flex flex-col justify-end p-6 sm:p-8"
+              >
+                <img
+                  src={calmerArticle.image}
+                  alt={calmerArticle.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-106 transition-transform duration-700 ease-out"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                <div className="relative z-10 text-white space-y-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#FFCEBA]">
+                    {calmerArticle.subcategory || 'Mindful Living'}
+                  </span>
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold leading-snug group-hover:text-[#FFB599] transition-colors">
+                    {calmerArticle.title}
+                  </h3>
+                  <p className="text-white/80 text-xs line-clamp-2">
+                    {calmerArticle.excerpt}
+                  </p>
+                  <div className="pt-2 flex items-center text-xs font-semibold text-[#FFCEBA] gap-1">
+                    Explore Wellbeing <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+        </section>
+      )}
 
-        </div>
-      </section>
-
-      {/* 4. Latest Articles + Sidebar (Quick Wellbeing Tips & Newsletter) (Page 4) */}
+      {/* 4. Latest Articles + Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
         
         {/* Left Column (8 cols): Latest Articles */}
@@ -242,17 +243,28 @@ export const HealthPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {filteredArticles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
+          {filteredArticles.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {filteredArticles.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-14 px-4 bg-white/70 backdrop-blur-xs rounded-3xl border border-[#EDE8E0] space-y-2">
+              <p className="font-serif text-lg font-bold text-[#1E1B18]">No wellbeing articles found</p>
+              <p className="text-xs text-[#8C8477]">
+                {healthArticles.length === 0
+                  ? 'No health & wellbeing guides have been published yet. Check back soon!'
+                  : `No stories found matching "${selectedSubcategory}".`}
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Right Sidebar (4 cols): Quick Wellbeing Tips + Feel Better Card (Page 4) */}
+        {/* Right Sidebar (4 cols): Quick Wellbeing Tips + Feel Better Card */}
         <aside className="lg:col-span-4 space-y-8">
           
-          {/* Quick Wellbeing Tips Card (Page 4) */}
+          {/* Quick Wellbeing Tips Card */}
           <div className="bg-white rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-4">
             <h4 className="font-serif font-bold text-lg text-[#1E1B18] pb-2 border-b border-[#F0ECE6] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#E8734A]" /> Quick Wellbeing Tips
@@ -273,7 +285,7 @@ export const HealthPage: React.FC = () => {
             </div>
           </div>
 
-          {/* "Feel Better. Explore More." Card with Newsletter (Page 4) */}
+          {/* "Feel Better. Explore More." Card with Newsletter */}
           <div className="bg-gradient-to-br from-[#FFFDFC] to-[#FAF8F5] rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-4 relative overflow-hidden">
             <div className="w-9 h-9 rounded-full bg-[#EDF7F1] text-[#2E7D5A] flex items-center justify-center font-bold text-sm">
               🌿
@@ -301,7 +313,7 @@ export const HealthPage: React.FC = () => {
               />
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-full bg-[#2E7D5A] hover:bg-[#25684A] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all"
+                className="w-full py-2.5 rounded-full bg-[#2E7D5A] hover:bg-[#25684A] text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
               >
                 {subscribed ? 'Joined!' : 'Subscribe'}
               </button>
@@ -311,7 +323,7 @@ export const HealthPage: React.FC = () => {
         </aside>
       </div>
 
-      {/* 5. Explore Health & Wellbeing Topics (5 Visual Cards from Page 4) */}
+      {/* 5. Explore Health & Wellbeing Topics */}
       <section className="space-y-6">
         <div className="flex items-end justify-between border-b border-[#EAE5DF] pb-3">
           <div>
@@ -343,9 +355,6 @@ export const HealthPage: React.FC = () => {
                 <h5 className="font-serif font-bold text-base leading-tight group-hover:text-[#FFCEBA] transition-colors">
                   {topic.name}
                 </h5>
-                <span className="text-[11px] text-white/80 block mt-1 font-mono">
-                  {topic.count}
-                </span>
               </div>
             </div>
           ))}
@@ -355,4 +364,3 @@ export const HealthPage: React.FC = () => {
     </div>
   );
 };
-
