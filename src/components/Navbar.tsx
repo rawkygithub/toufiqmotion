@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme, PageId } from '../context/ThemeContext';
 import { PRESETS } from './InsideLightEffect';
-import { Search, Bookmark, Sparkles, Menu, X, Lock } from 'lucide-react';
+import { Search, Bookmark, Sparkles, Menu, X } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const {
@@ -103,14 +103,14 @@ export const Navbar: React.FC = () => {
       <header
         className={`${
           siteSettings?.header_sticky !== false ? 'sticky top-0' : 'relative'
-        } z-30 transition-all duration-300 ${
+        } z-30 transition-all duration-300 w-full ${
           isScrolled
-            ? 'bg-[#FAF8F5]/90 backdrop-blur-md shadow-xs border-b border-[#EAE5DF]/70 py-3.5'
-            : 'bg-[#FAF8F5]/60 backdrop-blur-xs py-5'
+            ? 'bg-[#FAF8F5]/90 backdrop-blur-md shadow-xs border-b border-[#EAE5DF]/70 py-3'
+            : 'bg-[#FAF8F5]/60 backdrop-blur-xs py-4.5'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
+          <div className="flex items-center justify-between gap-4">
             
             {/* Brand Logo & Tagline (Supports Image Logo or Styled Monogram) */}
             <button
@@ -136,16 +136,16 @@ export const Navbar: React.FC = () => {
               )}
             </button>
 
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-7">
+            {/* Desktop Navigation Links (Full Width Responsive Flow) */}
+            <nav className="hidden lg:flex items-center gap-3.5 xl:gap-5 2xl:gap-6 flex-wrap justify-center min-w-0">
               {menuItems.map((item) => {
                 const isActive = activePage === (item.pageId || item.id);
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleMenuClick(item)}
-                    className={`text-[13.5px] font-medium tracking-wide uppercase transition-all duration-200 py-1.5 cursor-pointer ${
-                      isActive ? 'font-bold border-b-2' : 'hover:opacity-80'
+                    className={`text-[12px] xl:text-[13px] 2xl:text-[13.5px] font-semibold tracking-wider uppercase transition-all duration-200 py-1.5 whitespace-nowrap cursor-pointer ${
+                      isActive ? 'border-b-2' : 'hover:opacity-80'
                     }`}
                     style={
                       isActive
@@ -160,7 +160,7 @@ export const Navbar: React.FC = () => {
             </nav>
 
             {/* Right Action Icons */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Header CTA Button (Configurable in Backend) */}
               {siteSettings?.header_cta_enabled && siteSettings.header_cta_text && (
                 <button
@@ -210,29 +210,16 @@ export const Navbar: React.FC = () => {
             {/* Search Trigger */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 rounded-full hover:bg-black/5 text-[#4A453E] hover:text-[#E8734A] transition-colors"
+              className="p-2 rounded-full hover:bg-black/5 text-[#4A453E] hover:text-[#E8734A] transition-colors cursor-pointer"
               title="Search Articles (Ctrl+K)"
             >
               <Search className="w-4 h-4" />
             </button>
 
-            {/* Admin Studio Trigger */}
-            <button
-              onClick={() => setActivePage('admin')}
-              className={`p-2 rounded-full transition-colors ${
-                activePage === 'admin'
-                  ? 'bg-[#E8734A] text-white shadow-xs'
-                  : 'hover:bg-black/5 text-[#4A453E] hover:text-[#E8734A]'
-              }`}
-              title="Admin Editorial Studio"
-            >
-              <Lock className="w-4 h-4" />
-            </button>
-
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-[#4A453E] hover:text-[#E8734A] hover:bg-black/5 transition-colors"
+              className="lg:hidden p-2 rounded-lg text-[#4A453E] hover:text-[#E8734A] hover:bg-black/5 transition-colors cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -248,7 +235,7 @@ export const Navbar: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => handleMenuClick(item)}
-                className={`text-left text-base font-medium py-2 px-3 rounded-xl transition-all ${
+                className={`text-left text-base font-medium py-2 px-3 rounded-xl transition-all cursor-pointer ${
                   (item.type === 'page' && activePage === item.pageId)
                     ? 'bg-[#FFF3EC] text-[#E8734A] font-semibold'
                     : 'text-[#4A453E] hover:bg-[#FAF8F5]'
@@ -257,20 +244,6 @@ export const Navbar: React.FC = () => {
                 {item.label}
               </button>
             ))}
-
-            <button
-              onClick={() => {
-                setActivePage('admin');
-                setMobileMenuOpen(false);
-              }}
-              className={`text-left text-base font-medium py-2 px-3 rounded-xl flex items-center gap-2 transition-all ${
-                activePage === 'admin'
-                  ? 'bg-[#FFF3EC] text-[#E8734A] font-semibold'
-                  : 'text-[#4A453E] hover:bg-[#FAF8F5]'
-              }`}
-            >
-              <Lock className="w-4 h-4" /> Admin Studio
-            </button>
           </div>
         </div>
       )}
