@@ -26,6 +26,7 @@ require_once __DIR__ . '/controllers/MediaController.php';
 require_once __DIR__ . '/controllers/PagesController.php';
 require_once __DIR__ . '/controllers/SeoController.php';
 require_once __DIR__ . '/controllers/AffiliateController.php';
+require_once __DIR__ . '/controllers/UsersController.php';
 
 if (Request::method() === 'OPTIONS') {
     Response::sendCorsHeaders();
@@ -139,6 +140,14 @@ try {
     $router->post('/affiliate/generate-box-html', fn() => AffiliateController::generateBoxHtml());
     $router->get('/affiliate/settings', fn() => AffiliateController::getSettings());
     $router->post('/affiliate/settings', fn() => AffiliateController::saveSettings());
+
+    // User & Role Management
+    $router->get('/users', fn() => UsersController::index());
+    $router->get('/users/:id', fn($p) => UsersController::show($p));
+    $router->post('/users', fn() => UsersController::create());
+    $router->put('/users/:id', fn($p) => UsersController::update($p));
+    $router->put('/users/:id/password', fn($p) => UsersController::changePassword($p));
+    $router->delete('/users/:id', fn($p) => UsersController::delete($p));
 
     $router->dispatch(Request::method(), Request::apiPath());
 } catch (Throwable $e) {

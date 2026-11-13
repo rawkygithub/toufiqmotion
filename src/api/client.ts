@@ -255,6 +255,18 @@ export interface SiteSettings {
   footer_legal_links_json?: LegalLink[];
 }
 
+export type UserRole = 'admin' | 'editor' | 'author' | 'contributor';
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string | null;
+  created_at?: string;
+  articlesCount?: number;
+}
+
 export interface MediaItem {
   id: string;
   filename: string;
@@ -1008,6 +1020,81 @@ export const api = {
       },
       token,
       'Failed to save affiliate settings'
+    );
+  },
+
+  // =========================================================================
+  // USER & ROLE MANAGEMENT
+  // =========================================================================
+  async getUsers(token: string): Promise<{ users: AdminUser[] }> {
+    return authFetchJson(`${API_BASE}/users`, {}, token, 'Failed to fetch team users');
+  },
+
+  async getUser(token: string, id: string): Promise<{ user: AdminUser }> {
+    return authFetchJson(`${API_BASE}/users/${id}`, {}, token, 'Failed to fetch user');
+  },
+
+  async createUser(
+    token: string,
+    userData: { name: string; email: string; password: string; role: UserRole; avatar?: string }
+  ): Promise<{ success: boolean; message: string; user: AdminUser }> {
+    return authFetchJson(
+      `${API_BASE}/users`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      },
+      token,
+      'Failed to create user'
+    );
+  },
+
+  async updateUser(
+    token: string,
+    id: string,
+    userData: { name?: string; email?: string; role?: UserRole; avatar?: string }
+  ): Promise<{ success: boolean; message: string; user: AdminUser }> {
+    return authFetchJson(
+      `${API_BASE}/users/${id}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      },
+      token,
+      'Failed to update user'
+    );
+  },
+
+  async changeUserPassword(
+    token: string,
+    id: string,
+    password: string
+  ): Promise<{ success: boolean; message: string }> {
+    return authFetchJson(
+      `${API_BASE}/users/${id}/password`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      },
+      token,
+      'Failed to update password'
+    );
+  },
+
+  async deleteUser(
+    token: string,
+    id: string
+  ): Promise<{ success: boolean; message: string }> {
+    return authFetchJson(
+      `${API_BASE}/users/${id}`,
+      {
+        method: 'DELETE'
+      },
+      token,
+      'Failed to delete user'
     );
   }
 };

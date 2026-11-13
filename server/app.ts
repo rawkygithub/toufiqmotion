@@ -17,6 +17,7 @@ import seoRoutes from './routes/seo.js';
 import settingsRoutes from './routes/settings.js';
 import pagesRoutes from './routes/pages.js';
 import affiliateRoutes from './routes/affiliate.js';
+import usersRoutes from './routes/users.js';
 import { db } from './db/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { injectHeadTagsIntoHtml } from './services/headTags.js';
@@ -202,6 +203,7 @@ app.use('/api/seo', seoRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/pages', pagesRoutes);
 app.use('/api/affiliate', affiliateRoutes);
+app.use('/api/users', usersRoutes);
 
 // Static frontend serving (from dist directory with long-term immutable caching for hashed chunks)
 const distDir = path.join(__dirname, '../dist');

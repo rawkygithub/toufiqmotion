@@ -9,6 +9,7 @@ import { SiteAppearanceManager } from '../admin/SiteAppearanceManager';
 import { MediaLibrary } from '../admin/MediaLibrary';
 import { PagesManager } from '../admin/PagesManager';
 import { AffiliateManager } from '../admin/AffiliateManager';
+import { UserManager } from '../admin/UserManager';
 import {
   Lock,
   LogOut,
@@ -55,7 +56,7 @@ export const AdminStudio: React.FC = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Dashboard active tab
-  const [activeTab, setActiveTab] = useState<'articles' | 'pages' | 'categories' | 'media' | 'appearance' | 'affiliate' | 'seo_center' | 'subscribers' | 'inquiries'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'pages' | 'categories' | 'media' | 'appearance' | 'affiliate' | 'seo_center' | 'subscribers' | 'inquiries' | 'users'>('articles');
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
 
   // Data states
@@ -606,6 +607,7 @@ export const AdminStudio: React.FC = () => {
             <option value="seo_center">SEO Command Center (Yoast Pro)</option>
             <option value="subscribers">Newsletter ({subscribers.length})</option>
             <option value="inquiries">Inquiries &amp; Leads ({inquiries.length})</option>
+            <option value="users">Team &amp; User Management</option>
           </select>
         </div>
 
@@ -851,6 +853,31 @@ export const AdminStudio: React.FC = () => {
                       : 'bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]'
                   }`}>
                     {inquiries.length}
+                  </span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Group 4: Team, Users & Access Control */}
+            <div className="pt-2 border-t border-[#F5F2EB]">
+              <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A39B8E]">
+                Team &amp; Access Control
+              </div>
+              <nav className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('users')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'users'
+                      ? 'bg-[#FFF2EB] text-[#C85228] font-bold shadow-2xs border-l-3 border-[#E8734A]'
+                      : 'text-[#5A5348] hover:bg-[#FAF8F5] hover:text-[#1E1B18] font-medium border-l-3 border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className={`w-4 h-4 ${activeTab === 'users' ? 'text-[#E8734A]' : 'text-[#8C8477]'}`} />
+                    <span>Users &amp; Roles</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF8F5] text-[#8C8477] border border-[#EAE5DF]">
+                    Team
                   </span>
                 </button>
               </nav>
@@ -1327,6 +1354,11 @@ export const AdminStudio: React.FC = () => {
       {/* Tab: Affiliate Marketing Command Center */}
       {activeTab === 'affiliate' && (
         <AffiliateManager token={token} />
+      )}
+
+      {/* Tab: User & Role Management */}
+      {activeTab === 'users' && (
+        <UserManager token={token} currentUser={adminUser} />
       )}
 
         </div>
