@@ -49,6 +49,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
 
   // Quick instant activation of home variant
   const handleSelectHomeVariant = async (variant: 'design1' | 'design2' | 'design3') => {
@@ -101,6 +102,26 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
       alert(err.message || 'Failed to upload logo image');
     } finally {
       setIsUploadingLogo(false);
+    }
+  };
+
+  // Handle direct file upload for favicon (.ico, .png, .svg, .webp)
+  const handleFaviconFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    setIsUploadingFavicon(true);
+    try {
+      const uploadRes = await api.uploadMedia(token, file);
+      setFormData((prev) => ({
+        ...prev,
+        favicon_url: uploadRes.url
+      }));
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload favicon icon');
+    } finally {
+      setIsUploadingFavicon(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -267,7 +288,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
           }`}
         >
           <ImageIcon className="w-4 h-4" />
-          <span>Brand Logo &amp; Identity</span>
+          <span>Brand Logo &amp; Favicon</span>
         </button>
 
         <button
@@ -755,6 +776,78 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
                 />
               </div>
             </div>
+
+            {/* Favicon (Browser Tab & App Icon) */}
+            <div className="bg-white p-6 rounded-2xl border border-[#EDE7DF] space-y-4 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#8C8477] block">
+                    Favicon &amp; Browser Tab Icon
+                  </label>
+                  <p className="text-[11px] text-[#7A7468] mt-0.5">
+                    The signature icon shown in browser tabs, bookmarks, and mobile home screen shortcuts.
+                  </p>
+                </div>
+                {formData.favicon_url && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, favicon_url: '' })}
+                    className="text-[11px] text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Reset to Default
+                  </button>
+                )}
+              </div>
+
+              {/* Favicon Upload Row */}
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <label className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] hover:border-[#E8734A] text-[#1E1B18] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-2xs">
+                  <Upload className="w-4 h-4 text-[#E8734A]" />
+                  <span>{isUploadingFavicon ? 'Uploading...' : 'Upload Favicon File'}</span>
+                  <input
+                    type="file"
+                    accept=".ico,.png,.svg,.webp,image/png,image/x-icon,image/svg+xml,image/webp"
+                    onChange={handleFaviconFileUpload}
+                    className="hidden"
+                    disabled={isUploadingFavicon}
+                  />
+                </label>
+
+                <span className="text-xs text-[#8C8477]">or enter image URL:</span>
+              </div>
+
+              <div className="space-y-1">
+                <input
+                  type="url"
+                  placeholder="https://toufiqmotion.com/uploads/favicon.png"
+                  value={formData.favicon_url || ''}
+                  onChange={(e) => setFormData({ ...formData, favicon_url: e.target.value })}
+                  className="w-full bg-[#FAF8F5] border border-[#E0DCD4] rounded-xl px-4 py-2.5 text-xs text-[#1E1B18] focus:outline-hidden focus:border-[#E8734A]"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-2 text-xs text-[#7A7468]">
+                <div className="w-10 h-10 rounded-xl border border-[#EDE7DF] bg-[#FAF8F5] flex items-center justify-center p-1.5 shrink-0 shadow-2xs">
+                  {formData.favicon_url ? (
+                    <img
+                      src={formData.favicon_url}
+                      alt="Favicon"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <span className="text-lg">✨</span>
+                  )}
+                </div>
+                <div>
+                  <div className="font-semibold text-[#1E1B18]">
+                    {formData.favicon_url ? 'Custom Favicon Active' : 'Default ✨ Sparkle Active'}
+                  </div>
+                  <div className="text-[11px] text-[#8C8477]">
+                    Recommended specs: 32×32 or 64×64 PNG, SVG, or ICO.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right Preview Card */}
@@ -800,6 +893,59 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
 
               <div className="text-[11px] text-[#7A7468] leading-relaxed bg-[#FFF9F5] p-3 rounded-xl border border-[#FADCC8]">
                 💡 Tip: If using an image logo, we recommend a transparent PNG or SVG around 200px wide for optimal crispness on retina and mobile displays.
+              </div>
+            </div>
+
+            {/* Live Browser Tab Simulation Card */}
+            <div className="bg-white rounded-2xl p-6 border border-[#EDE7DF] shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#F0ECE6]">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C8477] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#E8734A]" /> Live Browser Tab Preview
+                </h4>
+                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+                  Real-time Simulation
+                </span>
+              </div>
+
+              {/* Realistic Chrome/Safari Window Header Mockup */}
+              <div className="rounded-xl overflow-hidden border border-[#DDD7CD] shadow-sm bg-[#EFECE6]">
+                {/* Window top bar */}
+                <div className="px-3 pt-2.5 pb-0 flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56] border border-[#E0443E]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
+                  </div>
+
+                  {/* Browser Tab */}
+                  <div className="ml-2 px-3 py-1.5 bg-white rounded-t-lg border-t border-x border-[#DDD7CD] flex items-center gap-2 max-w-[210px] shadow-2xs">
+                    {formData.favicon_url ? (
+                      <img
+                        src={formData.favicon_url}
+                        alt="Favicon preview"
+                        className="w-3.5 h-3.5 object-contain shrink-0"
+                      />
+                    ) : (
+                      <span className="text-[11px] leading-none shrink-0">✨</span>
+                    )}
+                    <span className="text-[11px] font-medium text-[#1E1B18] truncate">
+                      {formData.site_title || 'Toufiq Motion'}
+                    </span>
+                    <span className="text-[10px] text-[#8C8477] hover:text-[#1E1B18] ml-auto shrink-0">×</span>
+                  </div>
+                </div>
+
+                {/* Browser URL address bar */}
+                <div className="bg-white px-3 py-2 border-t border-[#DDD7CD] flex items-center gap-2 text-[11px] text-[#554E42]">
+                  <div className="flex-1 bg-[#FAF8F5] border border-[#E0DCD4] rounded-md px-2.5 py-1 flex items-center gap-1.5 text-[#8C8477]">
+                    <span className="text-[10px] text-emerald-600">🔒</span>
+                    <span className="text-[#1E1B18] font-mono text-[10px] truncate">https://toufiqmotion.com/</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-[#7A7468] leading-relaxed bg-[#FAF8F5] p-3 rounded-xl border border-[#EDE7DF]">
+                ✨ Changes take effect across your site instantly when saved, and update automatically in browser tabs, bookmarks, and search snippets.
               </div>
             </div>
           </div>

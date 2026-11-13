@@ -17,20 +17,24 @@ if ($path === '/sitemap.xml') {
         $pdo = Database::getConnection();
         $baseUrl = Database::canonicalDomain();
 
-        $articles   = $pdo->query('SELECT `slug`, `updated_at`, `created_at` FROM `articles` WHERE `published` = 1 AND `no_index` = 0')->fetchAll();
-        $categories = $pdo->query('SELECT `slug` FROM `categories`')->fetchAll();
+        // 1. Only published, indexable articles with non-empty slug
+        $articles = $pdo->query("SELECT `slug`, `updated_at`, `created_at` FROM `articles` WHERE `published` = 1 AND `no_index` = 0 AND `slug` IS NOT NULL AND `slug` != ''")->fetchAll();
+
+        // 2. Only published, indexable custom pages with non-empty slug
         $customPages = [];
         try {
-            $customPages = $pdo->query("SELECT `slug`, `updated_at`, `created_at` FROM `pages` WHERE `status` = 'published' AND `no_index` = 0")->fetchAll();
+            $customPages = $pdo->query("SELECT `slug`, `updated_at`, `created_at` FROM `pages` WHERE `status` = 'published' AND `no_index` = 0 AND `slug` IS NOT NULL AND `slug` != ''")->fetchAll();
         } catch (Throwable $e) {}
 
+        // 3. Authoritative Core Live Pages (All 200 OK)
         $staticPages = [
-            ['loc' => "{$baseUrl}/",             'priority' => '1.0', 'changefreq' => 'daily'],
-            ['loc' => "{$baseUrl}/travel",       'priority' => '0.9', 'changefreq' => 'weekly'],
-            ['loc' => "{$baseUrl}/lifestyle",    'priority' => '0.9', 'changefreq' => 'weekly'],
-            ['loc' => "{$baseUrl}/health",       'priority' => '0.9', 'changefreq' => 'weekly'],
-            ['loc' => "{$baseUrl}/work-with-us", 'priority' => '0.8', 'changefreq' => 'monthly'],
-            ['loc' => "{$baseUrl}/about",        'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['loc' => "{$baseUrl}/",          'priority' => '1.0', 'changefreq' => 'daily'],
+            ['loc' => "{$baseUrl}/travel",    'priority' => '0.9', 'changefreq' => 'weekly'],
+            ['loc' => "{$baseUrl}/lifestyle", 'priority' => '0.9', 'changefreq' => 'weekly'],
+            ['loc' => "{$baseUrl}/health",    'priority' => '0.9', 'changefreq' => 'weekly'],
+            ['loc' => "{$baseUrl}/work",      'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['loc' => "{$baseUrl}/about",     'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['loc' => "{$baseUrl}/contact",   'priority' => '0.8', 'changefreq' => 'monthly'],
         ];
 
         $xml  = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
@@ -40,25 +44,31 @@ if ($path === '/sitemap.xml') {
             $loc = htmlspecialchars($p['loc'], ENT_XML1, 'UTF-8');
             $xml .= "  <url>\n    <loc>{$loc}</loc>\n    <changefreq>{$p['changefreq']}</changefreq>\n    <priority>{$p['priority']}</priority>\n  </url>\n";
         }
-        foreach ($categories as $c) {
-            $loc = htmlspecialchars("{$baseUrl}/category/{$c['slug']}", ENT_XML1, 'UTF-8');
-            $xml .= "  <url>\n    <loc>{$loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.85</priority>\n  </url>\n";
-        }
+
         foreach ($articles as $a) {
             $rawDate = (string)($a['updated_at'] ?: ($a['created_at'] ?: date('Y-m-d')));
             $lastmod = explode(' ', $rawDate)[0];
-            $loc = htmlspecialchars("{$baseUrl}/{$a['slug']}", ENT_XML1, 'UTF-8');
+            $cleanSlug = trim((string)$a['slug'], '/');
+            $loc = htmlspecialchars("{$baseUrl}/article/{$cleanSlug}", ENT_XML1, 'UTF-8');
             $xml .= "  <url>\n    <loc>{$loc}</loc>\n    <lastmod>{$lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.90</priority>\n  </url>\n";
         }
+
         foreach ($customPages as $cp) {
+            $cleanSlug = trim((string)$cp['slug'], '/');
+            if (in_array(strtolower($cleanSlug), ['travel', 'lifestyle', 'health', 'work', 'about', 'contact', 'home'], true)) {
+                continue;
+            }
             $rawDate = (string)($cp['updated_at'] ?: ($cp['created_at'] ?: date('Y-m-d')));
             $lastmod = explode(' ', $rawDate)[0];
-            $loc = htmlspecialchars("{$baseUrl}/{$cp['slug']}", ENT_XML1, 'UTF-8');
+            $loc = htmlspecialchars("{$baseUrl}/{$cleanSlug}", ENT_XML1, 'UTF-8');
             $xml .= "  <url>\n    <loc>{$loc}</loc>\n    <lastmod>{$lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.85</priority>\n  </url>\n";
         }
         $xml .= "</urlset>";
 
         header('Content-Type: application/xml; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
         echo $xml;
         exit;
     } catch (Throwable $e) {
@@ -124,9 +134,24 @@ if (preg_match('#^/go/([^/]+)$#', $path, $m)) {
 
 // 4. SEO 301/302 Redirects & Legacy Crawler 404 Logger (on GET/HEAD)
 if ($method === 'GET' || $method === 'HEAD') {
-    $cleanPath = strtolower($path);
+    $cleanPath = strtolower(rtrim($path, '/'));
+    if ($cleanPath === '') $cleanPath = '/';
+
+    // Built-in canonical section aliases
+    if ($cleanPath === '/work-with-us') {
+        header('Location: /work', true, 301);
+        exit;
+    }
+    if (preg_match('#^/category/(travel|lifestyle|health(?:-wellbeing)?)$#', $cleanPath, $catM)) {
+        $dest = str_starts_with($catM[1], 'health') ? 'health' : $catM[1];
+        header('Location: /' . $dest, true, 301);
+        exit;
+    }
+
     try {
         $pdo = Database::getConnection();
+
+        // Check custom user redirects in seo_redirects table
         $redStmt = $pdo->prepare('SELECT * FROM `seo_redirects` WHERE LOWER(`source_path`) = ? LIMIT 1');
         $redStmt->execute([$cleanPath]);
         $redirect = $redStmt->fetch();
@@ -136,6 +161,19 @@ if ($method === 'GET' || $method === 'HEAD') {
                 ->execute([$redirect['id']]);
             header('Location: ' . $redirect['target_path'], true, (int)($redirect['redirect_code'] ?: 301));
             exit;
+        }
+
+        // Bare article slug redirect: /my-story-slug -> /article/my-story-slug
+        $slugCand = trim($cleanPath, '/');
+        $reserved = ['travel', 'lifestyle', 'health', 'work', 'about', 'contact', 'admin', 'api', 'uploads', 'sitemap.xml', 'robots.txt'];
+        if ($slugCand !== '' && !in_array($slugCand, $reserved, true) && !str_starts_with($slugCand, 'article/')) {
+            $artStmt = $pdo->prepare('SELECT `slug` FROM `articles` WHERE LOWER(`slug`) = ? AND `published` = 1 LIMIT 1');
+            $artStmt->execute([$slugCand]);
+            $foundArt = $artStmt->fetch();
+            if ($foundArt) {
+                header('Location: /article/' . $foundArt['slug'], true, 301);
+                exit;
+            }
         }
     } catch (Throwable $e) {}
 

@@ -19,10 +19,10 @@ class SeoController
 
         $grade = $avgScore === 0 ? 'N/A' : ($avgScore < 60 ? 'Grade C' : ($avgScore < 75 ? 'Grade B' : ($avgScore < 90 ? 'Grade A' : 'Grade A+')));
 
-        $articleCount  = (int)$pdo->query('SELECT COUNT(*) as c FROM `articles` WHERE `published` = 1')->fetch()['c'];
-        $categoryCount = (int)$pdo->query('SELECT COUNT(*) as c FROM `categories`')->fetch()['c'];
-        $staticPages   = (int)($pdo->query("SELECT COUNT(*) as c FROM `pages` WHERE `status` = 'published'")->fetch()['c'] ?? 0);
-        $totalIndexedUrls = $articleCount + $categoryCount + $staticPages;
+        $articleCount  = (int)$pdo->query("SELECT COUNT(*) as c FROM `articles` WHERE `published` = 1 AND `no_index` = 0 AND `slug` IS NOT NULL AND `slug` != ''")->fetch()['c'];
+        $corePages     = 7; // /, /travel, /lifestyle, /health, /work, /about, /contact
+        $customPages   = (int)($pdo->query("SELECT COUNT(*) as c FROM `pages` WHERE `status` = 'published' AND `no_index` = 0 AND `slug` IS NOT NULL AND `slug` != ''")->fetch()['c'] ?? 0);
+        $totalIndexedUrls = $articleCount + $corePages + $customPages;
 
         $redirectsCount   = (int)$pdo->query('SELECT COUNT(*) as c FROM `seo_redirects`')->fetch()['c'];
         $crawlErrorsCount = (int)$pdo->query("SELECT COUNT(*) as c FROM `seo_crawl_errors` WHERE `status` = 'active'")->fetch()['c'];
@@ -36,8 +36,8 @@ class SeoController
             'totalIndexedUrls'     => $totalIndexedUrls,
             'breakdown'            => [
                 'articles'    => $articleCount,
-                'categories'  => $categoryCount,
-                'staticPages' => $staticPages,
+                'categories'  => 3,
+                'staticPages' => $corePages + $customPages,
             ],
             'activeRedirectsCount' => $redirectsCount,
             'crawlErrorsCount'     => $crawlErrorsCount,
@@ -91,7 +91,7 @@ class SeoController
                 'focusKeyword'     => (string)($r['focus_keyword'] ?? ''),
                 'metaTitle'        => $metaTitle,
                 'metaDescription'  => $metaDesc,
-                'canonicalUrl'     => (string)($r['canonical_url'] ?: "{$canonicalBase}/{$r['slug']}"),
+                'canonicalUrl'     => (string)($r['canonical_url'] ?: "{$canonicalBase}/article/{$r['slug']}"),
                 'noIndex'          => (bool)$r['no_index'],
                 'seoScore'         => $r['seo_score'] !== null ? (int)$r['seo_score'] : 85,
                 'readabilityScore' => $r['readability_score'] !== null ? (int)$r['readability_score'] : 90,

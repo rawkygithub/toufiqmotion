@@ -231,6 +231,7 @@ export interface SiteSettings {
   logo_type?: 'text' | 'image';
   logo_url?: string;
   logo_height?: number | string;
+  favicon_url?: string;
   site_title?: string;
   site_tagline?: string;
   header_sticky?: boolean;

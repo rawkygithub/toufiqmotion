@@ -87,9 +87,29 @@ export function buildHeadTagsHtml(): string {
 }
 
 /**
- * Injects the generated head tags into raw HTML right before </head>
+ * Injects the generated head tags and custom favicon into raw HTML right before </head>
  */
 export function injectHeadTagsIntoHtml(html: string): string {
+  try {
+    const favRow = db.prepare("SELECT value FROM site_settings WHERE key = 'favicon_url' LIMIT 1").get() as { value: string } | undefined;
+    const faviconUrl = (favRow?.value || '').trim();
+    if (faviconUrl) {
+      const lower = faviconUrl.toLowerCase();
+      let typeAttr = '';
+      if (lower.endsWith('.svg')) typeAttr = ' type="image/svg+xml"';
+      else if (lower.endsWith('.png')) typeAttr = ' type="image/png"';
+      else if (lower.endsWith('.ico')) typeAttr = ' type="image/x-icon"';
+      else if (lower.endsWith('.webp')) typeAttr = ' type="image/webp"';
+
+      const customFavTag = `<link rel="icon"${typeAttr} href="${faviconUrl}" />`;
+      if (/<link\s+rel=["']icon["'][^>]*>/i.test(html)) {
+        html = html.replace(/<link\s+rel=["']icon["'][^>]*>/i, customFavTag);
+      } else {
+        html = html.replace('</head>', `    ${customFavTag}\n  </head>`);
+      }
+    }
+  } catch {}
+
   const headInjections = buildHeadTagsHtml();
   if (!headInjections.trim()) return html;
   if (html.includes('</head>')) {

@@ -11,6 +11,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   logo_type: 'text',
   logo_url: '',
   logo_height: 36,
+  favicon_url: '',
   site_title: 'Toufiq Motion',
   site_tagline: 'Travel • Lifestyle • Wellbeing',
   header_sticky: true,
@@ -103,9 +104,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (path === 'travel' || hash === 'travel') return 'travel';
       if (path === 'lifestyle' || hash === 'lifestyle') return 'lifestyle';
       if (path === 'health' || hash === 'health') return 'health';
-      if (path === 'work' || hash === 'work') return 'work';
+      if (path === 'work' || hash === 'work' || path === 'work-with-us') return 'work';
       if (path === 'about' || hash === 'about') return 'about';
       if (path === 'contact' || hash === 'contact') return 'contact';
+      if (path.startsWith('category/')) {
+        const cat = path.replace('category/', '').toLowerCase();
+        if (cat.includes('travel')) return 'travel';
+        if (cat.includes('lifestyle')) return 'lifestyle';
+        if (cat.includes('health') || cat.includes('wellbeing')) return 'health';
+      }
       if (path && path !== 'index.html') return path;
     }
     return 'home';
@@ -178,6 +185,31 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn('Could not save ambient light to localStorage', e);
     }
   }, [ambientLight, lightIntensity]);
+
+  // Dynamically update browser tab favicon in real-time
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const faviconUrl = siteSettings?.favicon_url?.trim();
+    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+
+    if (faviconUrl) {
+      link.href = faviconUrl;
+      const lower = faviconUrl.toLowerCase();
+      if (lower.endsWith('.svg')) link.type = 'image/svg+xml';
+      else if (lower.endsWith('.png')) link.type = 'image/png';
+      else if (lower.endsWith('.ico')) link.type = 'image/x-icon';
+      else if (lower.endsWith('.webp')) link.type = 'image/webp';
+      else link.removeAttribute('type');
+    } else {
+      link.href = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>";
+      link.type = 'image/svg+xml';
+    }
+  }, [siteSettings?.favicon_url]);
 
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {

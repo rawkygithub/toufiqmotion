@@ -56,11 +56,11 @@ router.get('/overview', (req, res) => {
     else if (avgScore > 0 && avgScore < 90) grade = 'Grade A';
 
     // Total URLs in sitemap
-    const articleCount = (db.prepare('SELECT COUNT(*) as c FROM articles WHERE published = 1').get() as { c: number }).c;
-    const categoryCount = (db.prepare('SELECT COUNT(*) as c FROM categories').get() as { c: number }).c;
-    const pagesRow = db.prepare("SELECT COUNT(*) as c FROM pages WHERE status = 'published'").get() as { c: number } | undefined;
-    const staticPages = pagesRow?.c ?? 0;
-    const totalIndexedUrls = articleCount + categoryCount + staticPages;
+    const articleCount = (db.prepare("SELECT COUNT(*) as c FROM articles WHERE published = 1 AND no_index = 0 AND slug IS NOT NULL AND slug != ''").get() as { c: number }).c;
+    const corePages = 7; // /, /travel, /lifestyle, /health, /work, /about, /contact
+    const pagesRow = db.prepare("SELECT COUNT(*) as c FROM pages WHERE status = 'published' AND no_index = 0 AND slug IS NOT NULL AND slug != ''").get() as { c: number } | undefined;
+    const customPages = pagesRow?.c ?? 0;
+    const totalIndexedUrls = articleCount + corePages + customPages;
 
     // Active 301 redirects
     const redirectsCount = (db.prepare('SELECT COUNT(*) as c FROM seo_redirects').get() as { c: number }).c;
@@ -138,7 +138,7 @@ router.get('/audit', (req, res) => {
         focusKeyword: r.focus_keyword || '',
         metaTitle,
         metaDescription: metaDesc,
-        canonicalUrl: r.canonical_url || `https://toufiqmotion.com/${r.slug}`,
+        canonicalUrl: r.canonical_url || `https://toufiqmotion.com/article/${r.slug}`,
         noIndex: Boolean(r.no_index),
         seoScore: r.seo_score || 85,
         readabilityScore: r.readability_score || 90,

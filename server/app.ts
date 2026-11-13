@@ -80,11 +80,10 @@ app.get('/sitemap.xml', (req, res) => {
     const canonical = db.prepare("SELECT value FROM seo_settings WHERE key = 'canonical_domain'").get() as { value: string } | undefined;
     const baseUrl = canonical?.value || `${protocol}://${host}`;
 
-    const articles = db.prepare('SELECT slug, updated_at, created_at FROM articles WHERE published = 1 AND no_index = 0').all() as any[];
-    const categories = db.prepare('SELECT slug FROM categories').all() as any[];
+    const articles = db.prepare("SELECT slug, updated_at, created_at FROM articles WHERE published = 1 AND no_index = 0 AND slug IS NOT NULL AND slug != ''").all() as any[];
     let customPages: any[] = [];
     try {
-      customPages = db.prepare("SELECT slug, updated_at, created_at FROM pages WHERE status = 'published' AND no_index = 0").all() as any[];
+      customPages = db.prepare("SELECT slug, updated_at, created_at FROM pages WHERE status = 'published' AND no_index = 0 AND slug IS NOT NULL AND slug != ''").all() as any[];
     } catch {}
 
     const staticPages = [
@@ -92,8 +91,9 @@ app.get('/sitemap.xml', (req, res) => {
       { loc: `${baseUrl}/travel`, priority: '0.9', changefreq: 'weekly' },
       { loc: `${baseUrl}/lifestyle`, priority: '0.9', changefreq: 'weekly' },
       { loc: `${baseUrl}/health`, priority: '0.9', changefreq: 'weekly' },
-      { loc: `${baseUrl}/work-with-us`, priority: '0.8', changefreq: 'monthly' },
-      { loc: `${baseUrl}/about`, priority: '0.8', changefreq: 'monthly' }
+      { loc: `${baseUrl}/work`, priority: '0.8', changefreq: 'monthly' },
+      { loc: `${baseUrl}/about`, priority: '0.8', changefreq: 'monthly' },
+      { loc: `${baseUrl}/contact`, priority: '0.8', changefreq: 'monthly' }
     ];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -103,23 +103,27 @@ app.get('/sitemap.xml', (req, res) => {
       xml += `  <url>\n    <loc>${p.loc}</loc>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>\n`;
     }
 
-    for (const c of categories) {
-      xml += `  <url>\n    <loc>${baseUrl}/category/${c.slug}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.85</priority>\n  </url>\n`;
-    }
-
     for (const a of articles) {
       const lastmod = (a.updated_at || a.created_at || new Date().toISOString()).split(' ')[0];
-      xml += `  <url>\n    <loc>${baseUrl}/${a.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.90</priority>\n  </url>\n`;
+      const cleanSlug = String(a.slug || '').replace(/^\/+|\/+$/g, '');
+      xml += `  <url>\n    <loc>${baseUrl}/article/${cleanSlug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.90</priority>\n  </url>\n`;
     }
 
     for (const cp of customPages) {
+      const cleanSlug = String(cp.slug || '').replace(/^\/+|\/+$/g, '');
+      if (['travel', 'lifestyle', 'health', 'work', 'about', 'contact', 'home'].includes(cleanSlug.toLowerCase())) {
+        continue;
+      }
       const lastmod = (cp.updated_at || cp.created_at || new Date().toISOString()).split(' ')[0];
-      xml += `  <url>\n    <loc>${baseUrl}/${cp.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.85</priority>\n  </url>\n`;
+      xml += `  <url>\n    <loc>${baseUrl}/${cleanSlug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.85</priority>\n  </url>\n`;
     }
 
     xml += `</urlset>`;
 
-    res.header('Content-Type', 'application/xml');
+    res.header('Content-Type', 'application/xml; charset=utf-8');
+    res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
     res.send(xml);
   } catch (err: any) {
     res.status(500).send(`<!-- Error generating sitemap: ${err.message} -->`);

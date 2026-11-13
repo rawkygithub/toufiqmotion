@@ -84,6 +84,29 @@ class HeadTagsService
 
     public static function injectHeadTagsIntoHtml(string $html): string
     {
+        try {
+            $pdo = Database::getConnection();
+            $favStmt = $pdo->query("SELECT `value` FROM `site_settings` WHERE `key` = 'favicon_url' LIMIT 1");
+            $favRow = $favStmt ? $favStmt->fetch() : null;
+            $faviconUrl = trim((string)($favRow['value'] ?? ''));
+            if ($faviconUrl !== '') {
+                $safeFav = htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8');
+                $typeAttr = '';
+                $lower = strtolower($faviconUrl);
+                if (str_ends_with($lower, '.svg')) $typeAttr = ' type="image/svg+xml"';
+                elseif (str_ends_with($lower, '.png')) $typeAttr = ' type="image/png"';
+                elseif (str_ends_with($lower, '.ico')) $typeAttr = ' type="image/x-icon"';
+                elseif (str_ends_with($lower, '.webp')) $typeAttr = ' type="image/webp"';
+
+                $customFaviconTag = "<link rel=\"icon\"{$typeAttr} href=\"{$safeFav}\" />";
+                if (preg_match('/<link\s+rel=["\']icon["\'][^>]*>/i', $html)) {
+                    $html = preg_replace('/<link\s+rel=["\']icon["\'][^>]*>/i', $customFaviconTag, $html, 1);
+                } else {
+                    $html = str_replace('</head>', "    {$customFaviconTag}\n  </head>", $html);
+                }
+            }
+        } catch (Throwable $e) {}
+
         $headInjections = self::buildHeadTagsHtml();
         if (trim($headInjections) === '') {
             return $html;
