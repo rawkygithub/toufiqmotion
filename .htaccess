@@ -1,0 +1,70 @@
+# Toufiq Motion Blog — Hostinger LiteSpeed / Apache Configuration
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule LiteSpeed>
+  CacheLookup off
+  RewriteEngine On
+  RewriteCond %{REQUEST_URI} !^/(assets|uploads)/
+  RewriteRule .* - [E=Cache-Control:no-cache]
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Preserve Authorization header for FastCGI / LiteSpeed PHP (Critical for JWT)
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # 2. Block direct HTTP access to internal PHP backend directories
+  RewriteRule ^api/(config|core|services|controllers|database)(/.*)?$ - [F,L]
+
+  # 3. Always route dynamic SEO & affiliate cloaker paths to PHP front controller
+  RewriteRule ^(sitemap\.xml|robots\.txt|go/.*)$ index.php [QSA,L]
+
+  # 4. Serve compiled frontend assets and uploaded media directly without invoking PHP
+  RewriteRule ^(assets|uploads)/ - [L]
+
+  # 5. Route all REST API requests to api/index.php
+  RewriteRule ^api(/.*)?$ api/index.php [QSA,L]
+
+  # 6. Serve other existing real files directly (e.g., favicon.ico, verification files),
+  #    except app-shell.html which must always flow through index.php for <head> tag injection
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteCond %{REQUEST_URI} !^/app-shell\.html$ [NC]
+  RewriteRule ^ - [L]
+
+  # 7. Fallback all SPA routes, 301 redirects, and 404 crawler probes to index.php
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Block direct access to database dumps, configs, environment, and log files
+<FilesMatch "\.(sql|sqlite|db|db-wal|db-shm|env|log|bak|ini|sh|ts)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Long-term immutable browser caching for Vite hashed assets & 30d for media uploads
+<IfModule mod_headers.c>
+  <If "%{REQUEST_URI} =~ m#^/assets/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  <If "%{REQUEST_URI} =~ m#^/uploads/#">
+    Header set Cache-Control "public, max-age=2592000"
+  </If>
+  <If "%{REQUEST_URI} !~ m#^/(assets|uploads)/#">
+    Header set X-LiteSpeed-Cache-Control "no-cache"
+  </If>
+</IfModule>
+
+# Enable Gzip / Brotli compression for text responses
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
