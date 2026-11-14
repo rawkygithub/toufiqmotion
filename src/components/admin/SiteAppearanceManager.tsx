@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { api, SiteSettings, MenuItem, FooterValueProp, LegalLink } from '../../api/client';
+import { MediaLibrary } from './MediaLibrary';
 import {
   Layout,
   Image as ImageIcon,
@@ -50,6 +51,8 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState<'logo' | 'favicon'>('logo');
 
   // Quick instant activation of home variant
   const handleSelectHomeVariant = async (variant: 'design1' | 'design2' | 'design3') => {
@@ -704,10 +707,22 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
                   Upload Logo Graphic (PNG / SVG)
                 </label>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                  <label className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] hover:border-[#E8734A] text-[#1E1B18] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-2xs">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaPickerTarget('logo');
+                      setIsMediaPickerOpen(true);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#FFF5EF] border border-[#FFCEBA] hover:bg-[#FFEADA] text-[#C85228] font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all shadow-2xs"
+                  >
+                    <ImageIcon className="w-4 h-4 text-[#E8734A]" />
+                    <span>Select from Media Library</span>
+                  </button>
+
+                  <label className="px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] hover:border-[#E8734A] text-[#1E1B18] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-2xs">
                     <Upload className="w-4 h-4 text-[#E8734A]" />
-                    <span>{isUploadingLogo ? 'Uploading...' : 'Choose File to Upload'}</span>
+                    <span>{isUploadingLogo ? 'Uploading...' : 'Upload File'}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -717,7 +732,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
                     />
                   </label>
 
-                  <span className="text-xs text-[#8C8477]">or paste URL below:</span>
+                  <span className="text-xs text-[#8C8477]">or paste URL:</span>
                 </div>
 
                 <div className="space-y-1">
@@ -800,10 +815,22 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
               </div>
 
               {/* Favicon Upload Row */}
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <label className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] hover:border-[#E8734A] text-[#1E1B18] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-2xs">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaPickerTarget('favicon');
+                    setIsMediaPickerOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#FFF5EF] border border-[#FFCEBA] hover:bg-[#FFEADA] text-[#C85228] font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all shadow-2xs"
+                >
+                  <ImageIcon className="w-4 h-4 text-[#E8734A]" />
+                  <span>Select from Media Library</span>
+                </button>
+
+                <label className="px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] hover:border-[#E8734A] text-[#1E1B18] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-2xs">
                   <Upload className="w-4 h-4 text-[#E8734A]" />
-                  <span>{isUploadingFavicon ? 'Uploading...' : 'Upload Favicon File'}</span>
+                  <span>{isUploadingFavicon ? 'Uploading...' : 'Upload File'}</span>
                   <input
                     type="file"
                     accept=".ico,.png,.svg,.webp,image/png,image/x-icon,image/svg+xml,image/webp"
@@ -813,7 +840,7 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
                   />
                 </label>
 
-                <span className="text-xs text-[#8C8477]">or enter image URL:</span>
+                <span className="text-xs text-[#8C8477]">or paste URL:</span>
               </div>
 
               <div className="space-y-1">
@@ -1566,6 +1593,59 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Media Library Picker Modal for Logo / Favicon */}
+      {isMediaPickerOpen && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsMediaPickerOpen(false);
+          }}
+        >
+          <div className="w-full max-w-5xl max-h-[92vh] bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-[#E0DCD4] flex items-center justify-between shrink-0">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#E8734A] block">
+                  Media Assets &bull; Identity Picker
+                </span>
+                <h3 className="font-serif font-bold text-xl text-[#1E1B18] mt-0.5">
+                  Select {mediaPickerTarget === 'logo' ? 'Brand Logo Graphic' : 'Browser Favicon Icon'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMediaPickerOpen(false)}
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#4A453E] shadow-xs cursor-pointer"
+                title="Close"
+              >
+                <span className="text-xs font-bold uppercase tracking-wider group-hover:text-white">Close</span>
+                <X className="w-3.5 h-3.5 group-hover:text-white" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 sm:p-6 grow">
+              <MediaLibrary
+                token={token}
+                selectionMode={true}
+                onSelectImage={(url) => {
+                  if (mediaPickerTarget === 'logo') {
+                    setFormData((prev) => ({
+                      ...prev,
+                      logo_type: 'image',
+                      logo_url: url
+                    }));
+                  } else {
+                    setFormData((prev) => ({
+                      ...prev,
+                      favicon_url: url
+                    }));
+                  }
+                  setIsMediaPickerOpen(false);
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

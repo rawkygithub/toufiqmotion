@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api, AdminUser, UserRole } from '../../api/client';
+import { MediaLibrary } from './MediaLibrary';
 import {
   Users,
   UserPlus,
@@ -24,7 +25,8 @@ import {
   Mail,
   Calendar,
   Lock,
-  User
+  User,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface UserManagerProps {
@@ -111,6 +113,8 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState<boolean>(false);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState<'add' | 'edit'>('edit');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   // Form states
@@ -856,8 +860,8 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
                 <label className="text-xs font-bold text-[#554E42] block">
                   Author Avatar Photo (Optional)
                 </label>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full border border-[#DDD7CD] bg-[#FAF8F5] overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-13 h-13 rounded-full border border-[#DDD7CD] bg-[#FAF8F5] overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
                     {addForm.avatar ? (
                       <img
                         src={addForm.avatar}
@@ -869,11 +873,23 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
                     )}
                   </div>
 
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMediaPickerTarget('add');
+                          setIsMediaPickerOpen(true);
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-[#FFF5EF] border border-[#FFCEBA] hover:bg-[#FFEADA] text-[#C85228] font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-[#E8734A]" />
+                        <span>Select from Media Library</span>
+                      </button>
+
                       <label className="px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD7CD] hover:border-[#E8734A] text-[#1E1B18] font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs">
                         <Upload className="w-3.5 h-3.5 text-[#E8734A]" />
-                        <span>{isUploadingAddAvatar ? 'Uploading...' : 'Upload Image'}</span>
+                        <span>{isUploadingAddAvatar ? 'Uploading...' : 'Upload File'}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -882,12 +898,21 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
                           disabled={isUploadingAddAvatar}
                         />
                       </label>
-                      <span className="text-[11px] text-[#8C8477]">or paste URL</span>
+
+                      {addForm.avatar && (
+                        <button
+                          type="button"
+                          onClick={() => setAddForm((prev) => ({ ...prev, avatar: '' }))}
+                          className="px-2.5 py-2 text-[11px] text-red-600 hover:text-red-700 hover:underline font-semibold cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
 
                     <input
                       type="url"
-                      placeholder="https://images.unsplash.com/..."
+                      placeholder="Or paste direct image URL (https://...)"
                       value={addForm.avatar}
                       onChange={(e) => setAddForm({ ...addForm, avatar: e.target.value })}
                       className="w-full bg-[#FAF8F5] border border-[#DDD7CD] rounded-xl px-3 py-1.5 text-xs text-[#1E1B18] focus:outline-hidden focus:border-[#E8734A]"
@@ -1020,8 +1045,8 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
                 <label className="text-xs font-bold text-[#554E42] block">
                   Author Avatar Photo
                 </label>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full border border-[#DDD7CD] bg-[#FAF8F5] overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-13 h-13 rounded-full border border-[#DDD7CD] bg-[#FAF8F5] overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
                     {editForm.avatar ? (
                       <img
                         src={editForm.avatar}
@@ -1033,11 +1058,23 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
                     )}
                   </div>
 
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMediaPickerTarget('edit');
+                          setIsMediaPickerOpen(true);
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-[#FFF5EF] border border-[#FFCEBA] hover:bg-[#FFEADA] text-[#C85228] font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-[#E8734A]" />
+                        <span>Select from Media Library</span>
+                      </button>
+
                       <label className="px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD7CD] hover:border-[#E8734A] text-[#1E1B18] font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs">
                         <Upload className="w-3.5 h-3.5 text-[#E8734A]" />
-                        <span>{isUploadingEditAvatar ? 'Uploading...' : 'Upload Image'}</span>
+                        <span>{isUploadingEditAvatar ? 'Uploading...' : 'Upload File'}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1046,12 +1083,21 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
                           disabled={isUploadingEditAvatar}
                         />
                       </label>
-                      <span className="text-[11px] text-[#8C8477]">or paste URL</span>
+
+                      {editForm.avatar && (
+                        <button
+                          type="button"
+                          onClick={() => setEditForm((prev) => ({ ...prev, avatar: '' }))}
+                          className="px-2.5 py-2 text-[11px] text-red-600 hover:text-red-700 hover:underline font-semibold cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
 
                     <input
                       type="url"
-                      placeholder="https://images.unsplash.com/..."
+                      placeholder="Or paste direct image URL (https://...)"
                       value={editForm.avatar}
                       onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
                       className="w-full bg-[#FAF8F5] border border-[#DDD7CD] rounded-xl px-3 py-1.5 text-xs text-[#1E1B18] focus:outline-hidden focus:border-[#E8734A]"
@@ -1249,6 +1295,56 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
         </div>
       )}
 
+      {/* =====================================================================
+          MODAL 5: MEDIA LIBRARY AVATAR PICKER
+          ===================================================================== */}
+      {isMediaPickerOpen && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsMediaPickerOpen(false);
+          }}
+        >
+          <div className="w-full max-w-5xl max-h-[92vh] bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-[#E0DCD4] flex items-center justify-between shrink-0">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#E8734A] block">
+                  Media Assets &bull; Avatar Selection
+                </span>
+                <h3 className="font-serif font-bold text-xl text-[#1E1B18] mt-0.5">
+                  Select User Avatar from Media Library
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMediaPickerOpen(false)}
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#4A453E] shadow-xs cursor-pointer"
+                title="Close Media Library"
+              >
+                <span className="text-xs font-bold uppercase tracking-wider group-hover:text-white">Close</span>
+                <X className="w-3.5 h-3.5 group-hover:text-white" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 sm:p-6 grow">
+              <MediaLibrary
+                token={token}
+                selectionMode={true}
+                onSelectImage={(url) => {
+                  if (mediaPickerTarget === 'add') {
+                    setAddForm((prev) => ({ ...prev, avatar: url }));
+                  } else {
+                    setEditForm((prev) => ({ ...prev, avatar: url }));
+                  }
+                  setIsMediaPickerOpen(false);
+                  showToast('success', 'Avatar image selected from Media Library');
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
+
