@@ -216,6 +216,20 @@ class UsersController
         ');
         $updStmt->execute([$name, $email, $role, $avatar, $id]);
 
+        // Automatically synchronize articles authored by this user
+        if (!empty($existing['name'])) {
+            try {
+                $artStmt = $pdo->prepare('
+                    UPDATE `articles`
+                    SET `author_name` = ?, `author_avatar` = ?
+                    WHERE `author_name` = ?
+                ');
+                $artStmt->execute([$name, $avatar ?: '', $existing['name']]);
+            } catch (Throwable $e) {
+                // gracefully ignore if articles table is modified
+            }
+        }
+
         Response::json([
             'success' => true,
             'message' => "User '{$name}' updated successfully",
@@ -313,6 +327,33 @@ class UsersController
             'success' => true,
             'message' => "User '{$target['name']}' has been removed successfully",
         ]);
+    }
+
+    /**
+     * GET /api/users/author
+     * Public endpoint to get primary author/admin safe profile
+     */
+    public static function primaryAuthor(): void
+    {
+        $pdo = Database::getConnection();
+        try {
+            $stmt = $pdo->query("SELECT `name`, `role`, `avatar` FROM `users` WHERE `role` = 'admin' ORDER BY `created_at` ASC LIMIT 1");
+            $author = $stmt ? $stmt->fetch() : null;
+            if (!$author) {
+                $stmt2 = $pdo->query("SELECT `name`, `role`, `avatar` FROM `users` ORDER BY `created_at` ASC LIMIT 1");
+                $author = $stmt2 ? $stmt2->fetch() : null;
+            }
+
+            Response::json([
+                'author' => $author ? [
+                    'name'   => (string)$author['name'],
+                    'role'   => (string)$author['role'],
+                    'avatar' => $author['avatar'] ?: '',
+                ] : null
+            ]);
+        } catch (Throwable $e) {
+            Response::error('Failed to get author profile: ' . $e->getMessage(), 500);
+        }
     }
 }
 

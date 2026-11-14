@@ -4,7 +4,11 @@ import { ArticleCard } from '../ArticleCard';
 import { ArrowRight, Sparkles, Clock, Compass, BookOpen } from 'lucide-react';
 
 export const HomeDesign3: React.FC = () => {
-  const { setActivePage, openArticle, articles, articlesLoaded } = useTheme();
+  const { setActivePage, openArticle, articles, articlesLoaded, siteSettings } = useTheme();
+
+  const authorName = siteSettings?.admin_name || siteSettings?.site_title || 'Toufiq Motion';
+  const authorAvatar = siteSettings?.admin_avatar || '';
+  const authorRole = siteSettings?.admin_role_title || 'Photographer & Lifestyle Writer';
 
   const featuredArticle = articles.find((a) => a.featured) || articles[0] || null;
   const sideArticles = featuredArticle
@@ -49,17 +53,23 @@ export const HomeDesign3: React.FC = () => {
               </button>
             </div>
 
-            {/* Author Attribution */}
+            {/* Author Attribution - Dynamically connected to authoritative Admin User Account */}
             <div className="pt-4 flex items-center gap-3">
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80"
-                alt="Toufiq Motion"
-                decoding="async"
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#E8734A]/30"
-              />
+              {authorAvatar ? (
+                <img
+                  src={authorAvatar}
+                  alt={authorName}
+                  decoding="async"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#E8734A]/30 shadow-xs"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#FAF8F5] border border-[#DDD7CD] flex items-center justify-center font-bold text-xs text-[#E8734A] ring-2 ring-[#E8734A]/30 shadow-xs">
+                  {authorName.slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <div className="text-xs">
-                <p className="font-bold text-[#1E1B18]">Curated by Toufiq Motion</p>
-                <p className="text-[#8C8477]">Photographer &amp; Lifestyle Writer</p>
+                <p className="font-bold text-[#1E1B18]">Curated by {authorName}</p>
+                <p className="text-[#8C8477]">{authorRole}</p>
               </div>
             </div>
           </div>

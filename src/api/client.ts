@@ -234,6 +234,11 @@ export interface SiteSettings {
   favicon_url?: string;
   site_title?: string;
   site_tagline?: string;
+  admin_name?: string;
+  admin_email?: string;
+  admin_role?: string;
+  admin_avatar?: string;
+  admin_role_title?: string;
   header_sticky?: boolean;
   announcement_enabled?: boolean;
   announcement_text?: string;
@@ -849,6 +854,12 @@ export const api = {
   async getSiteSettings(): Promise<{ settings: SiteSettings }> {
     const res = await fetch(`${API_BASE}/settings`);
     if (!res.ok) throw new Error('Failed to fetch site settings');
+    return res.json();
+  },
+
+  async getPrimaryAuthor(): Promise<{ author: { name: string; role: string; avatar: string } | null }> {
+    const res = await fetch(`${API_BASE}/users/author`);
+    if (!res.ok) return { author: null };
     return res.json();
   },
 

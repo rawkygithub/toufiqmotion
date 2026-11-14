@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import { api, AdminUser, UserRole } from '../../api/client';
 import { MediaLibrary } from './MediaLibrary';
 import {
@@ -102,6 +103,7 @@ const ROLE_DEFINITIONS: Record<UserRole, {
 };
 
 export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) => {
+  const { refreshSiteSettings } = useTheme();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -250,6 +252,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
         avatar: ''
       });
       await fetchUsers();
+      await refreshSiteSettings();
     } catch (err: any) {
       showToast('error', err.message || 'Failed to create user');
     } finally {
@@ -296,6 +299,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
       setIsEditModalOpen(false);
       setSelectedUser(null);
       await fetchUsers();
+      await refreshSiteSettings();
     } catch (err: any) {
       showToast('error', err.message || 'Failed to update user');
     } finally {
@@ -357,6 +361,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ token, currentUser }) 
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
       await fetchUsers();
+      await refreshSiteSettings();
     } catch (err: any) {
       showToast('error', err.message || 'Failed to delete user');
     } finally {

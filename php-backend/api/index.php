@@ -142,6 +142,7 @@ try {
     $router->post('/affiliate/settings', fn() => AffiliateController::saveSettings());
 
     // User & Role Management
+    $router->get('/users/author', fn() => UsersController::primaryAuthor());
     $router->get('/users', fn() => UsersController::index());
     $router->get('/users/:id', fn($p) => UsersController::show($p));
     $router->post('/users', fn() => UsersController::create());

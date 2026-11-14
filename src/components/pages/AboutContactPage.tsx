@@ -23,7 +23,10 @@ interface AboutContactProps {
 }
 
 export const AboutContactPage: React.FC<AboutContactProps> = ({ initialView = 'about' }) => {
-  const { setActivePage, articles } = useTheme();
+  const { setActivePage, articles, siteSettings } = useTheme();
+  const authorName = siteSettings?.admin_name || siteSettings?.site_title || 'Toufiq Motion';
+  const authorAvatar = siteSettings?.admin_avatar || '';
+  const authorRole = siteSettings?.admin_role_title || 'Photographer';
   const [view, setView] = useState<'about' | 'contact'>(initialView);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -153,17 +156,27 @@ export const AboutContactPage: React.FC<AboutContactProps> = ({ initialView = 'a
           <section className="bg-white rounded-3xl p-8 sm:p-12 lg:p-16 border border-[#EDE7DF] shadow-xs">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
               
-              {/* Portrait Photo of Toufiq (With Hat and Camera) */}
+              {/* Portrait Photo of Author / Founder - Connected dynamically to Admin User */}
               <div className="lg:col-span-5 relative">
-                <div className="rounded-3xl overflow-hidden aspect-[4/5] shadow-xl">
-                  <img
-                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80"
-                    alt="Toufiq portrait with fedora hat"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="rounded-3xl overflow-hidden aspect-[4/5] shadow-xl bg-[#FAF8F5] flex items-center justify-center">
+                  {authorAvatar ? (
+                    <img
+                      src={authorAvatar}
+                      alt={authorName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#FAF8F5] to-[#F2EDE4] p-8 text-center">
+                      <div className="w-24 h-24 rounded-full bg-white border border-[#DDD7CD] flex items-center justify-center text-3xl font-serif font-bold text-[#E8734A] shadow-md mb-3">
+                        {authorName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="font-serif font-bold text-xl text-[#1E1B18]">{authorName}</span>
+                      <span className="text-xs text-[#8C8477] mt-1">{authorRole}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="absolute -bottom-4 -right-4 bg-[#FFF2EB] border border-[#FBD8C8] text-[#D86237] px-4 py-2 rounded-2xl shadow-md text-xs font-bold uppercase tracking-wider font-sans">
-                  Founder &bull; Photographer
+                  Founder &bull; {authorRole}
                 </div>
               </div>
 
@@ -173,7 +186,7 @@ export const AboutContactPage: React.FC<AboutContactProps> = ({ initialView = 'a
                   Behind The Lens
                 </span>
                 <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#1E1B18] leading-tight">
-                  The Story Behind Toufiq Motion
+                  The Story Behind {authorName}
                 </h2>
                 
                 <div className="space-y-4 text-sm sm:text-base text-[#595246] leading-relaxed font-light">

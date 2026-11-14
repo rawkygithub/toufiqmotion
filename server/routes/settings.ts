@@ -27,6 +27,28 @@ router.get('/', (req, res) => {
       }
     }
 
+    // Dynamically bind authoritative primary administrator & author metadata
+    try {
+      const admin = db.prepare(`
+        SELECT name, email, role, avatar FROM users
+        ORDER BY (role = 'admin') DESC, created_at ASC
+        LIMIT 1
+      `).get() as { name: string; email: string; role: string; avatar: string } | undefined;
+
+      if (admin) {
+        settings.admin_name = admin.name;
+        settings.admin_email = admin.email;
+        settings.admin_role = admin.role;
+        settings.admin_avatar = admin.avatar || '';
+      }
+    } catch {
+      // gracefully fallback if users table does not exist
+    }
+
+    if (!settings.admin_role_title) {
+      settings.admin_role_title = 'Photographer & Lifestyle Writer';
+    }
+
     res.json({ settings });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

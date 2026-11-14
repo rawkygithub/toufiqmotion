@@ -33,6 +33,27 @@ router.get('/', requireAuth, (req: AuthRequest, res) => {
   }
 });
 
+// 1.5 GET /api/users/author - Get primary author/admin safe profile (Public)
+router.get('/author', (req, res) => {
+  try {
+    const author = db.prepare(`
+      SELECT name, role, avatar FROM users
+      ORDER BY (role = 'admin') DESC, created_at ASC
+      LIMIT 1
+    `).get() as { name: string; role: string; avatar: string } | undefined;
+
+    res.json({
+      author: author ? {
+        name: author.name,
+        role: author.role,
+        avatar: author.avatar || '',
+      } : null
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to retrieve author profile' });
+  }
+});
+
 // 2. GET /api/users/:id - Get single user
 router.get('/:id', requireAuth, (req: AuthRequest, res) => {
   try {
@@ -168,6 +189,17 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
       SET name = ?, email = ?, role = ?, avatar = ?
       WHERE id = ?
     `).run(name, email, role, avatar, id);
+
+    // Keep articles authored by this user updated
+    if (existing.name) {
+      try {
+        db.prepare(`
+          UPDATE articles
+          SET author_name = ?, author_avatar = ?
+          WHERE author_name = ?
+        `).run(name, avatar || '', existing.name);
+      } catch {}
+    }
 
     res.json({
       success: true,

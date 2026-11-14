@@ -25,6 +25,29 @@ class SettingsController
             }
         }
 
+        // Dynamically bind authoritative primary administrator & author metadata
+        try {
+            $adminStmt = $pdo->query("SELECT `name`, `email`, `role`, `avatar` FROM `users` WHERE `role` = 'admin' ORDER BY `created_at` ASC LIMIT 1");
+            $admin = $adminStmt ? $adminStmt->fetch() : null;
+            if (!$admin) {
+                $userStmt = $pdo->query("SELECT `name`, `email`, `role`, `avatar` FROM `users` ORDER BY `created_at` ASC LIMIT 1");
+                $admin = $userStmt ? $userStmt->fetch() : null;
+            }
+
+            if ($admin) {
+                $settings['admin_name'] = (string)$admin['name'];
+                $settings['admin_email'] = (string)$admin['email'];
+                $settings['admin_role'] = (string)$admin['role'];
+                $settings['admin_avatar'] = !empty($admin['avatar']) ? (string)$admin['avatar'] : '';
+            }
+        } catch (Throwable $e) {
+            // gracefully fallback if users table does not exist
+        }
+
+        if (!isset($settings['admin_role_title'])) {
+            $settings['admin_role_title'] = 'Photographer & Lifestyle Writer';
+        }
+
         Response::json([
             'settings' => count($settings) > 0 ? $settings : new stdClass(),
         ]);

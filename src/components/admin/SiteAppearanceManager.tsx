@@ -647,6 +647,71 @@ export const SiteAppearanceManager: React.FC<SiteAppearanceManagerProps> = ({ to
             </div>
 
           </div>
+
+          {/* Featured Hero Curator & Author Attribution Card */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDE7DF] shadow-2xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0ECE6] pb-4">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#E8734A] block">
+                  Hero Section Attribution
+                </span>
+                <h3 className="font-serif font-bold text-lg text-[#1E1B18] mt-0.5">
+                  Curator &amp; Author Identity
+                </h3>
+                <p className="text-xs text-[#7A7468] mt-0.5">
+                  Controls the curator badge shown on the homepage hero and author bio across the site.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 bg-[#FFF5EF] border border-[#FFCEBA] px-3 py-1.5 rounded-full text-[11px] font-bold text-[#C85228]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#E8734A]" />
+                <span>Synced with Admin Account</span>
+              </div>
+            </div>
+
+            {/* Live Preview of Hero Badge */}
+            <div className="bg-[#FAF8F5] rounded-2xl p-4 border border-[#DDD7CD] flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                {formData.admin_avatar ? (
+                  <img
+                    src={formData.admin_avatar}
+                    alt={formData.admin_name || 'Toufiq Motion'}
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-[#E8734A]/40 shadow-xs"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-white border border-[#DDD7CD] flex items-center justify-center font-bold text-sm text-[#E8734A] ring-2 ring-[#E8734A]/40 shadow-xs">
+                    {(formData.admin_name || 'TM').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-[#8C8477] font-semibold">Homepage Hero Badge</div>
+                  <p className="font-bold text-sm text-[#1E1B18]">Curated by {formData.admin_name || 'Toufiq Motion'}</p>
+                  <p className="text-xs text-[#8C8477]">{formData.admin_role_title || 'Photographer & Lifestyle Writer'}</p>
+                </div>
+              </div>
+
+              <div className="text-right hidden sm:block">
+                <span className="text-[11px] text-[#7A7468] block">Avatar &amp; Name managed in</span>
+                <span className="text-xs font-bold text-[#E8734A]">Users &amp; Roles Studio</span>
+              </div>
+            </div>
+
+            {/* Editable Curator Role / Subtitle */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#4A453E] block">
+                Curator Subtitle / Role Tagline
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Photographer & Lifestyle Writer"
+                value={formData.admin_role_title || ''}
+                onChange={(e) => setFormData({ ...formData, admin_role_title: e.target.value })}
+                className="w-full max-w-md bg-[#FAF8F5] border border-[#DDD7CD] rounded-xl px-4 py-2.5 text-xs text-[#1E1B18] placeholder-[#9E9587] focus:outline-hidden focus:border-[#E8734A]"
+              />
+              <span className="text-[11px] text-[#8C8477] block">
+                Text displayed under &quot;Curated by {formData.admin_name || 'Toufiq Motion'}&quot; in the homepage hero.
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
