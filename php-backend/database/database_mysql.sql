@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS `affiliate_clicks` (
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ==========================================================
--- Live SQLite Export -> MySQL (Generated 2026-11-14T14:00:06.090Z)
+-- Live SQLite Export -> MySQL (Generated 2026-11-14T19:10:55.662Z)
 -- ==========================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -349,8 +349,8 @@ INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('logo_height'
 INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('site_title', 'Toufiq Motion', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
 INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('site_tagline', 'Travel • Lifestyle • Wellbeing', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
 INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('header_sticky', 'true', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
-INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('announcement_enabled', 'true', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
-INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('announcement_text', '✨ Spring 2026 Editorial Issue is live: Discover the Amalfi Coast & Slow Coffee Chronicles', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
+INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('announcement_enabled', 'false', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
+INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('announcement_text', '', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
 INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('announcement_link', '/travel', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
 INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('header_cta_enabled', 'true', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);
 INSERT INTO `site_settings` (`key`, `value`, `updated_at`) VALUES ('header_cta_text', 'Work with Us', '2026-11-09 11:34:23') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = VALUES(`updated_at`);

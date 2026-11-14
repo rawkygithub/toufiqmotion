@@ -90,6 +90,11 @@ export function buildHeadTagsHtml(): string {
  * Injects the generated head tags and custom favicon into raw HTML right before </head>
  */
 export function injectHeadTagsIntoHtml(html: string): string {
+  // Clean any orphan svg text or stray icons from past templates
+  html = html.replace("<text y='.9em' font-size='90'>✨</text></svg>\" />", '');
+  html = html.replace('✨" />', '');
+  html = html.replace(/<text\s+y=[^>]*>.*?<\/svg>["']?\s*\/?>/gis, '');
+
   try {
     const favRow = db.prepare("SELECT value FROM site_settings WHERE key = 'favicon_url' LIMIT 1").get() as { value: string } | undefined;
     const faviconUrl = (favRow?.value || '').trim();
@@ -102,8 +107,8 @@ export function injectHeadTagsIntoHtml(html: string): string {
       else if (lower.endsWith('.webp')) typeAttr = ' type="image/webp"';
 
       const customFavTag = `<link rel="icon"${typeAttr} href="${faviconUrl}" />`;
-      if (/<link\s+rel=["']icon["'][^>]*>/i.test(html)) {
-        html = html.replace(/<link\s+rel=["']icon["'][^>]*>/i, customFavTag);
+      if (/<link\b[^>]*\brel=["'](?:shortcut\s+)?icon["'][^>]*>(?:<text[^>]*>.*?<\/svg>["']?\s*\/?>)?/i.test(html)) {
+        html = html.replace(/<link\b[^>]*\brel=["'](?:shortcut\s+)?icon["'][^>]*>(?:<text[^>]*>.*?<\/svg>["']?\s*\/?>)?/i, customFavTag);
       } else {
         html = html.replace('</head>', `    ${customFavTag}\n  </head>`);
       }

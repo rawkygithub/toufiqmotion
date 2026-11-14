@@ -84,6 +84,10 @@ class HeadTagsService
 
     public static function injectHeadTagsIntoHtml(string $html): string
     {
+        // 0. Remove any orphan svg text snippet if ever left behind in templates
+        $html = str_replace(["<text y='.9em' font-size='90'>✨</text></svg>\" />", "✨\" />"], '', $html);
+        $html = preg_replace('/<text\s+y=[^>]*>.*?<\/svg>["\']?\s*\/?>/is', '', $html);
+
         try {
             $pdo = Database::getConnection();
             $favStmt = $pdo->query("SELECT `value` FROM `site_settings` WHERE `key` = 'favicon_url' LIMIT 1");
@@ -99,8 +103,9 @@ class HeadTagsService
                 elseif (str_ends_with($lower, '.webp')) $typeAttr = ' type="image/webp"';
 
                 $customFaviconTag = "<link rel=\"icon\"{$typeAttr} href=\"{$safeFav}\" />";
-                if (preg_match('/<link\s+rel=["\']icon["\'][^>]*>/i', $html)) {
-                    $html = preg_replace('/<link\s+rel=["\']icon["\'][^>]*>/i', $customFaviconTag, $html, 1);
+                // Match the full link tag safely including any legacy svg text suffix
+                if (preg_match('/<link\b[^>]*\brel=["\'](?:shortcut\s+)?icon["\'][^>]*>(?:<text[^>]*>.*?<\/svg>["\']?\s*\/?>)?/is', $html)) {
+                    $html = preg_replace('/<link\b[^>]*\brel=["\'](?:shortcut\s+)?icon["\'][^>]*>(?:<text[^>]*>.*?<\/svg>["\']?\s*\/?>)?/is', $customFaviconTag, $html, 1);
                 } else {
                     $html = str_replace('</head>', "    {$customFaviconTag}\n  </head>", $html);
                 }

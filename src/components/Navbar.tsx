@@ -71,35 +71,6 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Top Announcement Bar (Configurable in Backend) */}
-      {siteSettings?.announcement_enabled && siteSettings.announcement_text && (
-        <div
-          className="py-1.5 px-4 text-center text-xs font-semibold tracking-wide border-b transition-colors flex items-center justify-center gap-2 relative z-30 shadow-2xs"
-          style={{
-            backgroundColor: currentLight.accentBg,
-            borderColor: `${currentLight.accentColor}30`,
-            color: currentLight.accentColor
-          }}
-        >
-          <span>{siteSettings.announcement_text}</span>
-          {siteSettings.announcement_link && (
-            <button
-              onClick={() => {
-                if (siteSettings.announcement_link?.startsWith('http')) {
-                  window.open(siteSettings.announcement_link, '_blank');
-                } else {
-                  const target = siteSettings.announcement_link?.replace(/^\//, '') || 'home';
-                  setActivePage(target as PageId);
-                }
-              }}
-              className="underline hover:opacity-80 font-bold ml-1 inline-flex items-center gap-0.5 cursor-pointer"
-            >
-              Explore &rarr;
-            </button>
-          )}
-        </div>
-      )}
-
       <header
         className={`${
           siteSettings?.header_sticky !== false ? 'sticky top-0' : 'relative'
