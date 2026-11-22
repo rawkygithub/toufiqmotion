@@ -16,6 +16,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignJustify,
   Sparkles,
   Undo,
   Redo,
@@ -33,6 +34,7 @@ import {
   X
 } from 'lucide-react';
 import { api } from '../../api/client';
+import { MediaLibrary } from './MediaLibrary';
 
 interface RichTextEditorProps {
   value: string;
@@ -61,6 +63,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [imageUrl, setImageUrl] = useState('');
   const [imageCaption, setImageCaption] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
 
   // Table Dialog
   const [showTableModal, setShowTableModal] = useState(false);
@@ -115,7 +118,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   const executeCommand = (command: string, arg: string | undefined = undefined) => {
-    document.execCommand(command, false, arg);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    try {
+      document.execCommand(command, false, arg);
+    } catch (err) {
+      console.warn('execCommand failed:', command, err);
+    }
     if (editorRef.current) {
       editorRef.current.focus();
       handleInput();
@@ -124,7 +134,22 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Formatting helpers
   const formatHeading = (level: 'h1' | 'h2' | 'h3' | 'p') => {
-    executeCommand('formatBlock', `<${level}>`);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    try {
+      document.execCommand('formatBlock', false, `<${level}>`);
+    } catch {
+      try {
+        document.execCommand('formatBlock', false, level);
+      } catch (err) {
+        console.warn('formatHeading failed:', level, err);
+      }
+    }
+    if (editorRef.current) {
+      editorRef.current.focus();
+      handleInput();
+    }
   };
 
   const insertQuote = () => {
@@ -282,28 +307,53 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         
         {/* Left Toolbar Commands */}
         <div className="flex flex-wrap items-center gap-1">
+          {/* History Undo / Redo */}
+          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('undo')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('redo')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           {/* Paragraph / Headings */}
           <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => formatHeading('p')}
-              className="px-2 py-1 text-xs font-semibold hover:bg-[#FAF8F5] rounded-lg transition-colors"
+              className="px-2 py-1 text-xs font-semibold hover:bg-[#FAF8F5] rounded-lg transition-colors cursor-pointer"
               title="Normal Paragraph"
             >
               P
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => formatHeading('h2')}
-              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg text-[#1E1B18] transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg text-[#1E1B18] transition-colors cursor-pointer"
               title="Heading 2 (H2)"
             >
               <Heading2 className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => formatHeading('h3')}
-              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg text-[#1E1B18] transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg text-[#1E1B18] transition-colors cursor-pointer"
               title="Heading 3 (H3)"
             >
               <Heading3 className="w-3.5 h-3.5" />
@@ -314,40 +364,45 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('bold')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Bold (Ctrl+B)"
             >
               <Bold className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('italic')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Italic (Ctrl+I)"
             >
               <Italic className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('underline')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Underline (Ctrl+U)"
             >
               <Underline className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('strikeThrough')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Strikethrough"
             >
               <Strikethrough className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('formatBlock', '<pre>')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Inline Code / Preformatted"
             >
               <Code className="w-3.5 h-3.5" />
@@ -358,32 +413,36 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('insertUnorderedList')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
-              title="Bullet List"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Bullet List (Unordered)"
             >
               <List className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('insertOrderedList')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
-              title="Numbered List"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Numbered List (Ordered)"
             >
               <ListOrdered className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={insertQuote}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Editorial Blockquote"
             >
               <Quote className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={insertCalloutBox}
-              className="p-1.5 hover:bg-[#FFF2EB] text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FFF2EB] text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Insert Inside-Light Ambient Note Box"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -394,32 +453,36 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setShowLinkModal(true)}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Insert Hyperlink (Ctrl+K)"
             >
               <LinkIcon className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setShowImageModal(true)}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
-              title="Insert Image / Upload"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Insert Image / Upload / Media Library"
             >
               <ImageIcon className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setShowTableModal(true)}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Insert Table"
             >
               <Table className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('insertHorizontalRule')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Horizontal Divider"
             >
               <Minus className="w-3.5 h-3.5" />
@@ -429,6 +492,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           {/* Standout Eye-Catching Affiliate Box Button */}
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={handleOpenAffiliateModal}
             className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#FFF2EB] to-[#FFE5D6] hover:from-[#E8734A] hover:to-[#D56237] text-[#E8734A] hover:text-white border border-[#FFCEBA] transition-all flex items-center gap-1.5 font-bold text-xs shadow-2xs cursor-pointer group shrink-0 mr-1"
             title="Insert High-Converting Affiliate Product Review Box"
@@ -437,31 +501,43 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <span className="font-bold tracking-tight">🛍️ Affiliate Box</span>
           </button>
 
-          {/* Alignment */}
-          <div className="hidden sm:flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
+          {/* Alignment (Left, Center, Right, Justify) */}
+          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('justifyLeft')}
-              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Align Left"
             >
               <AlignLeft className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('justifyCenter')}
-              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Align Center"
             >
               <AlignCenter className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand('justifyRight')}
-              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg transition-colors"
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Align Right"
             >
               <AlignRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('justifyFull')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Justify (Align Both Edges)"
+            >
+              <AlignJustify className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -521,7 +597,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             contentEditable
             onInput={handleInput}
             onKeyDown={handleKeyDown}
-            className="p-6 sm:p-8 outline-hidden min-h-full font-serif text-[#2D2A26] text-lg leading-[1.8] prose max-w-none focus:ring-0 selection:bg-[#E8734A]/20"
+            className="rich-editor-content p-6 sm:p-8 outline-hidden min-h-full font-serif text-[#2D2A26] text-lg leading-[1.8] focus:ring-0 selection:bg-[#E8734A]/20"
             style={{ minHeight: '360px' }}
           />
         )}
@@ -534,14 +610,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
               contentEditable
               onInput={handleInput}
               onKeyDown={handleKeyDown}
-              className="p-6 outline-hidden font-serif text-[#2D2A26] text-base leading-[1.8] focus:ring-0 overflow-y-auto"
+              className="rich-editor-content p-6 outline-hidden font-serif text-[#2D2A26] text-base leading-[1.8] focus:ring-0 overflow-y-auto"
             />
             <div className="p-6 bg-[#FAF8F5] overflow-y-auto">
               <div className="text-[10px] uppercase font-bold tracking-widest text-[#8C8477] mb-3">
                 Live Article Preview
               </div>
               <div
-                className="font-serif text-[#2D2A26] text-base leading-[1.8] prose max-w-none"
+                className="rich-editor-content font-serif text-[#2D2A26] text-base leading-[1.8]"
                 dangerouslySetInnerHTML={{ __html: value || '<p class="text-[#8C8477] italic">Start writing to see live preview...</p>' }}
               />
             </div>
@@ -556,7 +632,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 ✨ Magazine Preview Mode — Rendered with Toufiq Motion Editorial Typography
               </div>
               <article
-                className="font-serif text-[#2D2A26] text-lg sm:text-xl leading-[1.85] prose max-w-none"
+                className="rich-editor-content font-serif text-[#2D2A26] text-lg sm:text-xl leading-[1.85]"
                 dangerouslySetInnerHTML={{ __html: value }}
               />
             </div>
@@ -672,20 +748,31 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <form onSubmit={handleInsertImage} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-[#4A453E] block mb-1">Image URL *</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <input
                     type="url"
                     required
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="https://images.unsplash.com/... or choose from library"
                     className="w-full px-3 py-2 rounded-xl border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
                   />
-                  <label className="cursor-pointer px-3 py-2 rounded-xl border border-[#E0DCD4] text-xs font-semibold hover:border-[#E8734A] flex items-center gap-1 shrink-0">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{uploadingImage ? '...' : 'Upload'}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleDirectImageUpload} />
-                  </label>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsMediaPickerOpen(true)}
+                      className="px-3 py-1.5 rounded-xl bg-[#FFF5EF] border border-[#FFCEBA] hover:bg-[#FFEADA] text-[#C85228] text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors shadow-2xs"
+                      title="Select existing optimized WebP image from Media Library"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-[#E8734A]" />
+                      <span>Select from Media Library</span>
+                    </button>
+                    <label className="cursor-pointer px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-bold hover:border-[#E8734A] text-[#1E1B18] flex items-center gap-1 shrink-0 transition-colors shadow-2xs">
+                      <Upload className="w-3.5 h-3.5 text-[#E8734A]" />
+                      <span>{uploadingImage ? 'Uploading...' : 'Upload File'}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleDirectImageUpload} />
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -955,6 +1042,49 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
               >
                 Insert Card into Story
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Media Library Picker Modal for Content Image Embed */}
+      {isMediaPickerOpen && (
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsMediaPickerOpen(false);
+          }}
+        >
+          <div className="w-full max-w-5xl max-h-[92vh] bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-[#E0DCD4] flex items-center justify-between shrink-0">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#E8734A] block">
+                  Media Assets &bull; Content Image Embed
+                </span>
+                <h3 className="font-serif font-bold text-xl text-[#1E1B18] mt-0.5">
+                  Select Image from Media Library
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMediaPickerOpen(false)}
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#4A453E] shadow-xs cursor-pointer"
+                title="Close"
+              >
+                <span className="text-xs font-bold uppercase tracking-wider group-hover:text-white">Close</span>
+                <X className="w-3.5 h-3.5 group-hover:text-white" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 sm:p-6 grow">
+              <MediaLibrary
+                token={token || null}
+                selectionMode={true}
+                onSelectImage={(url, item) => {
+                  setImageUrl(url);
+                  if (item?.title) setImageCaption(item.title);
+                  setIsMediaPickerOpen(false);
+                }}
+              />
             </div>
           </div>
         </div>

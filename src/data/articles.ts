@@ -32,6 +32,7 @@ export interface Article {
   readabilityScore?: number;
   hasAffiliateLinks?: boolean;
   affiliateDisclosure?: string;
+  published?: boolean;
 }
 
 export const ARTICLES: Article[] = [

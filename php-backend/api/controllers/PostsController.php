@@ -58,35 +58,57 @@ class PostsController
         $tag         = Request::query('tag');
         $q           = Request::query('q');
         $featured    = Request::query('featured');
+        $status      = Request::query('status', 'published');
         $sort        = Request::query('sort', 'latest');
         $pageNum     = max(1, (int)Request::query('page', 1));
         $limitNum    = max(1, min(100, (int)Request::query('limit', 50)));
         $offset      = ($pageNum - 1) * $limitNum;
 
-        $sql = 'SELECT * FROM `articles` WHERE `published` = 1';
+        $sql = 'SELECT * FROM `articles` WHERE 1=1';
+        $countSql = 'SELECT COUNT(*) as total FROM `articles` WHERE 1=1';
         $params = [];
+        $countParams = [];
+
+        if ($status === 'published') {
+            $sql .= ' AND `published` = 1';
+            $countSql .= ' AND `published` = 1';
+        } elseif ($status === 'draft') {
+            $sql .= ' AND `published` = 0';
+            $countSql .= ' AND `published` = 0';
+        }
 
         if ($category) {
             $sql .= ' AND `category` = ?';
+            $countSql .= ' AND `category` = ?';
             $params[] = $category;
+            $countParams[] = $category;
         }
         if ($subcategory) {
             $sql .= ' AND `subcategory` = ?';
+            $countSql .= ' AND `subcategory` = ?';
             $params[] = $subcategory;
+            $countParams[] = $subcategory;
         }
         if ($featured === '1' || $featured === 'true') {
             $sql .= ' AND `featured` = 1';
+            $countSql .= ' AND `featured` = 1';
         }
         if ($q) {
             $sql .= ' AND (`title` LIKE ? OR `excerpt` LIKE ? OR `tags_json` LIKE ?)';
+            $countSql .= ' AND (`title` LIKE ? OR `excerpt` LIKE ? OR `tags_json` LIKE ?)';
             $term = '%' . $q . '%';
             $params[] = $term;
             $params[] = $term;
             $params[] = $term;
+            $countParams[] = $term;
+            $countParams[] = $term;
+            $countParams[] = $term;
         }
         if ($tag) {
             $sql .= ' AND `tags_json` LIKE ?';
+            $countSql .= ' AND `tags_json` LIKE ?';
             $params[] = '%"' . $tag . '"%';
+            $countParams[] = '%"' . $tag . '"%';
         }
 
         if ($sort === 'popular') {
@@ -108,7 +130,7 @@ class PostsController
 
         $articles = array_map([self::class, 'formatArticle'], $rows);
 
-        $countStmt = $pdo->query('SELECT COUNT(*) as total FROM `articles` WHERE `published` = 1');
+        $countStmt = Database::execute($countSql, $countParams);
         $total = (int)($countStmt->fetch()['total'] ?? 0);
 
         Response::json([
@@ -206,9 +228,10 @@ class PostsController
         $date = date('M j, Y');
 
         $tags = is_array($body['tags'] ?? null) ? $body['tags'] : [];
-        $featured = !empty($body['featured']) ? 1 : 0;
-        $noIndex  = !empty($body['noIndex']) ? 1 : 0;
-        $hasAff   = !empty($body['hasAffiliateLinks']) ? 1 : 0;
+        $featured  = !empty($body['featured']) ? 1 : 0;
+        $published = isset($body['published']) ? (!empty($body['published']) ? 1 : 0) : 1;
+        $noIndex   = !empty($body['noIndex']) ? 1 : 0;
+        $hasAff    = !empty($body['hasAffiliateLinks']) ? 1 : 0;
 
         $canonicalBase = Database::canonicalDomain();
         $canonicalUrl  = !empty($body['canonicalUrl']) ? (string)$body['canonicalUrl'] : "{$canonicalBase}/{$slug}";
@@ -221,7 +244,7 @@ class PostsController
                 `focus_keyword`, `meta_title`, `meta_description`, `canonical_url`,
                 `no_index`, `og_image`, `seo_score`, `readability_score`,
                 `views_count`, `likes_count`, `published`, `has_affiliate_links`, `affiliate_disclosure_custom`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?)
         ');
 
         $stmt->execute([
@@ -250,6 +273,7 @@ class PostsController
             !empty($body['ogImage']) ? $body['ogImage'] : $image,
             isset($body['seoScore']) ? (int)$body['seoScore'] : 85,
             isset($body['readabilityScore']) ? (int)$body['readabilityScore'] : 90,
+            $published,
             $hasAff,
             $body['affiliateDisclosure'] ?? null,
         ]);
@@ -282,10 +306,11 @@ class PostsController
             ? json_encode(is_array($body['content']) ? $body['content'] : [$body['content']], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             : $existing['content_json'];
 
-        $featuredVal = array_key_exists('featured', $body) ? (!empty($body['featured']) ? 1 : 0) : (int)$existing['featured'];
-        $noIndexVal  = array_key_exists('noIndex', $body) ? (!empty($body['noIndex']) ? 1 : 0) : (int)$existing['no_index'];
-        $hasAffVal   = array_key_exists('hasAffiliateLinks', $body) ? (!empty($body['hasAffiliateLinks']) ? 1 : 0) : (int)$existing['has_affiliate_links'];
-        $affDiscVal  = array_key_exists('affiliateDisclosure', $body) ? $body['affiliateDisclosure'] : $existing['affiliate_disclosure_custom'];
+        $featuredVal  = array_key_exists('featured', $body) ? (!empty($body['featured']) ? 1 : 0) : (int)$existing['featured'];
+        $publishedVal = array_key_exists('published', $body) ? (!empty($body['published']) ? 1 : 0) : (int)$existing['published'];
+        $noIndexVal   = array_key_exists('noIndex', $body) ? (!empty($body['noIndex']) ? 1 : 0) : (int)$existing['no_index'];
+        $hasAffVal    = array_key_exists('hasAffiliateLinks', $body) ? (!empty($body['hasAffiliateLinks']) ? 1 : 0) : (int)$existing['has_affiliate_links'];
+        $affDiscVal   = array_key_exists('affiliateDisclosure', $body) ? $body['affiliateDisclosure'] : $existing['affiliate_disclosure_custom'];
 
         $stmt = $pdo->prepare('
             UPDATE `articles` SET
@@ -296,6 +321,7 @@ class PostsController
                 `image` = COALESCE(?, `image`),
                 `quote` = COALESCE(?, `quote`),
                 `featured` = ?,
+                `published` = ?,
                 `tags_json` = ?,
                 `content_json` = ?,
                 `html_content` = COALESCE(?, `html_content`),
@@ -321,6 +347,7 @@ class PostsController
             $body['image'] ?? null,
             $body['quote'] ?? null,
             $featuredVal,
+            $publishedVal,
             $updatedTags,
             $updatedContent,
             $body['htmlContent'] ?? null,

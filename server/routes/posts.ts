@@ -55,34 +55,53 @@ function slugify(text: string): string {
 
 // GET /api/posts
 router.get('/', (req, res) => {
-  const { category, subcategory, tag, q, featured, sort, limit = 50, page = 1 } = req.query;
+  const { category, subcategory, tag, q, featured, sort, status = 'published', limit = 50, page = 1 } = req.query;
 
-  let query = 'SELECT * FROM articles WHERE published = 1';
+  let query = 'SELECT * FROM articles WHERE 1=1';
+  let countQuery = 'SELECT COUNT(*) as total FROM articles WHERE 1=1';
   const params: any[] = [];
+  const countParams: any[] = [];
+
+  if (status === 'published') {
+    query += ' AND published = 1';
+    countQuery += ' AND published = 1';
+  } else if (status === 'draft') {
+    query += ' AND published = 0';
+    countQuery += ' AND published = 0';
+  }
 
   if (category) {
     query += ' AND category = ?';
+    countQuery += ' AND category = ?';
     params.push(category);
+    countParams.push(category);
   }
 
   if (subcategory) {
     query += ' AND subcategory = ?';
+    countQuery += ' AND subcategory = ?';
     params.push(subcategory);
+    countParams.push(subcategory);
   }
 
   if (featured === '1' || featured === 'true') {
     query += ' AND featured = 1';
+    countQuery += ' AND featured = 1';
   }
 
   if (q) {
     query += ' AND (title LIKE ? OR excerpt LIKE ? OR tags_json LIKE ?)';
+    countQuery += ' AND (title LIKE ? OR excerpt LIKE ? OR tags_json LIKE ?)';
     const search = `%${q}%`;
     params.push(search, search, search);
+    countParams.push(search, search, search);
   }
 
   if (tag) {
     query += ' AND tags_json LIKE ?';
+    countQuery += ' AND tags_json LIKE ?';
     params.push(`%"${tag}"%`);
+    countParams.push(`%"${tag}"%`);
   }
 
   // Sorting
@@ -106,8 +125,7 @@ router.get('/', (req, res) => {
   const articles = rows.map(formatArticle);
 
   // Total count
-  const countQuery = 'SELECT COUNT(*) as total FROM articles WHERE published = 1';
-  const { total } = db.prepare(countQuery).get() as { total: number };
+  const { total } = db.prepare(countQuery).get(...countParams) as { total: number };
 
   res.json({
     articles,
@@ -174,6 +192,7 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
     tags = [],
     quote,
     featured = false,
+    published = true,
     focusKeyword = '',
     metaTitle = '',
     metaDescription = '',
@@ -213,7 +232,7 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
       focus_keyword, meta_title, meta_description, canonical_url,
       no_index, og_image, seo_score, readability_score,
       views_count, likes_count, published, has_affiliate_links, affiliate_disclosure_custom
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?)
   `);
 
   stmt.run(
@@ -242,6 +261,7 @@ router.post('/', requireAuth, (req: AuthRequest, res) => {
     ogImage || image,
     seoScore,
     readabilityScore,
+    published ? 1 : 0,
     hasAffiliateLinks ? 1 : 0,
     affiliateDisclosure || null
   );
@@ -264,6 +284,7 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
     tags,
     quote,
     featured,
+    published,
     focusKeyword,
     metaTitle,
     metaDescription,
@@ -293,6 +314,7 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
       image = COALESCE(?, image),
       quote = COALESCE(?, quote),
       featured = COALESCE(?, featured),
+      published = COALESCE(?, published),
       tags_json = ?,
       content_json = ?,
       html_content = COALESCE(?, html_content),
@@ -316,6 +338,7 @@ router.put('/:id', requireAuth, (req: AuthRequest, res) => {
     image,
     quote,
     featured !== undefined ? (featured ? 1 : 0) : existing.featured,
+    published !== undefined ? (published ? 1 : 0) : existing.published,
     updatedTags,
     updatedContent,
     htmlContent,

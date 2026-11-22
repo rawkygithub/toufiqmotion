@@ -8,6 +8,7 @@ export interface PostParams {
   tag?: string;
   q?: string;
   featured?: boolean;
+  status?: 'all' | 'published' | 'draft';
   sort?: 'latest' | 'popular' | 'trending';
   page?: number;
   limit?: number;
@@ -373,6 +374,7 @@ export const api = {
     if (params.tag) searchParams.set('tag', params.tag);
     if (params.q) searchParams.set('q', params.q);
     if (params.featured) searchParams.set('featured', '1');
+    if (params.status) searchParams.set('status', params.status);
     if (params.sort) searchParams.set('sort', params.sort);
     if (params.limit) searchParams.set('limit', String(params.limit));
     if (params.page) searchParams.set('page', String(params.page));
