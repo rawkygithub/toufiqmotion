@@ -31,7 +31,9 @@ import {
   Clock,
   FileText,
   ShoppingBag,
-  X
+  X,
+  Video,
+  Play
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { MediaLibrary } from './MediaLibrary';
@@ -64,6 +66,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [imageCaption, setImageCaption] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
+
+  // Video Dialog
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoInput, setVideoInput] = useState('');
+  const [videoCaption, setVideoCaption] = useState('');
+  const [videoError, setVideoError] = useState('');
 
   // Table Dialog
   const [showTableModal, setShowTableModal] = useState(false);
@@ -191,6 +199,72 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     setImageUrl('');
     setImageCaption('');
     setShowImageModal(false);
+  };
+
+  const extractVideoEmbedUrl = (input: string): { embedUrl: string; provider: string } | null => {
+    if (!input) return null;
+    const trimmed = input.trim();
+
+    // Match iframe src if user pasted embed code
+    const iframeSrcMatch = trimmed.match(/src=["'](.*?)["']/);
+    const target = iframeSrcMatch ? iframeSrcMatch[1] : trimmed;
+
+    // YouTube matcher: watch?v=..., youtu.be/..., embed/..., shorts/...
+    const ytMatch = target.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return {
+        embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}`,
+        provider: 'YouTube'
+      };
+    }
+
+    // Vimeo matcher: vimeo.com/123456789
+    const vimeoMatch = target.match(/(?:vimeo\.com\/)(\d+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+      return {
+        embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+        provider: 'Vimeo'
+      };
+    }
+
+    if (target.startsWith('https://') || target.startsWith('http://')) {
+      return {
+        embedUrl: target,
+        provider: 'Video'
+      };
+    }
+
+    return null;
+  };
+
+  const handleInsertVideo = (e: React.FormEvent) => {
+    e.preventDefault();
+    setVideoError('');
+    const parsed = extractVideoEmbedUrl(videoInput);
+    if (!parsed) {
+      setVideoError('Please enter a valid YouTube or Vimeo URL or embed code.');
+      return;
+    }
+
+    const html = `
+      <figure class="my-8 text-center video-embed-container">
+        <div class="relative w-full overflow-hidden rounded-2xl shadow-lg aspect-video max-w-4xl mx-auto bg-black">
+          <iframe
+            src="${parsed.embedUrl}"
+            title="${videoCaption || (parsed.provider + ' video player')}"
+            class="w-full h-full border-0 absolute inset-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        </div>
+        ${videoCaption ? `<figcaption class="text-xs text-[#8C8477] mt-2 italic">${videoCaption}</figcaption>` : ''}
+      </figure><p><br></p>
+    `;
+    executeCommand('insertHTML', html);
+    setVideoInput('');
+    setVideoCaption('');
+    setVideoError('');
+    setShowVideoModal(false);
   };
 
   const handleInsertTable = (e: React.FormEvent) => {
@@ -468,6 +542,15 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
               title="Insert Image / Upload / Media Library"
             >
               <ImageIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setShowVideoModal(true)}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Embed YouTube / Vimeo Video"
+            >
+              <Video className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
@@ -806,6 +889,128 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   className="px-5 py-1.5 rounded-full bg-[#E8734A] text-white text-xs font-bold"
                 >
                   Insert Image
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Video / YouTube Embed Modal */}
+      {showVideoModal && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowVideoModal(false);
+              setVideoError('');
+            }
+          }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDE7DF] shadow-2xl w-full max-w-lg space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#F0ECE6]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center border border-red-200 shadow-2xs">
+                  <Video className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-lg text-[#1E1B18]">Embed Video in Story</h4>
+                  <p className="text-[11px] text-[#8C8477]">YouTube, Shorts, Vimeo, or iframe embed code</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVideoModal(false);
+                  setVideoError('');
+                }}
+                className="w-7 h-7 rounded-full bg-[#FAF8F5] text-[#8C8477] hover:bg-[#E8734A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleInsertVideo} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-[#4A453E] block mb-1">
+                  Video URL or Embed Code *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={videoInput}
+                  onChange={(e) => {
+                    setVideoInput(e.target.value);
+                    if (videoError) setVideoError('');
+                  }}
+                  placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0DCD4] text-xs font-mono focus:outline-hidden focus:border-[#E8734A] bg-[#FAF8F5]"
+                />
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-[#8C8477]">
+                  <span className="font-medium text-[#4A453E]">Supported:</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE5DF]">youtube.com/watch?v=...</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE5DF]">youtu.be/...</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE5DF]">youtube.com/shorts/...</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE5DF]">vimeo.com/...</span>
+                </div>
+                {videoError && (
+                  <p className="mt-1.5 text-xs text-rose-600 font-medium">{videoError}</p>
+                )}
+              </div>
+
+              {/* Live Preview if video is recognized */}
+              {(() => {
+                const parsed = extractVideoEmbedUrl(videoInput);
+                if (!parsed) return null;
+                return (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Live {parsed.provider} Embed Preview:
+                    </span>
+                    <div className="relative w-full overflow-hidden rounded-xl aspect-video border border-[#E0DCD4] bg-black shadow-inner">
+                      <iframe
+                        src={parsed.embedUrl}
+                        title="Video Preview"
+                        className="w-full h-full border-0 absolute inset-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div>
+                <label className="text-xs font-semibold text-[#4A453E] block mb-1">
+                  Video Caption / Description (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={videoCaption}
+                  onChange={(e) => setVideoCaption(e.target.value)}
+                  placeholder="e.g. Cinematic 4K Drone Footage of the Amalfi Coast"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-[#F0ECE6]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVideoModal(false);
+                    setVideoError('');
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-[#6A6357] hover:text-[#1E1B18] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>Insert Video Embed</span>
                 </button>
               </div>
             </form>

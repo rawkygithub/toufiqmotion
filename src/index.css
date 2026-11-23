@@ -247,3 +247,27 @@
   margin-bottom: 1rem !important;
   line-height: 1.8 !important;
 }
+
+/* Video Embeds and Responsive Iframes */
+.rich-editor-content .video-embed-container,
+.editorial-rendered-content .video-embed-container,
+[contenteditable="true"] .video-embed-container {
+  margin-top: 2rem !important;
+  margin-bottom: 2rem !important;
+}
+
+.rich-editor-content .aspect-video,
+.editorial-rendered-content .aspect-video,
+[contenteditable="true"] .aspect-video {
+  aspect-ratio: 16 / 9 !important;
+  width: 100% !important;
+}
+
+.rich-editor-content iframe,
+.editorial-rendered-content iframe,
+[contenteditable="true"] iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 1rem !important;
+  border: 0 !important;
+}
