@@ -55,7 +55,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [viewMode, setViewMode] = useState<'editor' | 'split' | 'preview'>('editor');
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // Link Dialog
+  // Dialogs
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
@@ -72,6 +72,74 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [videoInput, setVideoInput] = useState('');
   const [videoCaption, setVideoCaption] = useState('');
   const [videoError, setVideoError] = useState('');
+
+  // Selection Preservation Ref
+  const savedSelectionRef = useRef<Range | null>(null);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current) {
+      const range = sel.getRangeAt(0);
+      if (editorRef.current.contains(range.commonAncestorContainer)) {
+        savedSelectionRef.current = range.cloneRange();
+        return;
+      }
+    }
+    if (editorRef.current) {
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      savedSelectionRef.current = range;
+    }
+  };
+
+  const insertHTMLAtCursor = (html: string) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+
+    let inserted = false;
+    try {
+      inserted = document.execCommand('insertHTML', false, html);
+    } catch {
+      inserted = false;
+    }
+
+    if (!inserted && editorRef.current) {
+      if (savedSelectionRef.current) {
+        const range = savedSelectionRef.current;
+        range.deleteContents();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const frag = document.createDocumentFragment();
+        let node: ChildNode | null;
+        let lastNode: ChildNode | null = null;
+        while ((node = tempDiv.firstChild)) {
+          lastNode = frag.appendChild(node);
+        }
+        range.insertNode(frag);
+        if (lastNode) {
+          range.setStartAfter(lastNode);
+          range.collapse(true);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      } else {
+        editorRef.current.innerHTML += html;
+      }
+    }
+
+    if (editorRef.current) {
+      editorRef.current.focus();
+      handleInput();
+    }
+  };
 
   // Table Dialog
   const [showTableModal, setShowTableModal] = useState(false);
@@ -176,26 +244,36 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     executeCommand('insertHTML', calloutHtml);
   };
 
-  const handleInsertLink = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInsertLink = (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!linkUrl) return;
-    const html = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="text-[#E8734A] underline font-medium hover:text-[#C85228]">${linkText || linkUrl}</a>`;
-    executeCommand('insertHTML', html);
+    const cleanUrl = linkUrl.trim().startsWith('http://') || linkUrl.trim().startsWith('https://') || linkUrl.trim().startsWith('/') || linkUrl.trim().startsWith('#')
+      ? linkUrl.trim()
+      : `https://${linkUrl.trim()}`;
+    const html = `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-[#E8734A] underline font-medium hover:text-[#C85228]">${linkText || cleanUrl}</a>`;
+    insertHTMLAtCursor(html);
     setLinkUrl('');
     setLinkText('');
     setShowLinkModal(false);
   };
 
-  const handleInsertImage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!imageUrl) return;
+  const handleInsertImage = (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!imageUrl || !imageUrl.trim()) return;
+    const cleanUrl = imageUrl.trim();
     const html = `
       <figure class="my-8 text-center">
-        <img src="${imageUrl}" alt="${imageCaption || 'Blog illustration'}" class="w-full rounded-2xl shadow-md object-cover max-h-[480px] mx-auto" />
+        <img src="${cleanUrl}" alt="${imageCaption || 'Blog illustration'}" class="w-full rounded-2xl shadow-md object-cover max-h-[480px] mx-auto" />
         ${imageCaption ? `<figcaption class="text-xs text-[#8C8477] mt-2 italic">${imageCaption}</figcaption>` : ''}
       </figure><p><br></p>
     `;
-    executeCommand('insertHTML', html);
+    insertHTMLAtCursor(html);
     setImageUrl('');
     setImageCaption('');
     setShowImageModal(false);
@@ -237,12 +315,19 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     return null;
   };
 
-  const handleInsertVideo = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInsertVideo = (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setVideoError('');
+    if (!videoInput.trim()) {
+      setVideoError('Please enter a YouTube or Vimeo video link.');
+      return;
+    }
     const parsed = extractVideoEmbedUrl(videoInput);
     if (!parsed) {
-      setVideoError('Please enter a valid YouTube or Vimeo URL or embed code.');
+      setVideoError('Could not recognize a valid YouTube or Vimeo URL.');
       return;
     }
 
@@ -260,15 +345,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         ${videoCaption ? `<figcaption class="text-xs text-[#8C8477] mt-2 italic">${videoCaption}</figcaption>` : ''}
       </figure><p><br></p>
     `;
-    executeCommand('insertHTML', html);
+    insertHTMLAtCursor(html);
     setVideoInput('');
     setVideoCaption('');
     setVideoError('');
     setShowVideoModal(false);
   };
 
-  const handleInsertTable = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInsertTable = (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     let tableHtml = '<table class="w-full my-6 border-collapse border border-[#E0DCD4] text-sm"><thead><tr class="bg-[#FAF8F5]">';
     for (let j = 0; j < tableCols; j++) {
       tableHtml += `<th class="border border-[#E0DCD4] p-3 text-left font-bold font-serif text-[#1E1B18]">Header ${j + 1}</th>`;
@@ -282,7 +370,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       tableHtml += '</tr>';
     }
     tableHtml += '</tbody></table><p><br></p>';
-    executeCommand('insertHTML', tableHtml);
+    insertHTMLAtCursor(tableHtml);
     setShowTableModal(false);
   };
 
@@ -528,7 +616,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setShowLinkModal(true)}
+              onClick={() => {
+                saveSelection();
+                setShowLinkModal(true);
+              }}
               className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Insert Hyperlink (Ctrl+K)"
             >
@@ -537,7 +628,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setShowImageModal(true)}
+              onClick={() => {
+                saveSelection();
+                setShowImageModal(true);
+              }}
               className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Insert Image / Upload / Media Library"
             >
@@ -546,7 +640,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setShowVideoModal(true)}
+              onClick={() => {
+                saveSelection();
+                setShowVideoModal(true);
+              }}
               className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Embed YouTube / Vimeo Video"
             >
@@ -555,7 +652,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setShowTableModal(true)}
+              onClick={() => {
+                saveSelection();
+                setShowTableModal(true);
+              }}
               className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Insert Table"
             >
@@ -766,15 +866,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <form onSubmit={handleInsertLink} className="space-y-3">
+            <div className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-[#4A453E] block mb-1">Link URL *</label>
                 <input
-                  type="url"
+                  type="text"
                   required
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="https://..."
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleInsertLink(e); }}
+                  placeholder="https://... or /page"
                   className="w-full px-3 py-2 rounded-xl border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
                 />
               </div>
@@ -784,6 +885,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   type="text"
                   value={linkText}
                   onChange={(e) => setLinkText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleInsertLink(e); }}
                   placeholder="Read full itinerary here"
                   className="w-full px-3 py-2 rounded-xl border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
                 />
@@ -792,18 +894,19 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowLinkModal(false)}
-                  className="px-4 py-1.5 text-xs font-semibold text-[#6A6357]"
+                  className="px-4 py-1.5 text-xs font-semibold text-[#6A6357] hover:text-[#1E1B18] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-5 py-1.5 rounded-full bg-[#E8734A] text-white text-xs font-bold"
+                  type="button"
+                  onClick={handleInsertLink}
+                  className="px-5 py-1.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold cursor-pointer shadow-xs"
                 >
                   Insert Link
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -828,16 +931,17 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <form onSubmit={handleInsertImage} className="space-y-3">
+            <div className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-[#4A453E] block mb-1">Image URL *</label>
+                <label className="text-xs font-semibold text-[#4A453E] block mb-1">Image URL or Path *</label>
                 <div className="flex flex-wrap gap-2">
                   <input
-                    type="url"
+                    type="text"
                     required
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/... or choose from library"
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleInsertImage(e); }}
+                    placeholder="https://... or /uploads/... or select from library"
                     className="w-full px-3 py-2 rounded-xl border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
                   />
                   <div className="flex items-center gap-2 pt-1">
@@ -871,6 +975,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   type="text"
                   value={imageCaption}
                   onChange={(e) => setImageCaption(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleInsertImage(e); }}
                   placeholder="e.g. Sunset over the cliffs of Positano"
                   className="w-full px-3 py-2 rounded-xl border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
                 />
@@ -880,18 +985,19 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowImageModal(false)}
-                  className="px-4 py-1.5 text-xs font-semibold text-[#6A6357]"
+                  className="px-4 py-1.5 text-xs font-semibold text-[#6A6357] hover:text-[#1E1B18] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-5 py-1.5 rounded-full bg-[#E8734A] text-white text-xs font-bold"
+                  type="button"
+                  onClick={handleInsertImage}
+                  className="px-5 py-1.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold cursor-pointer shadow-xs"
                 >
                   Insert Image
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -931,7 +1037,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleInsertVideo} className="space-y-4">
+            <div className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-[#4A453E] block mb-1">
                   Video URL or Embed Code *
@@ -944,6 +1050,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                     setVideoInput(e.target.value);
                     if (videoError) setVideoError('');
                   }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleInsertVideo(e); }}
                   placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0DCD4] text-xs font-mono focus:outline-hidden focus:border-[#E8734A] bg-[#FAF8F5]"
                 />
@@ -989,6 +1096,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   type="text"
                   value={videoCaption}
                   onChange={(e) => setVideoCaption(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleInsertVideo(e); }}
                   placeholder="e.g. Cinematic 4K Drone Footage of the Amalfi Coast"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A]"
                 />
@@ -1006,14 +1114,15 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleInsertVideo}
                   className="px-6 py-2 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <Video className="w-3.5 h-3.5" />
                   <span>Insert Video Embed</span>
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -1038,7 +1147,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <form onSubmit={handleInsertTable} className="space-y-3">
+            <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-[#4A453E] block mb-1">Rows</label>
@@ -1067,18 +1176,19 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowTableModal(false)}
-                  className="px-4 py-1.5 text-xs font-semibold text-[#6A6357]"
+                  className="px-4 py-1.5 text-xs font-semibold text-[#6A6357] hover:text-[#1E1B18] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="px-5 py-1.5 rounded-full bg-[#E8734A] text-white text-xs font-bold"
+                  type="button"
+                  onClick={handleInsertTable}
+                  className="px-5 py-1.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold cursor-pointer shadow-xs"
                 >
                   Create Table
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

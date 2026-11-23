@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS `affiliate_clicks` (
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ==========================================================
--- Live SQLite Export -> MySQL (Generated 2026-11-23T04:25:30.264Z)
+-- Live SQLite Export -> MySQL (Generated 2026-11-23T04:49:23.843Z)
 -- ==========================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;

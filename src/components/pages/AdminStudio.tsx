@@ -283,6 +283,16 @@ export const AdminStudio: React.FC = () => {
   const handleSaveArticle = async (e?: React.FormEvent, overridePublished?: boolean) => {
     if (e) e.preventDefault();
     if (!token) return;
+
+    if (!articleForm.title.trim()) {
+      alert('Please enter an Article Title');
+      return;
+    }
+    if (!articleForm.image.trim()) {
+      alert('Please enter a Cover Image URL');
+      return;
+    }
+
     setFormSaving(true);
     try {
       // Split html paragraphs for backward-compatible fallback
@@ -1524,7 +1534,7 @@ export const AdminStudio: React.FC = () => {
             </div>
 
             {/* Scrollable Form Body with Pinned Bottom Action Bar */}
-            <form onSubmit={handleSaveArticle} className="flex flex-col grow overflow-hidden">
+            <div className="flex flex-col grow overflow-hidden">
               <div className="overflow-y-auto p-5 sm:p-8 md:p-10 space-y-8 grow">
               
               {/* Basic Article Meta */}
@@ -1803,8 +1813,9 @@ export const AdminStudio: React.FC = () => {
                   {formSaving ? 'Saving...' : 'Save as Draft'}
                 </button>
                 <button
-                  type="submit"
+                  type="button"
                   disabled={formSaving}
+                  onClick={() => handleSaveArticle(undefined, true)}
                   className="px-7 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <Globe className="w-3.5 h-3.5 text-white" />
@@ -1813,7 +1824,7 @@ export const AdminStudio: React.FC = () => {
               </div>
             </div>
 
-          </form>
+          </div>
         </div>
       </div>
     )}
