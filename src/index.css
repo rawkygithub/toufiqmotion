@@ -12,9 +12,11 @@
   }
 
   html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    text-rendering: optimizeSpeed;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-y: none;
   }
 
@@ -31,11 +33,11 @@
   .clickable {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    cursor: pointer;
   }
 
   button:active:not(:disabled) {
-    transform: scale(0.98);
-    transition: transform 60ms ease-out;
+    transform: scale(0.985);
   }
 
   /* Hardware-accelerated image rendering for zero scroll hitching */
@@ -111,6 +113,8 @@
 .editorial-rendered-content,
 [contenteditable="true"] {
   outline: none;
+  caret-color: #E8734A;
+  cursor: text;
 }
 
 .rich-editor-content ul,

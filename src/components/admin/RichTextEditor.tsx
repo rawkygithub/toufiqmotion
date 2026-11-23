@@ -75,6 +75,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Selection Preservation Ref
   const savedSelectionRef = useRef<Range | null>(null);
+  const isInternalChangeRef = useRef(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const saveSelection = () => {
     const sel = window.getSelection();
@@ -166,9 +168,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Sync internal innerHTML only when value changes externally (not during active typing)
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '<p>Start writing your captivating story...</p>';
-      calculateStats();
+    if (isInternalChangeRef.current) {
+      isInternalChangeRef.current = false;
+      return;
+    }
+    if (editorRef.current) {
+      const isFocused = document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement);
+      if (!isFocused && editorRef.current.innerHTML !== value) {
+        editorRef.current.innerHTML = value || '<p>Start writing your captivating story...</p>';
+        calculateStats();
+      }
     }
   }, [value]);
 
@@ -189,8 +198,29 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const handleInput = () => {
     if (!editorRef.current) return;
     const html = editorRef.current.innerHTML;
-    onChange(html);
-    calculateStats();
+
+    isInternalChangeRef.current = true;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Debounce state propagation by 150ms so typing remains 100% smooth at native 120fps
+    debounceTimerRef.current = setTimeout(() => {
+      onChange(html);
+      calculateStats();
+    }, 150);
+  };
+
+  const handleBlur = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    if (editorRef.current) {
+      isInternalChangeRef.current = true;
+      onChange(editorRef.current.innerHTML);
+      calculateStats();
+    }
   };
 
   const executeCommand = (command: string, arg: string | undefined = undefined) => {
@@ -204,7 +234,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
     if (editorRef.current) {
       editorRef.current.focus();
-      handleInput();
+      isInternalChangeRef.current = true;
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      onChange(editorRef.current.innerHTML);
+      calculateStats();
     }
   };
 
@@ -779,6 +812,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             ref={editorRef}
             contentEditable
             onInput={handleInput}
+            onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             className="rich-editor-content p-6 sm:p-8 outline-hidden min-h-full font-serif text-[#2D2A26] text-lg leading-[1.8] focus:ring-0 selection:bg-[#E8734A]/20"
             style={{ minHeight: '360px' }}
@@ -792,6 +826,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
               ref={editorRef}
               contentEditable
               onInput={handleInput}
+              onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               className="rich-editor-content p-6 outline-hidden font-serif text-[#2D2A26] text-base leading-[1.8] focus:ring-0 overflow-y-auto"
             />

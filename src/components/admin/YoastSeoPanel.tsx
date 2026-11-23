@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import {
   Search,
   Globe,
@@ -50,9 +50,13 @@ export const YoastSeoPanel: React.FC<YoastSeoPanelProps> = ({
   const [socialNetwork, setSocialNetwork] = useState<'facebook' | 'twitter'>('facebook');
   const [copiedSchema, setCopiedSchema] = useState(false);
 
+  // Defer heavy content analysis so typing and cursor interactions remain 100% fluid and snappy
+  const deferredContent = useDeferredValue(articleContent);
+  const deferredTitle = useDeferredValue(articleTitle);
+
   const cleanContentText = useMemo(() => {
-    return articleContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  }, [articleContent]);
+    return (deferredContent || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  }, [deferredContent]);
 
   const words = useMemo(() => cleanContentText.split(/\s+/).filter(Boolean), [cleanContentText]);
   const wordCount = words.length;
@@ -60,7 +64,7 @@ export const YoastSeoPanel: React.FC<YoastSeoPanelProps> = ({
   // Real-time SEO analysis algorithm like Yoast SEO Premium
   const analysis = useMemo(() => {
     const keyword = seoData.focusKeyword.toLowerCase().trim();
-    const title = (seoData.metaTitle || articleTitle).toLowerCase();
+    const title = (seoData.metaTitle || deferredTitle || '').toLowerCase();
     const slug = (seoData.slug || '').toLowerCase();
     const desc = (seoData.metaDescription || '').toLowerCase();
     const text = cleanContentText.toLowerCase();
@@ -100,7 +104,7 @@ export const YoastSeoPanel: React.FC<YoastSeoPanelProps> = ({
     }
 
     // 2. SEO Title Width / Length
-    const titleLen = (seoData.metaTitle || articleTitle).length;
+    const titleLen = (seoData.metaTitle || deferredTitle || '').length;
     if (titleLen >= 40 && titleLen <= 65) {
       results.push({
         type: 'good',
@@ -241,7 +245,7 @@ export const YoastSeoPanel: React.FC<YoastSeoPanelProps> = ({
       readabilityScore: wordCount > 150 ? 92 : 75,
       results
     };
-  }, [seoData, articleTitle, cleanContentText, words, wordCount]);
+  }, [seoData, deferredTitle, cleanContentText, words, wordCount]);
 
   // Schema.org Structured Data JSON-LD
   const schemaJson = useMemo(() => {

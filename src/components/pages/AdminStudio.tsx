@@ -551,6 +551,409 @@ export const AdminStudio: React.FC = () => {
   // Active Category object for subcategory auto-population
   const currentSelectedCategory = categories.find(c => c.name === articleForm.category);
 
+  // Requirement: Article Writing & Editing is a Dedicated Full-Page Workspace (Not a popup modal)
+  if (isArticleModalOpen) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] text-[#1E1B18] flex flex-col font-sans">
+        {/* Sticky Editorial Header */}
+        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EAE5DF] h-16 px-4 sm:px-8 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <button
+              type="button"
+              onClick={() => setIsArticleModalOpen(false)}
+              className="flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#FAF8F5] hover:bg-[#F2EDE4] text-[#4A453E] hover:text-[#1E1B18] border border-[#DDD7CD] text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
+              title="Return to Dashboard"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#E8734A]" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
+            </button>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-serif font-bold text-base sm:text-lg text-[#1E1B18] truncate max-w-[200px] sm:max-w-md">
+                  {articleForm.title || (editingArticleId ? 'Edit Article' : 'New Editorial Story')}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  articleForm.published
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  {articleForm.published ? 'Published' : 'Draft'}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#8C8477] hidden md:block">
+                Toufiq Motion Editorial Workspace • Full Page Studio
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <button
+              type="button"
+              disabled={formSaving}
+              onClick={() => handleSaveArticle(undefined, false)}
+              className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-full bg-white hover:bg-amber-50/60 text-amber-800 border border-amber-200 text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
+              title="Save story as private draft (hidden from public website)"
+            >
+              <Bookmark className="w-3.5 h-3.5 text-amber-600" />
+              <span className="hidden sm:inline">{formSaving ? 'Saving...' : 'Save as Draft'}</span>
+              <span className="sm:hidden">Draft</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={formSaving}
+              onClick={() => handleSaveArticle(undefined, true)}
+              className="px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-white" />
+              <span>
+                {formSaving
+                  ? 'Saving...'
+                  : (editingArticleId ? (articleForm.published ? 'Update Story' : 'Publish Story') : 'Publish Story')}
+              </span>
+            </button>
+          </div>
+        </header>
+
+        {/* Full-Page Editorial Form Body (Natural single window scroll, wide canvas) */}
+        <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          
+          {/* Basic Article Meta */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EDE7DF] shadow-xs space-y-5">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-[#1E1B18] block mb-1">
+                Article Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={articleForm.title}
+                onChange={(e) => {
+                  const newTitle = e.target.value;
+                  setArticleForm({ ...articleForm, title: newTitle });
+                  if (!editingArticleId) {
+                    setSeoData((prev) => ({
+                      ...prev,
+                      metaTitle: newTitle,
+                      slug: newTitle.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-')
+                    }));
+                  }
+                }}
+                placeholder="e.g. The Ultimate Amalfi Coast Travel Guide"
+                className="w-full px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-base sm:text-lg font-serif text-[#1E1B18] font-bold focus:outline-hidden focus:border-[#E8734A]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-[#4A453E] block mb-1">Category *</label>
+                <select
+                  value={articleForm.category}
+                  onChange={(e) => {
+                    const newCatName = e.target.value;
+                    const catObj = categories.find(c => c.name === newCatName);
+                    const firstSub = catObj && catObj.subcategories.length > 0 ? catObj.subcategories[0] : 'General';
+                    setArticleForm({
+                      ...articleForm,
+                      category: newCatName,
+                      subcategory: firstSub
+                    });
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-medium focus:outline-hidden focus:border-[#E8734A]"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#4A453E] block mb-1">Subcategory *</label>
+                {currentSelectedCategory && currentSelectedCategory.subcategories.length > 0 ? (
+                  <select
+                    value={articleForm.subcategory}
+                    onChange={(e) => setArticleForm({ ...articleForm, subcategory: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-medium focus:outline-hidden focus:border-[#E8734A]"
+                  >
+                    {currentSelectedCategory.subcategories.map((sub, i) => (
+                      <option key={i} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={articleForm.subcategory}
+                    onChange={(e) => setArticleForm({ ...articleForm, subcategory: e.target.value })}
+                    placeholder="e.g. Island Escapes"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Cover Image & Upload */}
+            <div>
+              <label className="text-xs font-semibold text-[#4A453E] block mb-1">Cover Image *</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  required
+                  value={articleForm.image}
+                  onChange={(e) => setArticleForm({ ...articleForm, image: e.target.value })}
+                  placeholder="https://images.unsplash.com/... or /uploads/..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsMediaPickerOpen(true)}
+                  className="cursor-pointer px-3.5 py-2.5 rounded-xl bg-[#FFF2EB] border border-[#FFCEBA] text-xs font-bold text-[#E8734A] hover:bg-[#FFE5D6] flex items-center gap-1.5 shrink-0 shadow-2xs transition-all"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Media Library</span>
+                </button>
+                <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-semibold text-[#4A453E] hover:border-[#E8734A] flex items-center gap-1.5 shrink-0 shadow-2xs">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploading ? '...' : 'Upload'}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              </div>
+              {articleForm.image && (
+                <div className="mt-2.5 h-48 rounded-2xl overflow-hidden aspect-[16/9] border border-[#E0DCD4]">
+                  <img src={articleForm.image} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* Excerpt */}
+            <div>
+              <label className="text-xs font-semibold text-[#4A453E] block mb-1">Short Excerpt *</label>
+              <textarea
+                rows={2}
+                required
+                value={articleForm.excerpt}
+                onChange={(e) => {
+                  const newExcerpt = e.target.value;
+                  setArticleForm({ ...articleForm, excerpt: newExcerpt });
+                  if (!editingArticleId && !seoData.metaDescription) {
+                    setSeoData((prev) => ({ ...prev, metaDescription: newExcerpt }));
+                  }
+                }}
+                placeholder="Short engaging excerpt for cards and previews..."
+                className="w-full p-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A] resize-none"
+              />
+            </div>
+
+            {/* Editorial Quote Callout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-[#4A453E] block mb-1">Quote Callout (Optional)</label>
+                <input
+                  type="text"
+                  value={articleForm.quote}
+                  onChange={(e) => setArticleForm({ ...articleForm, quote: e.target.value })}
+                  placeholder="A memorable phrase highlighted in italic..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#4A453E] block mb-1">Tags (Comma Separated)</label>
+                <input
+                  type="text"
+                  value={articleForm.tags}
+                  onChange={(e) => setArticleForm({ ...articleForm, tags: e.target.value })}
+                  placeholder="Italy, Coast, Summer, Photography"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Publishing Status Selector */}
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#EAE5DF] flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-[#1E1B18] block">Story Publishing Status</span>
+                <span className="text-[11px] text-[#8C8477]">
+                  {articleForm.published
+                    ? 'Published: Visible live to public readers and search engines.'
+                    : 'Draft: Saved privately in your studio; hidden from the live website.'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-[#E0DCD4]">
+                <button
+                  type="button"
+                  onClick={() => setArticleForm({ ...articleForm, published: false })}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    !articleForm.published
+                      ? 'bg-amber-100 text-amber-900 shadow-2xs border border-amber-300'
+                      : 'text-[#6A6357] hover:text-[#1E1B18]'
+                  }`}
+                >
+                  <Bookmark className="w-3.5 h-3.5 text-amber-600" /> Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setArticleForm({ ...articleForm, published: true })}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    articleForm.published
+                      ? 'bg-emerald-100 text-emerald-900 shadow-2xs border border-emerald-300'
+                      : 'text-[#6A6357] hover:text-[#1E1B18]'
+                  }`}
+                >
+                  <Globe className="w-3.5 h-3.5 text-emerald-600" /> Published (Live)
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 pt-1">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="page-featured-check"
+                  checked={articleForm.featured}
+                  onChange={(e) => setArticleForm({ ...articleForm, featured: e.target.checked })}
+                  className="w-4 h-4 accent-[#E8734A]"
+                />
+                <label htmlFor="page-featured-check" className="text-xs font-semibold text-[#4A453E] cursor-pointer">
+                  Highlight as Featured Story on Homepage
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="page-affiliate-check"
+                  checked={articleForm.hasAffiliateLinks}
+                  onChange={(e) => setArticleForm({ ...articleForm, hasAffiliateLinks: e.target.checked })}
+                  className="w-4 h-4 accent-[#E8734A]"
+                />
+                <label htmlFor="page-affiliate-check" className="text-xs font-semibold text-[#4A453E] cursor-pointer flex items-center gap-1.5">
+                  <span>🛍️ Contains Affiliate Links</span>
+                  <span className="text-[10px] text-[#8C8477]">(Auto-renders FTC disclosure &amp; sponsored tags)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Complete Rich Text Editor */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold uppercase tracking-wider text-[#1E1B18] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#E8734A]" /> Complete Rich Text Editor
+              </label>
+              <span className="text-xs text-[#8C8477]">
+                Headings, Formatting, Lists, Links, Tables, Image Embeds &amp; Split Preview
+              </span>
+            </div>
+            <RichTextEditor
+              value={htmlContent}
+              onChange={setHtmlContent}
+              token={token || undefined}
+            />
+          </div>
+
+          {/* Yoast SEO Premium Panel */}
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold uppercase tracking-wider text-[#1E1B18] flex items-center gap-2">
+                <Search className="w-4 h-4 text-[#E8734A]" /> Yoast SEO Premium Analysis Suite
+              </label>
+            </div>
+            <YoastSeoPanel
+              seoData={seoData}
+              onChange={setSeoData}
+              articleTitle={articleForm.title}
+              articleContent={htmlContent}
+              articleImage={articleForm.image}
+              category={articleForm.category}
+            />
+          </div>
+
+          {/* Pinned Bottom Action Bar */}
+          <div className="bg-white rounded-3xl p-5 border border-[#EDE7DF] shadow-xs flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setIsArticleModalOpen(false)}
+              className="px-5 py-2.5 rounded-full text-xs font-bold text-[#6A6357] hover:text-[#1E1B18] hover:bg-[#FAF8F5] border border-transparent hover:border-[#E0DCD4] transition-all cursor-pointer"
+            >
+              Cancel & Exit to Dashboard
+            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={formSaving}
+                onClick={() => handleSaveArticle(undefined, false)}
+                className="px-5 py-2.5 rounded-full bg-[#FAF8F5] hover:bg-[#F2EDE4] text-amber-900 border border-amber-300/80 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
+                title="Save story as private draft (hidden from public website)"
+              >
+                <Bookmark className="w-3.5 h-3.5 text-amber-600" />
+                {formSaving ? 'Saving...' : 'Save as Draft'}
+              </button>
+              <button
+                type="button"
+                disabled={formSaving}
+                onClick={() => handleSaveArticle(undefined, true)}
+                className="px-7 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                <Globe className="w-3.5 h-3.5 text-white" />
+                {formSaving ? 'Saving...' : (editingArticleId ? (articleForm.published ? 'Update Story' : 'Publish Story') : 'Publish Story')}
+              </button>
+            </div>
+          </div>
+        </main>
+
+        {/* Media Picker Modal Overlay (When triggered from cover image) */}
+        {isMediaPickerOpen && (
+          <div
+            className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsMediaPickerOpen(false);
+            }}
+          >
+            <div className="w-full max-w-5xl max-h-[92vh] bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden">
+              <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-[#EAE5DF] flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold">
+                    <ImageIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-xl text-[#1E1B18]">Select from Media Library</h3>
+                    <p className="text-xs text-[#8C8477]">Click any WebP image to select as cover, or upload and auto-compress new files.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMediaPickerOpen(false)}
+                  className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all text-[#4A453E] shadow-xs cursor-pointer"
+                  title="Close"
+                >
+                  <span className="text-xs font-bold uppercase tracking-wider group-hover:text-white">Close</span>
+                  <div className="w-5 h-5 rounded-full bg-[#FAF8F5] group-hover:bg-white/20 flex items-center justify-center">
+                    <X className="w-3.5 h-3.5 group-hover:text-white" />
+                  </div>
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-6 grow">
+                <MediaLibrary
+                  token={token}
+                  selectionMode={true}
+                  onSelectImage={(url) => {
+                    setArticleForm((prev) => ({ ...prev, image: url }));
+                    setIsMediaPickerOpen(false);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F6F4EE] flex flex-col font-sans">
       
@@ -1490,344 +1893,6 @@ export const AdminStudio: React.FC = () => {
         </div>
       </div>
     </div>
-
-      {/* --- MODAL 1: WRITE / EDIT ARTICLE WITH RICH TEXT EDITOR & YOAST SEO PREMIUM --- */}
-      {isArticleModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsArticleModalOpen(false);
-          }}
-        >
-          <div className="w-full max-w-5xl max-h-[94vh] bg-[#FAF8F5] rounded-3xl shadow-2xl border border-[#EDE7DF] flex flex-col overflow-hidden relative">
-            
-            {/* Pinned Top Bar: Article Context & Prominent Close Button */}
-            <div className="px-5 sm:px-8 py-3.5 sm:py-4 bg-white/95 backdrop-blur-md border-b border-[#EAE5DF] flex items-center justify-between shrink-0 z-20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#FFF2EB] text-[#E8734A] flex items-center justify-center font-bold shrink-0">
-                  <PenTool className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#1E1B18] leading-tight">
-                    {editingArticleId ? 'Edit Article' : 'Write Complete Editorial Story'}
-                  </h3>
-                  <p className="text-xs text-[#8C8477] hidden sm:block">
-                    Complete Rich Text Editor + Yoast SEO Premium Analysis Suite
-                  </p>
-                </div>
-              </div>
-
-              {/* Prominent High-Contrast Close Button */}
-              <button
-                type="button"
-                onClick={() => setIsArticleModalOpen(false)}
-                className="group flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#FAF8F5] border border-[#DDD7CD] hover:border-[#E8734A] hover:bg-[#E8734A] transition-all shadow-xs cursor-pointer"
-                title="Close editor (Esc)"
-              >
-                <span className="text-xs font-bold uppercase tracking-wider text-[#4A453E] group-hover:text-white transition-colors">
-                  Close
-                </span>
-                <div className="w-5 h-5 rounded-full bg-white group-hover:bg-white/20 flex items-center justify-center transition-colors">
-                  <X className="w-3.5 h-3.5 text-[#6A6356] group-hover:text-white transition-colors" />
-                </div>
-              </button>
-            </div>
-
-            {/* Scrollable Form Body with Pinned Bottom Action Bar */}
-            <div className="flex flex-col grow overflow-hidden">
-              <div className="overflow-y-auto p-5 sm:p-8 md:p-10 space-y-8 grow">
-              
-              {/* Basic Article Meta */}
-              <div className="bg-white rounded-3xl p-6 border border-[#EDE7DF] shadow-xs space-y-4">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#1E1B18] block mb-1">
-                    Article Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={articleForm.title}
-                    onChange={(e) => {
-                      const newTitle = e.target.value;
-                      setArticleForm({ ...articleForm, title: newTitle });
-                      if (!editingArticleId) {
-                        setSeoData((prev) => ({
-                          ...prev,
-                          metaTitle: newTitle,
-                          slug: newTitle.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-')
-                        }));
-                      }
-                    }}
-                    placeholder="e.g. The Ultimate Amalfi Coast Travel Guide"
-                    className="w-full px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-base font-serif text-[#1E1B18] font-bold focus:outline-hidden focus:border-[#E8734A]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Category Dropdown (Dynamically populated from Requirement 1!) */}
-                  <div>
-                    <label className="text-xs font-semibold text-[#4A453E] block mb-1">Category *</label>
-                    <select
-                      value={articleForm.category}
-                      onChange={(e) => {
-                        const newCatName = e.target.value;
-                        const catObj = categories.find(c => c.name === newCatName);
-                        const firstSub = catObj && catObj.subcategories.length > 0 ? catObj.subcategories[0] : 'General';
-                        setArticleForm({
-                          ...articleForm,
-                          category: newCatName,
-                          subcategory: firstSub
-                        });
-                      }}
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-medium focus:outline-hidden focus:border-[#E8734A]"
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Subcategory */}
-                  <div>
-                    <label className="text-xs font-semibold text-[#4A453E] block mb-1">Subcategory *</label>
-                    {currentSelectedCategory && currentSelectedCategory.subcategories.length > 0 ? (
-                      <select
-                        value={articleForm.subcategory}
-                        onChange={(e) => setArticleForm({ ...articleForm, subcategory: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-medium focus:outline-hidden focus:border-[#E8734A]"
-                      >
-                        {currentSelectedCategory.subcategories.map((sub, i) => (
-                          <option key={i} value={sub}>{sub}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        required
-                        value={articleForm.subcategory}
-                        onChange={(e) => setArticleForm({ ...articleForm, subcategory: e.target.value })}
-                        placeholder="e.g. Island Escapes"
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Cover Image & Upload */}
-                <div>
-                  <label className="text-xs font-semibold text-[#4A453E] block mb-1">Cover Image *</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      required
-                      value={articleForm.image}
-                      onChange={(e) => setArticleForm({ ...articleForm, image: e.target.value })}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setIsMediaPickerOpen(true)}
-                      className="cursor-pointer px-3.5 py-2.5 rounded-xl bg-[#FFF2EB] border border-[#FFCEBA] text-xs font-bold text-[#E8734A] hover:bg-[#FFE5D6] flex items-center gap-1.5 shrink-0 shadow-2xs transition-all"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>Media Library</span>
-                    </button>
-                    <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs font-semibold text-[#4A453E] hover:border-[#E8734A] flex items-center gap-1.5 shrink-0 shadow-2xs">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>{uploading ? '...' : 'Upload'}</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    </label>
-                  </div>
-                  {articleForm.image && (
-                    <div className="mt-2.5 h-36 rounded-2xl overflow-hidden aspect-[16/9] border border-[#E0DCD4]">
-                      <img src={articleForm.image} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Excerpt */}
-                <div>
-                  <label className="text-xs font-semibold text-[#4A453E] block mb-1">Short Excerpt *</label>
-                  <textarea
-                    rows={2}
-                    required
-                    value={articleForm.excerpt}
-                    onChange={(e) => {
-                      const newExcerpt = e.target.value;
-                      setArticleForm({ ...articleForm, excerpt: newExcerpt });
-                      if (!editingArticleId && !seoData.metaDescription) {
-                        setSeoData((prev) => ({ ...prev, metaDescription: newExcerpt }));
-                      }
-                    }}
-                    placeholder="Short engaging excerpt for cards and previews..."
-                    className="w-full p-3 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs focus:outline-hidden focus:border-[#E8734A] resize-none"
-                  />
-                </div>
-
-                {/* Editorial Quote Callout */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-[#4A453E] block mb-1">Quote Callout (Optional)</label>
-                    <input
-                      type="text"
-                      value={articleForm.quote}
-                      onChange={(e) => setArticleForm({ ...articleForm, quote: e.target.value })}
-                      placeholder="A memorable phrase highlighted in italic..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-[#4A453E] block mb-1">Tags (Comma Separated)</label>
-                    <input
-                      type="text"
-                      value={articleForm.tags}
-                      onChange={(e) => setArticleForm({ ...articleForm, tags: e.target.value })}
-                      placeholder="Italy, Coast, Summer, Photography"
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#E0DCD4] text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Publishing Status Selector */}
-                <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#EAE5DF] flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <span className="text-xs font-bold text-[#1E1B18] block">Story Publishing Status</span>
-                    <span className="text-[11px] text-[#8C8477]">
-                      {articleForm.published
-                        ? 'Published: Visible live to public readers and search engines.'
-                        : 'Draft: Saved privately in your studio; hidden from the live website.'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-[#E0DCD4]">
-                    <button
-                      type="button"
-                      onClick={() => setArticleForm({ ...articleForm, published: false })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                        !articleForm.published
-                          ? 'bg-amber-100 text-amber-900 shadow-2xs border border-amber-300'
-                          : 'text-[#6A6357] hover:text-[#1E1B18]'
-                      }`}
-                    >
-                      <Bookmark className="w-3.5 h-3.5 text-amber-600" /> Draft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setArticleForm({ ...articleForm, published: true })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                        articleForm.published
-                          ? 'bg-emerald-100 text-emerald-900 shadow-2xs border border-emerald-300'
-                          : 'text-[#6A6357] hover:text-[#1E1B18]'
-                      }`}
-                    >
-                      <Globe className="w-3.5 h-3.5 text-emerald-600" /> Published (Live)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-6 pt-1">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="featured-check"
-                      checked={articleForm.featured}
-                      onChange={(e) => setArticleForm({ ...articleForm, featured: e.target.checked })}
-                      className="w-4 h-4 accent-[#E8734A]"
-                    />
-                    <label htmlFor="featured-check" className="text-xs font-semibold text-[#4A453E] cursor-pointer">
-                      Highlight as Featured Story on Homepage
-                    </label>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="affiliate-check"
-                      checked={articleForm.hasAffiliateLinks}
-                      onChange={(e) => setArticleForm({ ...articleForm, hasAffiliateLinks: e.target.checked })}
-                      className="w-4 h-4 accent-[#E8734A]"
-                    />
-                    <label htmlFor="affiliate-check" className="text-xs font-semibold text-[#4A453E] cursor-pointer flex items-center gap-1.5">
-                      <span>🛍️ Contains Affiliate Links</span>
-                      <span className="text-[10px] text-[#8C8477]">(Auto-renders FTC disclosure &amp; sponsored tags)</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Requirement 2: COMPLETE RICH TEXT EDITOR */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold uppercase tracking-wider text-[#1E1B18] flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#E8734A]" /> Complete Rich Text Editor
-                  </label>
-                  <span className="text-xs text-[#8C8477]">
-                    Headings, Formatting, Lists, Links, Tables, Image Embeds &amp; Split Preview
-                  </span>
-                </div>
-                <RichTextEditor
-                  value={htmlContent}
-                  onChange={setHtmlContent}
-                  token={token || undefined}
-                />
-              </div>
-
-              {/* Requirement 3: HIGH-CLASS YOAST SEO PREMIUM PANEL */}
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold uppercase tracking-wider text-[#1E1B18] flex items-center gap-2">
-                    <Search className="w-4 h-4 text-[#E8734A]" /> Yoast SEO Premium Analysis Suite
-                  </label>
-                </div>
-                <YoastSeoPanel
-                  seoData={seoData}
-                  onChange={setSeoData}
-                  articleTitle={articleForm.title}
-                  articleContent={htmlContent}
-                  articleImage={articleForm.image}
-                  category={articleForm.category}
-                />
-              </div>
-            </div>
-
-            {/* Pinned Bottom Action Bar */}
-            <div className="px-5 sm:px-8 py-3.5 bg-white/95 backdrop-blur-md border-t border-[#EAE5DF] flex items-center justify-between shrink-0 z-20">
-              <button
-                type="button"
-                onClick={() => setIsArticleModalOpen(false)}
-                className="px-5 py-2.5 rounded-full text-xs font-bold text-[#6A6357] hover:text-[#1E1B18] hover:bg-[#FAF8F5] border border-transparent hover:border-[#E0DCD4] transition-all cursor-pointer"
-              >
-                Cancel & Close
-              </button>
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  disabled={formSaving}
-                  onClick={() => handleSaveArticle(undefined, false)}
-                  className="px-5 py-2.5 rounded-full bg-[#FAF8F5] hover:bg-[#F2EDE4] text-amber-900 border border-amber-300/80 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-2xs"
-                  title="Save story as private draft (hidden from public website)"
-                >
-                  <Bookmark className="w-3.5 h-3.5 text-amber-600" />
-                  {formSaving ? 'Saving...' : 'Save as Draft'}
-                </button>
-                <button
-                  type="button"
-                  disabled={formSaving}
-                  onClick={() => handleSaveArticle(undefined, true)}
-                  className="px-7 py-3 rounded-full bg-[#E8734A] hover:bg-[#D56237] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  <Globe className="w-3.5 h-3.5 text-white" />
-                  {formSaving ? 'Saving...' : (editingArticleId ? (articleForm.published ? 'Update & Publish' : 'Update Draft') : (articleForm.published ? 'Publish Story' : 'Save as Draft'))}
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    )}
 
       {/* --- MODAL 2: CREATE / EDIT CATEGORY (Requirement 1) --- */}
       {isCategoryModalOpen && (
