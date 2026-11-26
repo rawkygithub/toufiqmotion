@@ -33,7 +33,21 @@ import {
   ShoppingBag,
   X,
   Video,
-  Play
+  Play,
+  Type,
+  Baseline,
+  Palette,
+  Highlighter,
+  Subscript,
+  Superscript,
+  RemoveFormatting,
+  Indent,
+  Outdent,
+  Code2,
+  FileCode,
+  ChevronDown,
+  Info,
+  AlertCircle
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { MediaLibrary } from './MediaLibrary';
@@ -52,8 +66,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onStatsChange
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [viewMode, setViewMode] = useState<'editor' | 'split' | 'preview'>('editor');
+  const [viewMode, setViewMode] = useState<'editor' | 'split' | 'preview' | 'html'>('editor');
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Popover States
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  const [showCalloutMenu, setShowCalloutMenu] = useState(false);
   
   // Dialogs
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -166,20 +185,56 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     buttonText: 'Check Price on Amazon'
   });
 
+  // Color Swatches
+  const TEXT_COLORS = [
+    { label: 'Charcoal', value: '#1E1B18' },
+    { label: 'Terracotta', value: '#E8734A' },
+    { label: 'Forest', value: '#2E7D5A' },
+    { label: 'Royal Blue', value: '#1E40AF' },
+    { label: 'Purple', value: '#7C3AED' },
+    { label: 'Amber', value: '#D97706' },
+    { label: 'Crimson', value: '#DC2626' },
+    { label: 'Slate', value: '#64748B' },
+  ];
+
+  const HIGHLIGHT_COLORS = [
+    { label: 'None', value: 'transparent' },
+    { label: 'Peach', value: '#FED7AA' },
+    { label: 'Yellow', value: '#FEF08A' },
+    { label: 'Green', value: '#BBF7D0' },
+    { label: 'Blue', value: '#BAE6FD' },
+    { label: 'Lavender', value: '#E9D5FF' },
+    { label: 'Rose', value: '#FECDD3' },
+  ];
+
+  // Close popovers on click outside
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.editor-popover-container')) {
+        setShowTextColorPicker(false);
+        setShowHighlightPicker(false);
+        setShowCalloutMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleGlobalClick);
+    return () => document.removeEventListener('mousedown', handleGlobalClick);
+  }, []);
+
   // Sync internal innerHTML only when value changes externally (not during active typing)
   useEffect(() => {
     if (isInternalChangeRef.current) {
       isInternalChangeRef.current = false;
       return;
     }
-    if (editorRef.current) {
+    if (editorRef.current && (viewMode === 'editor' || viewMode === 'split')) {
       const isFocused = document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement);
       if (!isFocused && editorRef.current.innerHTML !== value) {
         editorRef.current.innerHTML = value || '<p>Start writing your captivating story...</p>';
         calculateStats();
       }
     }
-  }, [value]);
+  }, [value, viewMode]);
 
   const calculateStats = () => {
     if (!editorRef.current) return;
@@ -216,7 +271,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    if (editorRef.current) {
+    if (editorRef.current && (viewMode === 'editor' || viewMode === 'split')) {
       isInternalChangeRef.current = true;
       onChange(editorRef.current.innerHTML);
       calculateStats();
@@ -241,24 +296,218 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   };
 
-  // Formatting helpers
-  const formatHeading = (level: 'h1' | 'h2' | 'h3' | 'p') => {
-    if (editorRef.current) {
-      editorRef.current.focus();
+  // Font Family handler (Requirement 1: Text Style Selection)
+  const applyFontFamily = (fontFamily: string) => {
+    if (!fontFamily) return;
+    if (editorRef.current) editorRef.current.focus();
+    saveSelection();
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
     }
-    try {
-      document.execCommand('formatBlock', false, `<${level}>`);
-    } catch {
-      try {
-        document.execCommand('formatBlock', false, level);
-      } catch (err) {
-        console.warn('formatHeading failed:', level, err);
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    if (range.collapsed) {
+      const span = document.createElement('span');
+      span.style.fontFamily = fontFamily;
+      span.innerHTML = '&#8203;';
+      range.insertNode(span);
+      range.setStart(span, 1);
+      range.setEnd(span, 1);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      document.execCommand('styleWithCSS', false, 'true');
+      document.execCommand('fontName', false, fontFamily);
+      if (editorRef.current) {
+        const fontTags = editorRef.current.querySelectorAll('font[face]');
+        fontTags.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          const face = htmlEl.getAttribute('face');
+          htmlEl.removeAttribute('face');
+          htmlEl.style.fontFamily = face || fontFamily;
+        });
       }
     }
-    if (editorRef.current) {
-      editorRef.current.focus();
-      handleInput();
+    handleInput();
+  };
+
+  // Font Size handler (Requirement 2: Text Size Selection)
+  const applyFontSize = (sizePx: string) => {
+    if (!sizePx) return;
+    if (editorRef.current) editorRef.current.focus();
+    saveSelection();
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
     }
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    if (range.collapsed) {
+      const span = document.createElement('span');
+      span.style.fontSize = sizePx;
+      span.innerHTML = '&#8203;';
+      range.insertNode(span);
+      range.setStart(span, 1);
+      range.setEnd(span, 1);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      document.execCommand('styleWithCSS', false, 'true');
+      document.execCommand('fontSize', false, '7');
+      if (editorRef.current) {
+        const styledEls = editorRef.current.querySelectorAll('span[style*="font-size"], font[size="7"]');
+        styledEls.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          if (htmlEl.style.fontSize.includes('xxx-large') || htmlEl.getAttribute('size') === '7') {
+            htmlEl.removeAttribute('size');
+            htmlEl.style.fontSize = sizePx;
+          }
+        });
+      }
+    }
+    handleInput();
+  };
+
+  // Text Color handler
+  const applyTextColor = (color: string) => {
+    if (editorRef.current) editorRef.current.focus();
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+    document.execCommand('styleWithCSS', false, 'true');
+    document.execCommand('foreColor', false, color);
+    handleInput();
+    setShowTextColorPicker(false);
+  };
+
+  // Highlight Background handler
+  const applyHighlightColor = (color: string) => {
+    if (editorRef.current) editorRef.current.focus();
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+    document.execCommand('styleWithCSS', false, 'true');
+    if (color === 'transparent') {
+      document.execCommand('removeFormat', false, undefined);
+    } else {
+      document.execCommand('hiliteColor', false, color);
+    }
+    handleInput();
+    setShowHighlightPicker(false);
+  };
+
+  // Block format dropdown handler
+  const handleBlockFormat = (format: string) => {
+    if (!format) return;
+    if (editorRef.current) editorRef.current.focus();
+    saveSelection();
+
+    if (format === 'lead') {
+      insertHTMLAtCursor('<p class="lead-text italic text-xl text-[#38332B] leading-[1.8] mb-4">Start your lead paragraph here with captivating introductory prose...</p><p><br></p>');
+    } else if (format === 'blockquote') {
+      executeCommand('formatBlock', '<blockquote>');
+    } else if (format === 'pre') {
+      executeCommand('formatBlock', '<pre>');
+    } else {
+      try {
+        document.execCommand('formatBlock', false, `<${format}>`);
+      } catch {
+        try {
+          document.execCommand('formatBlock', false, format);
+        } catch (err) {
+          console.warn('formatBlock failed:', format, err);
+        }
+      }
+    }
+    handleInput();
+  };
+
+  // Callout Box Handler
+  const insertCallout = (type: 'ambient' | 'tip' | 'warning' | 'summary') => {
+    let calloutHtml = '';
+    if (type === 'ambient') {
+      calloutHtml = `
+        <div class="my-6 p-6 rounded-2xl bg-gradient-to-r from-[#FFF5F0] to-[#FAF8F5] border-l-4 border-[#E8734A] text-[#2D2A26] shadow-xs">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#E8734A] mb-1">
+            <span>✨ Curated Travel &amp; Living Note</span>
+          </div>
+          <p class="italic text-base text-[#4A453E] m-0">Write your special insider advice, recommendation, or takeaway here...</p>
+        </div><p><br></p>
+      `;
+    } else if (type === 'tip') {
+      calloutHtml = `
+        <div class="my-6 p-6 rounded-2xl bg-[#F0FDF4] border-l-4 border-emerald-500 text-[#1E1B18] shadow-xs">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-1">
+            <span>💡 Pro Insider Tip</span>
+          </div>
+          <p class="text-base text-emerald-950 m-0">Book early morning slots to experience this location with the best light and zero crowds...</p>
+        </div><p><br></p>
+      `;
+    } else if (type === 'warning') {
+      calloutHtml = `
+        <div class="my-6 p-6 rounded-2xl bg-[#FFFBEB] border-l-4 border-amber-500 text-[#1E1B18] shadow-xs">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-700 mb-1">
+            <span>⚠️ Important Notice</span>
+          </div>
+          <p class="text-base text-amber-950 m-0">Roads can be winding and steep; always carry cash and check local transit schedules in advance...</p>
+        </div><p><br></p>
+      `;
+    } else if (type === 'summary') {
+      calloutHtml = `
+        <div class="my-6 p-6 rounded-2xl bg-[#F0F9FF] border-l-4 border-sky-500 text-[#1E1B18] shadow-xs">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-700 mb-1">
+            <span>📌 Key Highlights &amp; Takeaways</span>
+          </div>
+          <p class="text-base text-sky-950 m-0">Best season: May to September &bull; Recommended stay: 4-5 nights &bull; Ideal for photography and culinary escapes.</p>
+        </div><p><br></p>
+      `;
+    }
+    insertHTMLAtCursor(calloutHtml);
+    setShowCalloutMenu(false);
+  };
+
+  // Checklist Task List
+  const insertTaskList = () => {
+    const taskHtml = `
+      <ul class="task-list my-4 space-y-2">
+        <li><input type="checkbox" /> Pack lightweight linen clothing and comfortable walking shoes</li>
+        <li><input type="checkbox" /> Reserve table at cliffside trattoria 2-3 weeks ahead</li>
+        <li><input type="checkbox" /> Download offline navigation maps and local transit passes</li>
+      </ul><p><br></p>
+    `;
+    insertHTMLAtCursor(taskHtml);
+  };
+
+  // Inline Code helper
+  const insertInlineCode = () => {
+    if (editorRef.current) editorRef.current.focus();
+    saveSelection();
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) {
+      const text = sel.toString();
+      insertHTMLAtCursor(`<code>${text}</code>`);
+    } else {
+      insertHTMLAtCursor(`<code>code</code>`);
+    }
+  };
+
+  // View Mode Change helper with synchronization
+  const handleViewModeChange = (mode: 'editor' | 'split' | 'preview' | 'html') => {
+    if (viewMode === 'editor' || viewMode === 'split') {
+      if (editorRef.current) {
+        onChange(editorRef.current.innerHTML);
+      }
+    }
+    setViewMode(mode);
   };
 
   const insertQuote = () => {
@@ -266,15 +515,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   const insertCalloutBox = () => {
-    const calloutHtml = `
-      <div class="my-6 p-6 rounded-2xl bg-gradient-to-r from-[#FFF5F0] to-[#FAF8F5] border-l-4 border-[#E8734A] text-[#2D2A26] shadow-xs">
-        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#E8734A] mb-1">
-          <span>✨ Curated Travel &amp; Living Note</span>
-        </div>
-        <p class="italic text-base text-[#4A453E] m-0">Write your special insider advice, recommendation, or takeaway here...</p>
-      </div><p><br></p>
-    `;
-    executeCommand('insertHTML', calloutHtml);
+    insertCallout('ambient');
   };
 
   const handleInsertLink = (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
@@ -498,7 +739,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }`}>
       
       {/* 1. Format Toolbar */}
-      <div className="bg-[#FAF8F5] border-b border-[#EAE5DF] p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-1 text-[#4A453E]">
+      <div className="relative bg-[#FAF8F5] border-b border-[#EAE5DF] p-2 sm:p-2.5 flex flex-wrap items-center justify-between gap-1.5 text-[#4A453E]">
         
         {/* Left Toolbar Commands */}
         <div className="flex flex-wrap items-center gap-1">
@@ -524,38 +765,85 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             </button>
           </div>
 
-          {/* Paragraph / Headings */}
-          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => formatHeading('p')}
-              className="px-2 py-1 text-xs font-semibold hover:bg-[#FAF8F5] rounded-lg transition-colors cursor-pointer"
-              title="Normal Paragraph"
+          {/* Block Hierarchy Dropdown */}
+          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl px-2 py-0.5 shadow-2xs mr-1 text-xs">
+            <select
+              aria-label="Block formatting"
+              onMouseDown={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                handleBlockFormat(e.target.value);
+                e.target.value = '';
+              }}
+              defaultValue=""
+              className="bg-transparent text-xs font-semibold text-[#1E1B18] focus:outline-hidden cursor-pointer py-1 pr-1"
+              title="Heading & Block Format"
             >
-              P
-            </button>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => formatHeading('h2')}
-              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg text-[#1E1B18] transition-colors cursor-pointer"
-              title="Heading 2 (H2)"
-            >
-              <Heading2 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => formatHeading('h3')}
-              className="p-1.5 hover:bg-[#FAF8F5] rounded-lg text-[#1E1B18] transition-colors cursor-pointer"
-              title="Heading 3 (H3)"
-            >
-              <Heading3 className="w-3.5 h-3.5" />
-            </button>
+              <option value="" disabled>Block Style</option>
+              <option value="p">Paragraph (Normal)</option>
+              <option value="h1">Heading 1 (H1)</option>
+              <option value="h2">Heading 2 (H2)</option>
+              <option value="h3">Heading 3 (H3)</option>
+              <option value="h4">Heading 4 (H4)</option>
+              <option value="lead">Lead Paragraph</option>
+              <option value="blockquote">Blockquote</option>
+              <option value="pre">Code Block</option>
+            </select>
           </div>
 
-          {/* Text Styling */}
+          {/* Requirement 1: Text Style Selection (Font Family) */}
+          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl px-2 py-0.5 shadow-2xs mr-1 text-xs">
+            <Type className="w-3.5 h-3.5 text-[#E8734A] mr-1 shrink-0" />
+            <select
+              aria-label="Text font style"
+              onMouseDown={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                applyFontFamily(e.target.value);
+                e.target.value = '';
+              }}
+              defaultValue=""
+              className="bg-transparent text-xs font-semibold text-[#1E1B18] focus:outline-hidden cursor-pointer py-1 pr-1 max-w-[130px]"
+              title="Font Style (Font Family)"
+            >
+              <option value="" disabled>Font Style</option>
+              <option value="'Playfair Display', Georgia, serif">Editorial Serif</option>
+              <option value="'Plus Jakarta Sans', system-ui, sans-serif">Modern Sans</option>
+              <option value="'Cormorant Garamond', Georgia, serif">Classic Garamond</option>
+              <option value="'Caveat', cursive">Handwriting Script</option>
+              <option value="'JetBrains Mono', monospace">Monospace Code</option>
+              <option value="Georgia, serif">Traditional Georgia</option>
+            </select>
+          </div>
+
+          {/* Requirement 2: Text Size Selection (Font Size) */}
+          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl px-2 py-0.5 shadow-2xs mr-1 text-xs">
+            <Baseline className="w-3.5 h-3.5 text-[#E8734A] mr-1 shrink-0" />
+            <select
+              aria-label="Text size"
+              onMouseDown={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                applyFontSize(e.target.value);
+                e.target.value = '';
+              }}
+              defaultValue=""
+              className="bg-transparent text-xs font-semibold text-[#1E1B18] focus:outline-hidden cursor-pointer py-1 pr-1 max-w-[105px]"
+              title="Font Size"
+            >
+              <option value="" disabled>Text Size</option>
+              <option value="12px">12px • Small</option>
+              <option value="14px">14px • Fine</option>
+              <option value="16px">16px • Normal</option>
+              <option value="18px">18px • Lead</option>
+              <option value="20px">20px • Large</option>
+              <option value="24px">24px • XL</option>
+              <option value="28px">28px • 2XL</option>
+              <option value="32px">32px • 3XL</option>
+              <option value="36px">36px • Title</option>
+              <option value="42px">42px • Display</option>
+              <option value="48px">48px • Hero</option>
+            </select>
+          </div>
+
+          {/* Inline Text Styling */}
           <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
               type="button"
@@ -596,15 +884,136 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => executeCommand('formatBlock', '<pre>')}
+              onClick={() => executeCommand('subscript')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer text-xs font-bold"
+              title="Subscript (X₂)"
+            >
+              <Subscript className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('superscript')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer text-xs font-bold"
+              title="Superscript (X²)"
+            >
+              <Superscript className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={insertInlineCode}
               className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
-              title="Inline Code / Preformatted"
+              title="Inline Code"
             >
               <Code className="w-3.5 h-3.5" />
             </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('removeFormat')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+              title="Clear Formatting"
+            >
+              <RemoveFormatting className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* Lists & Quotes */}
+          {/* Color & Highlight Picker Buttons */}
+          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                saveSelection();
+                setShowTextColorPicker(!showTextColorPicker);
+                setShowHighlightPicker(false);
+                setShowCalloutMenu(false);
+              }}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                showTextColorPicker ? 'bg-[#FAF8F5] text-[#E8734A]' : 'hover:bg-[#FAF8F5] hover:text-[#E8734A]'
+              }`}
+              title="Text Color"
+            >
+              <Palette className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                saveSelection();
+                setShowHighlightPicker(!showHighlightPicker);
+                setShowTextColorPicker(false);
+                setShowCalloutMenu(false);
+              }}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                showHighlightPicker ? 'bg-[#FAF8F5] text-[#E8734A]' : 'hover:bg-[#FAF8F5] hover:text-[#E8734A]'
+              }`}
+              title="Highlight Background Color"
+            >
+              <Highlighter className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Alignment & Indentation */}
+          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('justifyLeft')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Align Left"
+            >
+              <AlignLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('justifyCenter')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Align Center"
+            >
+              <AlignCenter className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('justifyRight')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Align Right"
+            >
+              <AlignRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('justifyFull')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Justify (Align Both Edges)"
+            >
+              <AlignJustify className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('outdent')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Decrease Indent"
+            >
+              <Outdent className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => executeCommand('indent')}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Increase Indent"
+            >
+              <Indent className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Lists & Callouts */}
           <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
             <button
               type="button"
@@ -627,6 +1036,15 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
+              onClick={insertTaskList}
+              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
+              title="Interactive Checklist / Task List"
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={insertQuote}
               className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
               title="Editorial Blockquote"
@@ -636,9 +1054,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={insertCalloutBox}
-              className="p-1.5 hover:bg-[#FFF2EB] text-[#E8734A] rounded-lg transition-colors cursor-pointer"
-              title="Insert Inside-Light Ambient Note Box"
+              onClick={() => {
+                saveSelection();
+                setShowCalloutMenu(!showCalloutMenu);
+                setShowTextColorPicker(false);
+                setShowHighlightPicker(false);
+              }}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                showCalloutMenu ? 'bg-[#FFF2EB] text-[#E8734A]' : 'hover:bg-[#FFF2EB] text-[#E8734A]'
+              }`}
+              title="Insert Callout Note Box (Curated, Pro Tip, Warning, Summary)"
             >
               <Sparkles className="w-3.5 h-3.5" />
             </button>
@@ -716,46 +1141,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <ShoppingBag className="w-3.5 h-3.5 text-[#E8734A] group-hover:text-white transition-colors" />
             <span className="font-bold tracking-tight">🛍️ Affiliate Box</span>
           </button>
-
-          {/* Alignment (Left, Center, Right, Justify) */}
-          <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs mr-1">
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => executeCommand('justifyLeft')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
-              title="Align Left"
-            >
-              <AlignLeft className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => executeCommand('justifyCenter')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
-              title="Align Center"
-            >
-              <AlignCenter className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => executeCommand('justifyRight')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
-              title="Align Right"
-            >
-              <AlignRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => executeCommand('justifyFull')}
-              className="p-1.5 hover:bg-[#FAF8F5] hover:text-[#E8734A] rounded-lg transition-colors cursor-pointer"
-              title="Justify (Align Both Edges)"
-            >
-              <AlignJustify className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
 
         {/* Right Toolbar View Toggles */}
@@ -763,7 +1148,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <div className="flex items-center bg-white border border-[#E0DCD4] rounded-xl p-0.5 shadow-2xs">
             <button
               type="button"
-              onClick={() => setViewMode('editor')}
+              onClick={() => handleViewModeChange('editor')}
               className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
                 viewMode === 'editor' ? 'bg-[#E8734A] text-white shadow-xs' : 'hover:bg-[#FAF8F5] text-[#554E42]'
               }`}
@@ -772,7 +1157,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('split')}
+              onClick={() => handleViewModeChange('split')}
               className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all ${
                 viewMode === 'split' ? 'bg-[#E8734A] text-white shadow-xs' : 'hover:bg-[#FAF8F5] text-[#554E42]'
               }`}
@@ -782,13 +1167,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('preview')}
+              onClick={() => handleViewModeChange('preview')}
               className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all ${
                 viewMode === 'preview' ? 'bg-[#E8734A] text-white shadow-xs' : 'hover:bg-[#FAF8F5] text-[#554E42]'
               }`}
               title="Live Reader Mode Preview"
             >
               <Eye className="w-3 h-3" /> Reader
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('html')}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all ${
+                viewMode === 'html' ? 'bg-[#E8734A] text-white shadow-xs' : 'hover:bg-[#FAF8F5] text-[#554E42]'
+              }`}
+              title="Inspect or Edit Raw HTML Source Code"
+            >
+              <Code2 className="w-3 h-3" /> HTML
             </button>
           </div>
 
@@ -801,6 +1196,121 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
+
+        {/* POPOVERS */}
+
+        {/* Text Color Picker Popover */}
+        {showTextColorPicker && (
+          <div className="editor-popover-container absolute top-12 left-6 z-30 bg-white rounded-2xl shadow-xl border border-[#EDE7DF] p-3 w-56 animate-in fade-in zoom-in-95">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#8C8477] mb-2">
+              Select Text Color
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {TEXT_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyTextColor(c.value)}
+                  className="flex flex-col items-center gap-1 p-1 rounded-xl hover:bg-[#FAF8F5] transition-colors cursor-pointer group"
+                  title={c.label}
+                >
+                  <span
+                    className="w-6 h-6 rounded-full border border-black/10 shadow-2xs group-hover:scale-110 transition-transform"
+                    style={{ backgroundColor: c.value }}
+                  />
+                  <span className="text-[9px] text-[#6A6357] truncate w-full text-center">{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Highlight Background Color Popover */}
+        {showHighlightPicker && (
+          <div className="editor-popover-container absolute top-12 left-16 z-30 bg-white rounded-2xl shadow-xl border border-[#EDE7DF] p-3 w-56 animate-in fade-in zoom-in-95">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#8C8477] mb-2">
+              Text Highlight Color
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {HIGHLIGHT_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyHighlightColor(c.value)}
+                  className="flex flex-col items-center gap-1 p-1 rounded-xl hover:bg-[#FAF8F5] transition-colors cursor-pointer group"
+                  title={c.label}
+                >
+                  <span
+                    className="w-6 h-6 rounded-full border border-black/15 shadow-2xs group-hover:scale-110 transition-transform flex items-center justify-center text-[10px]"
+                    style={{ backgroundColor: c.value === 'transparent' ? '#FFFFFF' : c.value }}
+                  >
+                    {c.value === 'transparent' ? '✕' : ''}
+                  </span>
+                  <span className="text-[9px] text-[#6A6357] truncate w-full text-center">{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Callout Box Menu Popover */}
+        {showCalloutMenu && (
+          <div className="editor-popover-container absolute top-12 left-44 z-30 bg-white rounded-2xl shadow-xl border border-[#EDE7DF] p-2.5 w-64 space-y-1 animate-in fade-in zoom-in-95">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#8C8477] px-2 py-1">
+              Insert Callout Box
+            </div>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCallout('ambient')}
+              className="w-full px-3 py-2 text-left rounded-xl hover:bg-[#FFF5F0] text-[#1E1B18] transition-colors flex items-center gap-2 text-xs font-semibold cursor-pointer"
+            >
+              <span className="text-[#E8734A]">✨</span>
+              <div>
+                <div>Ambient Light Note</div>
+                <div className="text-[10px] font-normal text-[#8C8477]">Terracotta gradient note</div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCallout('tip')}
+              className="w-full px-3 py-2 text-left rounded-xl hover:bg-[#F0FDF4] text-[#1E1B18] transition-colors flex items-center gap-2 text-xs font-semibold cursor-pointer"
+            >
+              <span className="text-emerald-600">💡</span>
+              <div>
+                <div>Pro Insider Tip</div>
+                <div className="text-[10px] font-normal text-[#8C8477]">Emerald green recommendation</div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCallout('warning')}
+              className="w-full px-3 py-2 text-left rounded-xl hover:bg-[#FFFBEB] text-[#1E1B18] transition-colors flex items-center gap-2 text-xs font-semibold cursor-pointer"
+            >
+              <span className="text-amber-600">⚠️</span>
+              <div>
+                <div>Warning / Notice</div>
+                <div className="text-[10px] font-normal text-[#8C8477]">Amber caution callout</div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCallout('summary')}
+              className="w-full px-3 py-2 text-left rounded-xl hover:bg-[#F0F9FF] text-[#1E1B18] transition-colors flex items-center gap-2 text-xs font-semibold cursor-pointer"
+            >
+              <span className="text-sky-600">📌</span>
+              <div>
+                <div>Key Takeaways</div>
+                <div className="text-[10px] font-normal text-[#8C8477]">Summary box with key points</div>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 2. Editor Body & Live Preview */}
@@ -854,6 +1364,30 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 dangerouslySetInnerHTML={{ __html: value }}
               />
             </div>
+          </div>
+        )}
+
+        {/* HTML Source Code Mode */}
+        {viewMode === 'html' && (
+          <div className="p-4 sm:p-6 bg-[#1A1816] min-h-full flex flex-col">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#2E2A24] text-xs">
+              <span className="font-mono flex items-center gap-2 text-amber-400 font-semibold">
+                <Code2 className="w-4 h-4" /> Raw HTML Source Code Editor
+              </span>
+              <span className="text-[11px] text-[#A09A8F]">
+                Edit raw HTML elements directly. Changes sync immediately to visual modes.
+              </span>
+            </div>
+            <textarea
+              value={value}
+              onChange={(e) => {
+                isInternalChangeRef.current = true;
+                onChange(e.target.value);
+              }}
+              className="w-full grow min-h-[360px] bg-transparent text-emerald-400 font-mono text-xs sm:text-sm leading-relaxed outline-hidden resize-none p-2 selection:bg-[#E8734A]/40"
+              placeholder="<p>Enter custom HTML markup...</p>"
+              spellCheck={false}
+            />
           </div>
         )}
       </div>

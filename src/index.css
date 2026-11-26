@@ -275,3 +275,72 @@
   border-radius: 1rem !important;
   border: 0 !important;
 }
+
+/* Enhanced Rich Text Elements: Sub, Sup, Mark, Lead, Tasks, Callouts */
+.rich-editor-content sub,
+.editorial-rendered-content sub,
+[contenteditable="true"] sub {
+  vertical-align: sub !important;
+  font-size: 0.75em !important;
+  line-height: 0 !important;
+}
+
+.rich-editor-content sup,
+.editorial-rendered-content sup,
+[contenteditable="true"] sup {
+  vertical-align: super !important;
+  font-size: 0.75em !important;
+  line-height: 0 !important;
+}
+
+.rich-editor-content mark,
+.editorial-rendered-content mark,
+[contenteditable="true"] mark {
+  padding: 0.125em 0.35em !important;
+  border-radius: 0.25rem !important;
+}
+
+.rich-editor-content .lead-text,
+.editorial-rendered-content .lead-text,
+[contenteditable="true"] .lead-text {
+  font-size: 1.25rem !important;
+  line-height: 1.8 !important;
+  color: #38332B !important;
+  font-weight: 500 !important;
+  margin-bottom: 1.25rem !important;
+}
+
+.rich-editor-content ul.task-list,
+.editorial-rendered-content ul.task-list,
+[contenteditable="true"] ul.task-list {
+  list-style-type: none !important;
+  padding-left: 0.25rem !important;
+}
+
+.rich-editor-content ul.task-list li,
+.editorial-rendered-content ul.task-list li,
+[contenteditable="true"] ul.task-list li {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.rich-editor-content ul.task-list input[type="checkbox"],
+.editorial-rendered-content ul.task-list input[type="checkbox"],
+[contenteditable="true"] ul.task-list input[type="checkbox"] {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  accent-color: #E8734A !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+}
+
+.rich-editor-content hr,
+.editorial-rendered-content hr,
+[contenteditable="true"] hr {
+  border: 0 !important;
+  height: 1px !important;
+  background-color: #E2DDD5 !important;
+  margin: 2rem 0 !important;
+}
